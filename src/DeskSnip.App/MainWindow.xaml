@@ -1,0 +1,84 @@
+<Window x:Class="DeskSnip.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DeskSnip"
+        Width="1020" Height="700" MinWidth="900" MinHeight="580" WindowStartupLocation="CenterScreen">
+    <Grid Margin="28,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,24">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Content="设置" Click="SettingsClick" Margin="3"/>
+                <Button Content="收起到托盘" Click="TrayClick" Margin="3"/>
+            </StackPanel>
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Border Background="#008978" Width="38" Height="38" CornerRadius="11" Margin="0,0,12,0">
+                        <TextBlock Text="⌗" FontSize="28" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="DeskSnip" FontSize="30" FontWeight="SemiBold" Foreground="#1C2B38"/>
+                </StackPanel>
+                <TextBlock Text="截图、标注、钉图，让桌面信息随手可用。" Foreground="#677984" Margin="50,6,0,0"/>
+            </StackPanel>
+        </DockPanel>
+        <UniformGrid Grid.Row="1" Columns="3" Margin="-5,0,-5,18">
+            <Button Click="CaptureClick" AutomationProperties.Name="截取屏幕" Margin="5" Padding="18,17" Background="#008978" Foreground="White" BorderBrush="#008978">
+                <StackPanel HorizontalAlignment="Left"><TextBlock Text="截取屏幕" FontSize="20" FontWeight="SemiBold"/><TextBlock x:Name="CaptureKey" Text="Ctrl+Alt+A · 框选后编辑" Margin="0,8,0,0" Opacity="0.85"/></StackPanel>
+            </Button>
+            <Button Click="ClipboardClick" AutomationProperties.Name="钉住剪贴板" Margin="5" Padding="18,17">
+                <StackPanel HorizontalAlignment="Left"><TextBlock Text="钉住剪贴板" FontSize="20" FontWeight="SemiBold"/><TextBlock x:Name="PinKey" Text="Ctrl+Alt+P · 图片贴到桌面" Foreground="#677984" Margin="0,8,0,0"/></StackPanel>
+            </Button>
+            <Button Click="RecordClick" AutomationProperties.Name="录制区域" Margin="5" Padding="18,17">
+                <StackPanel HorizontalAlignment="Left"><TextBlock Text="录制区域" FontSize="20" FontWeight="SemiBold"/><TextBlock x:Name="RecordKey" Text="Ctrl+Alt+R · MP4 / GIF" Foreground="#677984" Margin="0,8,0,0"/></StackPanel>
+            </Button>
+        </UniformGrid>
+        <Border x:Name="NoticeBox" Grid.Row="2" Background="#FFF4D9" CornerRadius="7" Padding="12" Margin="0,0,0,14" Visibility="Collapsed">
+            <TextBlock x:Name="Notice" Foreground="#80621D" TextWrapping="Wrap"/>
+        </Border>
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+            <Border Background="White" CornerRadius="12" BorderBrush="#E1E8EC" BorderThickness="1" Padding="18">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                        <Button Content="打开图片…" Click="OpenClick" DockPanel.Dock="Right" Padding="12,5"/>
+                        <StackPanel><TextBlock Text="最近记录" FontSize="17" FontWeight="SemiBold"/><TextBlock Text="截图和录屏保存在本机" Foreground="#677984" FontSize="12" Margin="0,4,0,0"/></StackPanel>
+                    </DockPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button Content="打开 / 编辑" Click="HistoryOpenClick" Padding="12,6" Margin="0,0,5,0"/>
+                        <Button Content="钉图" Click="HistoryPinClick" Padding="12,6" Margin="0,0,5,0"/>
+                        <Button Content="另存为…" Click="HistorySaveClick" Padding="12,6"/>
+                        <Button Content="导出 GIF" Click="HistoryGifClick" Padding="12,6" Margin="5,0,0,0"/>
+                    </StackPanel>
+                    <Grid>
+                        <ListBox x:Name="HistoryList" BorderThickness="0" MouseDoubleClick="HistoryDoubleClick" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Padding" Value="8,11"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></ListBox.ItemContainerStyle>
+                        </ListBox>
+                        <TextBlock x:Name="EmptyHistory" Text="从一次截图开始。&#10;框选、标注，再复制或钉到桌面。" Foreground="#8A9BA5" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" LineHeight="25"/>
+                    </Grid>
+                </DockPanel>
+            </Border>
+            <Border Grid.Column="2" Background="#EAF2F1" CornerRadius="12" Padding="18">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Text="桌面钉图" FontSize="17" FontWeight="SemiBold"/>
+                        <TextBlock Text="滚轮缩放 · Ctrl+滚轮调透明度&#10;右键管理 · 拖动移动" Foreground="#677984" FontSize="12" Margin="0,8,0,12" LineHeight="21"/>
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                        <Button Content="显示 / 隐藏全部钉图" Click="TogglePinsClick" Margin="0,0,0,7"/>
+                        <Button Content="解除全部穿透 / 锁定" Click="RecoverClick" Margin="0,0,0,7"/>
+                        <Button x:Name="RestoreButton" Content="恢复最近关闭的钉图" Click="RestoreClick" IsEnabled="False"/>
+                    </StackPanel>
+                    <ListBox x:Name="PinList" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Padding" Value="5,8"/></Style></ListBox.ItemContainerStyle>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </Grid>
+        <DockPanel Grid.Row="4" Margin="0,18,0,0">
+            <Button Content="退出" Click="ExitClick" DockPanel.Dock="Right" Padding="12,5" MinHeight="30"/>
+            <TextBlock x:Name="Footer" Text="本地处理 · Windows 桌面工具" Foreground="#677984" VerticalAlignment="Center" FontSize="12"/>
+        </DockPanel>
+    </Grid>
+</Window>

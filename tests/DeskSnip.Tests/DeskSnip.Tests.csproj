@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(BaseTfm)</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>DeskSnip.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" Condition="'$(TargetFramework)' == 'net48'" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DeskSnip.Core\DeskSnip.Core.csproj" />
+    <ProjectReference Include="..\..\src\DeskSnip.App\DeskSnip.App.csproj" />
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+</Project>
