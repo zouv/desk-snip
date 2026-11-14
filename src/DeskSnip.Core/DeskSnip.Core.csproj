@@ -5,6 +5,11 @@
     <AssemblyName>DeskSnip.Core</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\English.xml" LogicalName="DeskSnip.Core.Resources.English.xml" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Security" />
   </ItemGroup>
 </Project>

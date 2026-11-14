@@ -14,7 +14,7 @@ public sealed class RecordingTimeline
 
     public void Start(TimeSpan now)
     {
-        if (State != RecordingState.Ready) throw new InvalidOperationException("Already started.");
+        if (State != RecordingState.Ready) throw new InvalidOperationException(TextCatalog.Get("录制已经开始。"));
         CheckClock(now); segmentStart = now; State = RecordingState.Recording;
     }
     public void Pause(TimeSpan now)
@@ -29,7 +29,7 @@ public sealed class RecordingTimeline
     }
     public void Stop(TimeSpan now)
     {
-        if (State != RecordingState.Recording && State != RecordingState.Paused) throw new InvalidOperationException("Not started.");
+        if (State != RecordingState.Recording && State != RecordingState.Paused) throw new InvalidOperationException(TextCatalog.Get("录制尚未开始。"));
         CheckClock(now);
         if (State == RecordingState.Recording) accumulated += now - segmentStart;
         State = RecordingState.Stopped;

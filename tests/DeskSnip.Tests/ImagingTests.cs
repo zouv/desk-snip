@@ -58,4 +58,12 @@ public class ImagingTests
         var output = AnnotationRenderer.Flatten(source, new[] { cover }); var pixel = new byte[4]; output.CopyPixels(new System.Windows.Int32Rect(15, 15, 1, 1), pixel, 4, 0);
         Assert.Equal(new byte[] { 0, 0, 0, 255 }, pixel);
     });
+    [Fact] public void PinColorTransformsPreserveAlphaAndClampBrightness() => Sta(() =>
+    {
+        var source = BitmapSource.Create(1, 1, 96, 96, PixelFormats.Bgra32, null, new byte[] { 10, 80, 250, 128 }, 4);
+        var pixel = new byte[4]; ImageTransforms.Apply(source, ImageTransform.Invert).CopyPixels(pixel, 4, 0);
+        Assert.Equal(new byte[] { 245, 175, 5, 128 }, pixel);
+        ImageTransforms.Apply(source, ImageTransform.Brighter).CopyPixels(pixel, 4, 0); Assert.Equal(255, pixel[2]); Assert.Equal(128, pixel[3]);
+        ImageTransforms.Apply(source, ImageTransform.Grayscale).CopyPixels(pixel, 4, 0); Assert.Equal(pixel[0], pixel[1]); Assert.Equal(pixel[1], pixel[2]); Assert.Equal(128, pixel[3]);
+    });
 }

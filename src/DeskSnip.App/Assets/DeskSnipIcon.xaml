@@ -1,0 +1,23 @@
+<DrawingImage xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+    <DrawingImage.Drawing>
+        <DrawingGroup>
+            <GeometryDrawing Geometry="M 52,0 L 204,0 Q 256,0 256,52 L 256,204 Q 256,256 204,256 L 52,256 Q 0,256 0,204 L 0,52 Q 0,0 52,0 Z">
+                <GeometryDrawing.Brush>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Offset="0" Color="#459FFE"/>
+                        <GradientStop Offset="0.58" Color="#2A7BF0"/>
+                        <GradientStop Offset="1" Color="#235DCC"/>
+                    </LinearGradientBrush>
+                </GeometryDrawing.Brush>
+            </GeometryDrawing>
+            <GeometryDrawing Geometry="M 91,57 L 62,57 Q 57,57 57,62 L 57,91 M 165,57 L 194,57 Q 199,57 199,62 L 199,91 M 199,165 L 199,194 Q 199,199 194,199 L 165,199 M 91,199 L 62,199 Q 57,199 57,194 L 57,165">
+                <GeometryDrawing.Pen><Pen Brush="White" Thickness="14" StartLineCap="Round" EndLineCap="Round" LineJoin="Round"/></GeometryDrawing.Pen>
+            </GeometryDrawing>
+            <DrawingGroup>
+                <DrawingGroup.Transform><RotateTransform Angle="-28" CenterX="128" CenterY="128"/></DrawingGroup.Transform>
+                <GeometryDrawing Brush="White" Geometry="M 105,78 Q 101,78 101,83 L 101,92 Q 101,96 107,96 L 111,96 L 109,120 L 95,135 Q 91,140 98,143 L 122,143 L 125,175 Q 128,184 131,175 L 134,143 L 158,143 Q 165,140 161,135 L 147,120 L 145,96 L 149,96 Q 155,96 155,92 L 155,83 Q 155,78 151,78 Z"/>
+                <GeometryDrawing Brush="#AFDEFF" Geometry="M 112,83 L 145,83 Q 149,83 149,87 L 149,90 L 107,90 L 107,87 Q 107,83 112,83 Z"/>
+            </DrawingGroup>
+        </DrawingGroup>
+    </DrawingImage.Drawing>
+</DrawingImage>

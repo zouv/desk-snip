@@ -109,6 +109,7 @@
 项目有 `manager.sh` 时，构建 / 运行 / 测试命令的唯一来源是 `manager.sh`（`sh manager.sh help` 看全部）；新增或修改命令先改它，再同步这里和 README 的命令表（`sh check-docs.sh` 会核对 help 与 README 是否一致）。纯文档项目没有 `manager.sh`，直接在 §4 写实际使用的脚本 / 命令：
 
 - 开发运行：`sh manager.sh dev`（构建 Debug 并启动窗口）
+- 图标资源：`sh manager.sh assets`（从自制矢量源生成 PNG 与多尺寸 ICO）
 - 环境自检：`sh manager.sh doctor`（.NET SDK / PowerShell / 目标框架）
 - 测试：`sh manager.sh test`（xunit；net48 用 Microsoft.NETFramework.ReferenceAssemblies）
 - 交付前总检：`sh manager.sh verify`（test + 严格编译 + check-docs）

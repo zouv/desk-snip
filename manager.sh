@@ -68,13 +68,14 @@ desk-snip — manager.sh（本项目所有命令的唯一来源）
 
 命令：
   build        构建解决方案（Debug；--configuration Release 出 Release）
+  assets       从矢量源生成蓝色应用图标与多尺寸 ICO
   dev          构建 Debug 并启动窗口
   run          启动已构建的应用（没有构建产物时先构建）
   start        同 run（后台启动并记录 .runtime/app.json）
   stop         请求应用正常退出并等待最多 30 秒（绝不强杀）
   restart      stop 后再 start
   status       查看是否在运行（pid、exe、启动时间）
-  test         dotnet test
+  test         dotnet test (optional: --filter test-expression)
   verify       交付前总检：test + 严格编译（warnaserror）+ check-docs
   package      出包到 dist/dev（Debug 调试包）与 dist/release（unpack/ + 免安装 zip + SHA256SUMS）
   clean        清理 bin/obj、dist/、.runtime/staging
@@ -91,6 +92,7 @@ main() {
   shift || true
   case "${cmd}" in
     build)      run_ps build "$@" ;;
+    assets)     run_ps assets "$@" ;;
     dev)        run_ps dev "$@" ;;
     run|start)  run_ps desktop start "$@" ;;
     stop)       run_ps desktop stop "$@" ;;

@@ -2,29 +2,37 @@
 
 ## 状态快照
 
-- 最近更新：2026-11-13。
-- 整体状态：0.1.0 首版已归档；无进行中任务，M1 真实桌面交互待验收。
-- 工作分支：main。
-- 最后验证：50 项测试与 manager.sh verify 通过（编译 / 文档 0 警告），含原生编解码、暂停/初始化停止、像素、数据与路径；免安装包 zip 内容和 SHA256 验证通过。真实进程可启动、响应、正常退出。
-- 交付：dist/release/DeskSnip_0.1.0_win-x64-unpack.zip；直接运行 dist/release/unpack/DeskSnip.exe。
-- 最终 Release 的启动/响应、第二实例唤起、正常退出验证通过；使用默认 LocalAppData 数据目录，进程状态由 manager.sh status 查看。
+- 最近更新：2026-11-14。
+- 无进行中任务。当前版本 0.2.0，累计功能与界面成果已归档至 CHANGELOG 0.2.0；工作分支 main，按用户要求提交本地仓库。
+- 最后验证：296 项全量测试、零警告/零错误严格编译及文档检查全部通过。脚本 ASCII/LF、源码凭据与图标元数据检查通过，第三方许可保留原署名。
+- 最新包：dist/release/DeskSnip_0.2.0_win-x64-unpack.zip；整目录运行 dist/release/unpack/DeskSnip.exe。33 项清单、ZIP 及产品/程序集版本验证通过。
+- 用户已确认中英文切换与任务栏图标正常；手动保存的 English 偏好重启后保留。既有语言/界面预览有效，本轮只更改版本和发布文档，未重新操作桌面。
+- PixPin 实机对照仍未完成。此前桌面操作被物理 Escape 中止，未更改 PixPin 配置；继续时重新选择窗口。上次独立测试窗口信息见 .runtime/blue-visual-run.json。
+- 本轮验证记录：.runtime/release-0.2.0-verify.log、release-0.2.0-package.log。
 
-## 当前任务
+## 后续 · PixPin 实机对照待继续
 
-- 无。
-
-## 进行中
-
-- 无。
+- 目标：依据实际 PixPin 设置核对两组六图，尤其是图中未展开的下拉选项、默认值和交互；发现差异后修正已有设置。
+- 作用域：arch/preferences-and-saving.md；SettingsWindow.Pages / ReferenceControls / Input、Core/ReferencePreferences / InputPreferences / InputBindings；行为接线按对应字段定位。
+- 完成定义：实际逐页读取与操作记录准确；差异在 docs/06-设置参考对照.md 区分已支持、部分支持及待实现；必要修正通过验证并更新包。
+- 半成品：实机读取未完成，当前参考依据为用户图片；界面和可用设置已完成实现。未经实际查看的下拉选项不得宣称全部准确或核对完成。
+- 恢复时从正常的原生窗口选择/读取开始；不要沿用中止前的句柄、坐标或元素索引。不要自动修改 PixPin 设置。
 
 ## 下一步
 
-- 按用户试用反馈验证 M1：AppController.Select / Capture / Record、CaptureWindow、EditorWindow、PinWindow.SetInteraction 与 RecordingSession.Run。
+1. 如继续 PixPin 实机对照，从新的窗口状态开始，不沿用物理 Escape 中止前的句柄、坐标或索引。
 
 ## 待验收
 
-- M1 操作试用：截图微调与输出、钉图穿透解除、MP4/GIF 暂停保存。默认三热键 Ctrl+Alt+A/P/R；使用说明见 docs/02-使用说明.md。
+- 设置与 B1/B2/B6/B7：两组六图设置、颜色/目录/字体/托盘、自启及图像右键、草稿/默认；真实框选、透明选区/预设、标注编辑与混合 DPI。语言切换与任务栏图标已由用户确认。
+- B3：多选/分组、锁定限制、边缘/中键/缩放基准点、穿透工具栏、启动恢复与真实屏幕位置。
+- B4：真实 Windows 语言/内容识别与校对、纵横滚动拼接/手工重叠恢复。
+- B5：真实系统声/麦克风同步、长时稳定、三格式/剪辑/暂停/取消、设备中断和断电恢复。
+- B8：配置协议服务和密钥后验收真实识别/翻译质量及结构化导出；本地模拟协议已验证。
 
-## 阻塞
+## 后续边界
 
-- computer-use 已读取主窗口控件；多次捕获出现 window capture / FrameArrived timeout，输入出现 failed to activate captured window / coordinate input geometry is unavailable。已重新绑定并重置会话，仍失败，不能据此声称交互通过。
+- 通用 IPC/脚本、手势、管理员启动、自动更新、其它界面语言、云同步、多类型/缩略钉图及对象控制点拖动仍待补；缺少底层能力的设置禁用并说明，不能按已实现统计。
+- 动作快捷键与钉图鼠标沿用已有本机偏好；参考图中的用户配置不覆盖旧配置。全局鼠标默认关闭，用户保存组合后启用。
+- 服务仅明确请求时上传，密钥为环境变量或本机 DPAPI；系统入口测试不修改真实注册表。协议约束见 docs/04-联网服务协议.md。
+- UI/像素测试使用合成内容，不等同实际鼠标与 PixPin 对照通过；HDR/混合 DPI、游戏、声卡同步和长期稳定仍待实测。

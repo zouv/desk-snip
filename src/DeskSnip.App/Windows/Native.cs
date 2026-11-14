@@ -12,6 +12,7 @@ internal static class Native
     internal const long WsExToolWindow = 0x00000080;
     internal static readonly IntPtr Topmost = new IntPtr(-1);
     [StructLayout(LayoutKind.Sequential)] internal struct Point { public int X; public int Y; }
+    [StructLayout(LayoutKind.Sequential)] internal struct Rect { public int Left; public int Top; public int Right; public int Bottom; }
     [StructLayout(LayoutKind.Sequential)] internal struct CursorInfo { public int Size; public int Flags; public IntPtr Cursor; public Point Position; }
     [StructLayout(LayoutKind.Sequential)] internal struct IconInfo { [MarshalAs(UnmanagedType.Bool)] public bool Icon; public int HotspotX; public int HotspotY; public IntPtr Mask; public IntPtr Color; }
     [StructLayout(LayoutKind.Sequential)] internal struct BitmapInfo
@@ -21,6 +22,8 @@ internal static class Native
     }
     [DllImport("user32.dll")] internal static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetCursorPos(out Point point);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetWindowRect(IntPtr window, out Rect rect);
     [DllImport("user32.dll")] internal static extern IntPtr GetDC(IntPtr window);
     [DllImport("user32.dll")] internal static extern int ReleaseDC(IntPtr window, IntPtr dc);
     [DllImport("gdi32.dll")] internal static extern IntPtr CreateCompatibleDC(IntPtr dc);

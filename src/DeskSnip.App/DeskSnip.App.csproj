@@ -7,9 +7,18 @@
     <RootNamespace>DeskSnip.App</RootNamespace>
     <AssemblyName>DeskSnip</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\DeskSnip.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Assets\DeskSnip.ico" LogicalName="DeskSnip.App.BrandIcon" />
+    <Resource Include="Assets\DeskSnip.png" />
     <ProjectReference Include="..\DeskSnip.Core\DeskSnip.Core.csproj" />
     <Reference Include="System.Drawing" />
+    <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.19041.1" />
+    <PackageReference Include="System.Runtime.WindowsRuntime" Version="4.7.0" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageReference Include="ZXing.Net" Version="0.16.11" />
+    <PackageReference Include="WpfMath" Version="0.13.1" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

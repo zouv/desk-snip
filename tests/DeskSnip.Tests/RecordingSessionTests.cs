@@ -9,6 +9,7 @@ using Xunit;
 
 namespace DeskSnip.Tests;
 
+[Collection("Recording session timing")]
 public class RecordingSessionTests
 {
     private sealed class SyntheticSource : IFrameSource
@@ -68,3 +69,7 @@ public class RecordingSessionTests
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
 }
+
+// The integration tests assert short wall-clock intervals; run without competing UI/encoder tests.
+[CollectionDefinition("Recording session timing", DisableParallelization = true)]
+public sealed class RecordingSessionTimingCollection { }

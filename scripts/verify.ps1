@@ -6,8 +6,14 @@ $failed = @()
 function Add-Failure([string]$Name) { $script:failed += $Name }
 
 Write-Step 'tests'
-& (Join-Path $PSScriptRoot 'test.ps1')
-if ($LASTEXITCODE -ne 0) { Add-Failure 'tests' }
+try {
+    & (Join-Path $PSScriptRoot 'test.ps1')
+    if ($LASTEXITCODE -ne 0) { Add-Failure 'tests' }
+}
+catch {
+    Write-Warn 'Tests failed; continuing strict build and documentation checks.'
+    Add-Failure 'tests'
+}
 
 Write-Step 'dotnet build -warnaserror (no incremental)'
 & dotnet build $Sln -c Debug -warnaserror --no-incremental --nologo

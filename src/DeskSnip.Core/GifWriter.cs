@@ -34,7 +34,7 @@ public sealed class GifWriter : IDisposable
     public void WriteFrame(byte[] bgra, TimeSpan duration)
     {
         if (disposed) throw new ObjectDisposedException(nameof(GifWriter));
-        if (bgra == null || bgra.Length != checked(width * height * 4)) throw new ArgumentException("Frame size mismatch.", nameof(bgra));
+        if (bgra == null || bgra.Length != checked(width * height * 4)) throw new ArgumentException(TextCatalog.Get("帧尺寸不匹配。"), nameof(bgra));
         var remaining = Math.Max(1L, (long)Math.Round(duration.TotalMilliseconds / 10));
         // GIF 单帧 delay 为 ushort，超长暂停后的静帧拆开写。
         do

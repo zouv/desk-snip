@@ -47,15 +47,25 @@ function Write-ReadmeText([string]$Directory, [string]$Mode) {
         ""
         "Move or copy the WHOLE folder; do not move the exe by itself."
         ""
-        "Capture: Ctrl+Alt+A, drag a region, Enter to edit."
+        "Capture: Ctrl+Alt+A, drag a region, Enter to copy."
+        "Pick annotations from toolbar groups, or use More > Edit."
+        "Click the size badge for precise coordinates and dimensions."
+        "C copies color; Alt+C copies coordinates."
         "Pin clipboard image: Ctrl+Alt+P."
         "Record: Ctrl+Alt+R. During recording this toggles pause."
-        "Use Stop on the recording bar to finalize MP4/GIF."
+        "Drag the recording grip; red Stop saves MP4/GIF/WebP."
         "Global hotkeys can be changed in Settings; conflicts are shown."
+        "Interface language: Settings > System > Language. Save to apply."
+        "Simplified Chinese, English and system language are supported."
         "Close hides the console by default. Use Exit to quit normally."
         "Data: %LOCALAPPDATA%\DeskSnip (separate from this folder)."
-        "Basic release: picture/cursor recording; OCR, scrolling capture"
-        "and audio are planned. Requires Windows media components for MP4."
+        "Local OCR uses installed Windows languages. Long capture is manual."
+        "Audio, WebP, editing and recovery require your FFmpeg/ffprobe."
+        "Configure FFmpeg in Settings or PATH; it is not bundled."
+        "Online recognition uses a configurable JSON service and a local key."
+        "Set it up in Settings; requests are sent only on explicit clicks."
+        "Pins restore their independent image/layout data at startup."
+        "Requires Windows media components for MP4."
         "See README.md for the full usage guide and verification limits."
     )
     Write-Utf8File (Join-Path $Directory 'README.txt') (($lines -join "`n") + "`n")
@@ -66,6 +76,8 @@ function Copy-PackageDocs([string]$Directory) {
         Copy-Item -LiteralPath (Join-Path $Root $name) -Destination (Join-Path $Directory $name)
     }
     Copy-Item -LiteralPath (Join-Path $Root 'docs') -Destination $Directory -Recurse
+    Copy-Item -LiteralPath (Join-Path $Root 'arch') -Destination $Directory -Recurse
+    Copy-Item -LiteralPath (Join-Path $Root 'licenses') -Destination $Directory -Recurse
 }
 
 function New-Zip([string]$Source, [string]$ZipPath, [string]$Prefix) {
@@ -119,7 +131,7 @@ function Test-PackageContents([string]$Directory, [bool]$AllowSymbols) {
     }
     $base = [IO.Path]::GetFullPath($Directory).TrimEnd('\') + '\'
     $forbidden = @(Get-ChildItem -LiteralPath $Directory -Recurse -Force -File |
-        Where-Object { $_.FullName.Substring($base.Length).Replace('\', '/') -match '(^|/)(\.env|node_modules|\.git|\.runtime)(/|$)' })
+        Where-Object { $_.FullName.Substring($base.Length).Replace('\', '/') -match '(^|/)(\.env|node_modules|\.git|\.runtime|credentials|recording-drafts|history|pins)(/|$)|(^|/)(settings|history|pins|captures|last-session)\.json$|(^|/)recognition\.dat$' })
     if ($forbidden.Count -gt 0) { throw "Disallowed package content: $($forbidden[0].Name)" }
     if (-not $AllowSymbols) {
         $symbols = @(Get-ChildItem -LiteralPath $Directory -Recurse -File -Filter '*.pdb')

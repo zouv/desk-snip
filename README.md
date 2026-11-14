@@ -7,7 +7,7 @@ Windows 桌面截图、标注、钉图与录屏工具，独立实现 PixPin 的�
 希望有一款可以自行维护、按日常使用习惯扩展的桌面工具。功能参考 PixPin 公开手册，技术架构沿用 desk-pins。
 ## 快速开始
 
-试用免安装版：解压 `dist/release/DeskSnip_0.1.0_win-x64-unpack.zip`，双击 `DeskSnip.exe`。仅支持 Windows 10 / 11 x64，需要 .NET Framework 4.8。开发者从源码运行：
+试用免安装版：解压 `dist/release/DeskSnip_0.2.0_win-x64-unpack.zip`，双击 `DeskSnip.exe`。仅支持 Windows 10 / 11 x64，需要 .NET Framework 4.8。开发者从源码运行：
 
 ```bash
 sh manager.sh doctor   # .NET SDK / PowerShell / 目标框架
@@ -21,13 +21,16 @@ sh manager.sh package  # 出包到 dist/dev 与 dist/release
 
 | 操作 | 入口 |
 |---|---|
-| 截图 | `Ctrl+Alt+A`，拖动框选后按 Enter 进入标注；Ctrl+A 选全部桌面 |
-| 取色 / 微调 | 选区中 Ctrl+C 复制 HEX；方向键移动，Shift 调尺寸，Ctrl 加速 |
-| 编辑输出 | 矩形、椭圆、直线、箭头、画笔、高亮、文字、序号、马赛克、遮挡；Ctrl+Z / Y 撤销重做，Ctrl+C / S / P 复制、保存、钉图 |
+| 截图 | `Ctrl+Alt+A`，框选后 Enter/Ctrl+C 复制，“编辑截图”进入标注；Ctrl+A 当前屏/全部屏，Tab 定位窗口/原生控件 |
+| 取色 / 微调 | C 复制颜色、Alt+C 坐标；方向键移动 1 px，Shift 收缩边、Ctrl 扩展边；位置/尺寸输入、放大镜与多种透明选区 |
+| 编辑输出 | 二十种工具、对象选择/移动/复制/样式重编辑、撤销重做；Ctrl+C/S/P 复制/保存/钉图，Ctrl+Shift+S 快速保存 |
 | 剪贴板钉图 | `Ctrl+Alt+P`；文件从“打开图片”进入编辑后钉图 |
-| 钉图管理 | 拖动移动、滚轮缩放、Ctrl+滚轮透明度；右键旋转/镜像/锁定/穿透；控制台与托盘可解除穿透和恢复最近关闭钉图 |
-| 录屏 | `Ctrl+Alt+R` 框选，选择 MP4 / GIF、帧率与位置后开始；录制时同一热键切换暂停，点击“停止保存”结束 |
-| 历史 | 双击查看，支持另存为；MP4 可以“导出 GIF” |
+| 钉图管理 | Ctrl 多选移动、边缘缩放、中键还原/切回；分组/批量、独立原图和布局、启动恢复、穿透解除与屏幕救援 |
+| OCR / 长截图 | Shift+C 或“文字识别”使用 Windows 离线 OCR；L/“长截图”手动纵横拼接、预览裁剪与失败恢复 |
+| 录屏 | `Ctrl+Alt+R`，MP4/GIF/WebP、两路音轨、倒计时、最高 60 FPS；同键暂停，停止保存，回放剪辑/倍速/音量与恢复 |
+| 联网识别 | 先在设置配置协议服务，手动请求文字/翻译/表格/公式/文档；可编辑导出和恢复上次结果 |
+| 设置 / 保存 | 按参考图分组的标注/保存偏好、动作/内置键、鼠标组合与全局拖动、忽略进程、主题及可移植配置 |
+| 界面语言 | 设置 → 系统 → 界面语言，选择简体中文、English 或跟随系统；保存后切换并记住选择 |
 
 快捷键可在“设置”中修改，冲突会提示。关闭主窗口默认收起到托盘；从托盘或窗口的“退出”结束程序并完成正在录制的文件。详细说明见 [使用手册](docs/02-使用说明.md)。
 
@@ -38,13 +41,14 @@ sh manager.sh package  # 出包到 dist/dev 与 dist/release
 | 命令 | 说明 |
 |---|---|
 | `build` | 构建解决方案（Debug；`--configuration Release` 出 Release） |
+| `assets` | 从矢量源重新生成蓝色应用图标及 16–256 像素 ICO |
 | `dev` | 构建 Debug 并启动窗口 |
 | `run` | 启动已构建的应用（没有构建产物时先构建） |
 | `start` | 同 `run`（后台启动并记录 `.runtime/app.json`） |
 | `stop` | 请求应用正常退出并等待最多 30 秒（绝不强杀） |
 | `restart` | `stop` 后再 `start` |
 | `status` | 查看是否在运行（pid、exe、启动时间） |
-| `test` | `dotnet test` |
+| `test` | `dotnet test`；可用 `--filter test-expression` 运行指定测试 |
 | `verify` | 交付前总检：test + 严格编译（warnaserror）+ check-docs |
 | `package` | 出包到 `dist/dev`（Debug 调试包）与 `dist/release`（`unpack/` + 免安装 zip + SHA256SUMS） |
 | `clean` | 清理 bin/obj、`dist/`、`.runtime/staging`、`.runtime/package.lock` |
@@ -76,6 +80,8 @@ sh manager.sh package  # 出包到 dist/dev 与 dist/release
 - 目标框架与界面：.NET Framework 4.8 / WPF / x64。
 - Windows PowerShell 5.1 或 PowerShell 7（脚本同时兼容）。
 - 运行环境：Windows 10 / 11 x64，.NET Framework 4.8；免安装 zip。
+- 本地 OCR 使用 Windows 已安装语言；音频/WebP/剪辑/硬件最终导出与恢复需本机 FFmpeg/ffprobe，设置路径或放入 PATH。
+- 联网操作需自行配置支持 [服务协议](docs/04-联网服务协议.md) 的服务地址；密钥由 Windows 当前账号加密保存。第三方组件见 [组件说明](docs/05-第三方组件.md)。
 
 ## 目录结构
 
@@ -92,8 +98,8 @@ Directory.Build.props    # 版本号 / 目标框架唯一出处
 
 ## 当前状态
 
-第一版基础代码已实现：截图编辑、图片钉图、MP4 / GIF 画面录制、历史、托盘与设置。自动测试覆盖区域、数据、标注、原生编码/解码与暂停成片时间。桌面自动化当前无法捕获/激活窗口，完整交互验收仍待实测；源码状态与各项差异见 [功能对照](docs/03-功能对照.md)，阶段安排见 [路线图](ROADMAP.md)。
+当前版本 0.2.0，已交付 B1–B8 的常用子集：精确选区/标注、钉图管理、离线 OCR/手动长截图、录屏音轨/剪辑/恢复、保存/设置和可配置识别服务，并完善截图/录屏/设置排版、中英文切换和蓝色应用图标。用户已确认语言切换与任务栏图标正常；服务用本地模拟请求验证，XLSX/Word 通过独立 Office 格式校验，完整桌面交互、真实设备和实际服务质量仍待验收。发布记录见 [更新日志](CHANGELOG.md)，逐项差异见 [功能对照](docs/03-功能对照.md)，后续见 [路线图](ROADMAP.md)。
 
-基础版录制画面及可选鼠标指针。GIF 使用 256 色，最多 15 FPS / 207 万像素，MP4 → GIF 默认 10 FPS；MP4 最大 4096 边长及 829 万像素，右/下边缘可缩减 1 px 以满足编码的偶数尺寸。运行不依赖 FFmpeg，N 版 Windows 需系统媒体组件。
+基础无音频 MP4/GIF 可只用系统组件；GIF 最多 15 FPS/207 万像素、256 色，基础 MP4 转 GIF 默认 10 FPS。MP4 最大单边 4096、829 万像素，右/下边缘可能缩减 1 px；N 版 Windows 需系统媒体组件。应用不下载或打包本机 FFmpeg。
 
-OCR、长截图、音频同步、回放剪辑、自动窗口定位、开机恢复活动钉图与高级预设尚未实现。混合 DPI、多屏、HDR 和游戏捕获需要专项测试。
+仍待补：多类型贴图/缩略图、自动滚动/超长分块、高级对象变换、键鼠/摄像头、脚本/手势/系统集成、更多识别格式与服务商适配。混合 DPI、多屏、HDR 和游戏捕获需专项测试。

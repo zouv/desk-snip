@@ -1,0 +1,5623 @@
+<?xml version='1.0' encoding='utf-8'?>
+<strings>
+  <text>
+    <source> · 区域录制</source>
+    <translation> · Region recording</translation>
+  </text>
+  <text>
+    <source> · 图片贴到桌面</source>
+    <translation> · Put images on your desktop</translation>
+  </text>
+  <text>
+    <source> · 已关闭</source>
+    <translation> · Closed</translation>
+  </text>
+  <text>
+    <source> · 显示缩放不改变导出尺寸</source>
+    <translation> · Display zoom does not affect export size</translation>
+  </text>
+  <text>
+    <source> · 框选、复制与编辑</source>
+    <translation> · Select, copy, and edit</translation>
+  </text>
+  <text>
+    <source> · 穿透</source>
+    <translation> · Click-through</translation>
+  </text>
+  <text>
+    <source> · 锁定</source>
+    <translation> · Locked</translation>
+  </text>
+  <text>
+    <source> 副本</source>
+    <translation> Copy</translation>
+  </text>
+  <text>
+    <source> 请在设置中修改。</source>
+    <translation> Change it in Settings.</translation>
+  </text>
+  <text>
+    <source>0 为静音；GIF/WebP 没有声音。</source>
+    <translation>0 mutes audio; GIF / WebP has no audio.</translation>
+  </text>
+  <text>
+    <source>0–100 像素</source>
+    <translation>0–100 px</translation>
+  </text>
+  <text>
+    <source>0–1000；活动图独立保留</source>
+    <translation>0–1000; active pins are kept separately</translation>
+  </text>
+  <text>
+    <source>0–100；0 为最低 JPEG 质量，PNG 等无损格式保持原像素</source>
+    <translation>0–100; 0 is the lowest JPEG quality; lossless formats keep original pixels</translation>
+  </text>
+  <text>
+    <source>0–20 像素；0 隐藏边框</source>
+    <translation>0–20 px; 0 hides the border</translation>
+  </text>
+  <text>
+    <source>0–30 秒</source>
+    <translation>0–30 seconds</translation>
+  </text>
+  <text>
+    <source>0–400 像素</source>
+    <translation>0–400 px</translation>
+  </text>
+  <text>
+    <source>0–99999；0 不保留</source>
+    <translation>0–99999; 0 keeps no history</translation>
+  </text>
+  <text>
+    <source>0–99999；0 停止记录和读取选区</source>
+    <translation>0–99999; 0 disables region history</translation>
+  </text>
+  <text>
+    <source>0（尖角）</source>
+    <translation>0 (square corners)</translation>
+  </text>
+  <text>
+    <source>10–100；退出穿透恢复原值</source>
+    <translation>10–100; leaving click-through restores the original value</translation>
+  </text>
+  <text>
+    <source>1–36500 天</source>
+    <translation>1–36500 days</translation>
+  </text>
+  <text>
+    <source>1–60 FPS；GIF 最大 15 FPS</source>
+    <translation>1–60 FPS; GIF supports up to 15 FPS</translation>
+  </text>
+  <text>
+    <source>45° 角度直线</source>
+    <translation>45° snapped lines</translation>
+  </text>
+  <text>
+    <source>5–300 秒</source>
+    <translation>5–300 seconds</translation>
+  </text>
+  <text>
+    <source>Alt + 滚轮精细缩放步长（%）</source>
+    <translation>Alt + wheel fine zoom step (%)</translation>
+  </text>
+  <text>
+    <source>Alt+C 复制坐标 · WASD 微调</source>
+    <translation>Alt+C copy coordinates · WASD fine adjustment</translation>
+  </text>
+  <text>
+    <source>C 取色 · Shift 格式 · P 坐标</source>
+    <translation>C pick color · Shift format · P coordinates</translation>
+  </text>
+  <text>
+    <source>Ctrl + 滚轮</source>
+    <translation>Ctrl + wheel</translation>
+  </text>
+  <text>
+    <source>Ctrl / Shift 选择单元格；合并显示左上格，其余内容在拆分后恢复。插删行列会拆分合并。</source>
+    <translation>Use Ctrl / Shift to select cells. Merged cells show the top-left value; other content returns when split. Inserting or deleting rows / columns splits merges.</translation>
+  </text>
+  <text>
+    <source>Ctrl+Alt+A · 框选、复制与编辑</source>
+    <translation>Ctrl+Alt+A · Select, copy, and edit</translation>
+  </text>
+  <text>
+    <source>Ctrl+Alt+P · 图片贴到桌面</source>
+    <translation>Ctrl+Alt+P · Put images on your desktop</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 倒计时</source>
+    <translation>DeskSnip · Countdown</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 回放与剪辑</source>
+    <translation>DeskSnip · Playback and editing</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 图像编辑</source>
+    <translation>DeskSnip · Image editor</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 开始录制</source>
+    <translation>DeskSnip · Start recording</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 录制中</source>
+    <translation>DeskSnip · Recording</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 录制已暂停</source>
+    <translation>DeskSnip · Recording paused</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 录制恢复与素材</source>
+    <translation>DeskSnip · Recording recovery and media</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 录制边框</source>
+    <translation>DeskSnip · Recording border</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 截图 / 钉图 / 录屏</source>
+    <translation>DeskSnip · Capture / Pin / Record</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 截图选区</source>
+    <translation>DeskSnip · Capture selection</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 截图预设</source>
+    <translation>DeskSnip · Capture presets</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 本地文字识别</source>
+    <translation>DeskSnip · Local text recognition</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 联网识别与翻译</source>
+    <translation>DeskSnip · Online recognition and translation</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 解除钉图穿透</source>
+    <translation>DeskSnip · Disable pin click-through</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 设置</source>
+    <translation>DeskSnip · Settings</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 选择录制区域</source>
+    <translation>DeskSnip · Select recording region</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 钉图</source>
+    <translation>DeskSnip · Pin</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 钉图管理</source>
+    <translation>DeskSnip · Pin manager</translation>
+  </text>
+  <text>
+    <source>DeskSnip · 长截图</source>
+    <translation>DeskSnip · Long capture</translation>
+  </text>
+  <text>
+    <source>DeskSnip 启动失败</source>
+    <translation>DeskSnip could not start</translation>
+  </text>
+  <text>
+    <source>DeskSnip 当前不收集或发送使用统计</source>
+    <translation>DeskSnip does not collect or send usage statistics</translation>
+  </text>
+  <text>
+    <source>DeskSnip 当前提供本地功能，不提供账号登录、会员购买和配置云同步。</source>
+    <translation>DeskSnip provides local features. Account sign-in, memberships, and cloud settings sync are unavailable.</translation>
+  </text>
+  <text>
+    <source>Excel 表格|*.xlsx|CSV 表格|*.csv</source>
+    <translation>Excel table|*.xlsx|CSV table|*.csv</translation>
+  </text>
+  <text>
+    <source>Excel 表格|*.xlsx|CSV 表格|*.csv|TSV 表格|*.tsv</source>
+    <translation>Excel table|*.xlsx|CSV table|*.csv|TSV table|*.tsv</translation>
+  </text>
+  <text>
+    <source>FFmpeg 程序</source>
+    <translation>FFmpeg executable</translation>
+  </text>
+  <text>
+    <source>FFmpeg 路径需要为完整的 exe 文件路径。</source>
+    <translation>The FFmpeg path must be a full path to an exe file.</translation>
+  </text>
+  <text>
+    <source>FFmpeg 路径（声音 / WebP 需要；留空自动查找）</source>
+    <translation>FFmpeg path (required for audio / WebP; empty to auto-detect)</translation>
+  </text>
+  <text>
+    <source>FFmpeg|ffmpeg.exe|程序|*.exe</source>
+    <translation>FFmpeg|ffmpeg.exe|Executables|*.exe</translation>
+  </text>
+  <text>
+    <source>GIF / WebP 不含声音。停止后保存到所选位置。</source>
+    <translation>GIF / WebP has no audio. Stop to save to the selected location.</translation>
+  </text>
+  <text>
+    <source>GIF 动图|*.gif</source>
+    <translation>GIF animation|*.gif</translation>
+  </text>
+  <text>
+    <source>GIF 导出正在进行，请等它完成。</source>
+    <translation>A GIF export is in progress. Wait for it to finish.</translation>
+  </text>
+  <text>
+    <source>GIF 已导出（10 FPS、256 色）。</source>
+    <translation>GIF exported (10 FPS, 256 colors).</translation>
+  </text>
+  <text>
+    <source>GIF 录制</source>
+    <translation>GIF recording</translation>
+  </text>
+  <text>
+    <source>GIF 转换最多支持 207 万像素。</source>
+    <translation>GIF conversion supports up to 2.07 million pixels.</translation>
+  </text>
+  <text>
+    <source>GIF 选区请保持在 207 万像素以内；较大区域可以录制 MP4。</source>
+    <translation>Keep GIF regions within 2.07 million pixels. Use MP4 for larger regions.</translation>
+  </text>
+  <text>
+    <source>HDPI 下复制图像缩小到</source>
+    <translation>Limit copied image size on high-DPI displays</translation>
+  </text>
+  <text>
+    <source>HTML 最大宽度</source>
+    <translation>Maximum HTML width</translation>
+  </text>
+  <text>
+    <source>JPEG / TIFF 保存时写入 EXIF 时间与软件信息</source>
+    <translation>Write the time and software name to JPEG / TIFF EXIF</translation>
+  </text>
+  <text>
+    <source>LaTeX 公式</source>
+    <translation>LaTeX formula</translation>
+  </text>
+  <text>
+    <source>LaTeX 源码|*.tex|当前公式 PNG|*.png</source>
+    <translation>LaTeX source|*.tex|Current formula PNG|*.png</translation>
+  </text>
+  <text>
+    <source>LaTeX 预览已更新。</source>
+    <translation>LaTeX preview updated.</translation>
+  </text>
+  <text>
+    <source>MP4 视频|*.mp4</source>
+    <translation>MP4 video|*.mp4</translation>
+  </text>
+  <text>
+    <source>MP4 选区需为偶数尺寸，且不超过 4096 边长和 829 万像素，请缩小选区。</source>
+    <translation>MP4 regions need even dimensions, sides no longer than 4096 pixels, and at most 8.29 million pixels. Choose a smaller region.</translation>
+  </text>
+  <text>
+    <source>Mac 虚拟桌面显示</source>
+    <translation>Show on Mac virtual desktops</translation>
+  </text>
+  <text>
+    <source>Markdown 与配图|*.zip|Word 文档|*.docx|Markdown 源码|*.md</source>
+    <translation>Markdown and images|*.zip|Word document|*.docx|Markdown source|*.md</translation>
+  </text>
+  <text>
+    <source>Markdown 编辑</source>
+    <translation>Markdown editor</translation>
+  </text>
+  <text>
+    <source>PNG 图片|*.png</source>
+    <translation>PNG image|*.png</translation>
+  </text>
+  <text>
+    <source>PNG 图片|*.png|JPEG 图片|*.jpg|BMP 图片|*.bmp</source>
+    <translation>PNG image|*.png|JPEG image|*.jpg|BMP image|*.bmp</translation>
+  </text>
+  <text>
+    <source>PNG 图片|*.png|JPEG 图片|*.jpg|BMP 图片|*.bmp|TIFF 图片|*.tiff</source>
+    <translation>PNG image|*.png|JPEG image|*.jpg|BMP image|*.bmp|TIFF image|*.tiff</translation>
+  </text>
+  <text>
+    <source>PNG 导出当前选中公式</source>
+    <translation>PNG export uses the selected formula</translation>
+  </text>
+  <text>
+    <source>Socks5 代理暂未开放</source>
+    <translation>SOCKS5 proxy is not supported yet</translation>
+  </text>
+  <text>
+    <source>UI 检测</source>
+    <translation>UI detection</translation>
+  </text>
+  <text>
+    <source>UTF-8 文本|*.txt</source>
+    <translation>UTF-8 text|*.txt</translation>
+  </text>
+  <text>
+    <source>WAV 文件头无效。</source>
+    <translation>The WAV header is invalid.</translation>
+  </text>
+  <text>
+    <source>WAV 没有可恢复的音频块。</source>
+    <translation>The WAV file has no audio blocks to recover.</translation>
+  </text>
+  <text>
+    <source>WEBP / AVIF 编码尚未开放</source>
+    <translation>WebP / AVIF encoding is not available here</translation>
+  </text>
+  <text>
+    <source>WebP 录制需要 FFmpeg 增强模式。</source>
+    <translation>WebP recording requires FFmpeg.</translation>
+  </text>
+  <text>
+    <source>WebP 预览未完成，原文件保留。</source>
+    <translation>WebP preview failed. The original file is kept.</translation>
+  </text>
+  <text>
+    <source>Windows 接口暂时不可用，请重试；MP4 编码需要系统媒体组件。</source>
+    <translation>A Windows interface is temporarily unavailable. Try again. MP4 encoding requires Windows media components.</translation>
+  </text>
+  <text>
+    <source>XLSX 单元格最多 32767 字符，请缩短内容或使用 CSV。</source>
+    <translation>XLSX cells support up to 32767 characters. Shorten the content or use CSV.</translation>
+  </text>
+  <text>
+    <source>X（物理像素）</source>
+    <translation>X (physical pixels)</translation>
+  </text>
+  <text>
+    <source>Y（物理像素）</source>
+    <translation>Y (physical pixels)</translation>
+  </text>
+  <text>
+    <source>auto 为自动识别，或使用服务支持的语言代码</source>
+    <translation>Use auto to detect the language, or enter a language code supported by the service</translation>
+  </text>
+  <text>
+    <source>{0}  {1} × {2}  ·  {3}</source>
+    <translation>{0}  {1} × {2}  ·  {3}</translation>
+  </text>
+  <text>
+    <source>{0} · {1} × {2}{3}{4}{5}</source>
+    <translation>{0} · {1} × {2}{3}{4}{5}</translation>
+  </text>
+  <text>
+    <source>{0} × {1} px · {2} 个标注 · </source>
+    <translation>{0} × {1} px · {2} annotations · </translation>
+  </text>
+  <text>
+    <source>{0} × {1} · {2:0.0} 秒 · {3}</source>
+    <translation>{0} × {1} · {2:0.0} s · {3}</translation>
+  </text>
+  <text>
+    <source>{0} × {1} · {2:0.0} 秒；设置导出范围、倍速、裁剪及音量。</source>
+    <translation>{0} × {1} · {2:0.0} seconds; set the export range, speed, crop, and volume.</translation>
+  </text>
+  <text>
+    <source>{0} × {1} · {2:P0}{3}{4}</source>
+    <translation>{0} × {1} · {2:P0}{3}{4}</translation>
+  </text>
+  <text>
+    <source>{0}修饰键</source>
+    <translation>{0} modifiers</translation>
+  </text>
+  <text>
+    <source>{0}设置</source>
+    <translation>{0} settings</translation>
+  </text>
+  <text>
+    <source>{0}鼠标组合</source>
+    <translation>{0} mouse gesture</translation>
+  </text>
+  <text>
+    <source>{0}（每行一个 exe 名称）</source>
+    <translation>{0} (one exe name per line)</translation>
+  </text>
+  <text>
+    <source>{0}：{1}</source>
+    <translation>{0}: {1}</translation>
+  </text>
+  <text>
+    <source>{time} 表示当前日期与时间</source>
+    <translation>{time} is the current date and time</translation>
+  </text>
+  <text>
+    <source>−50–999 像素</source>
+    <translation>−50–999 px</translation>
+  </text>
+  <text>
+    <source>。请在设置中修改，也可使用窗口或托盘入口。</source>
+    <translation>. Change it in Settings, or use the window or tray menu.</translation>
+  </text>
+  <text>
+    <source>三分法网格</source>
+    <translation>Rule-of-thirds grid</translation>
+  </text>
+  <text>
+    <source>上一历史区域</source>
+    <translation>Previous capture region</translation>
+  </text>
+  <text>
+    <source>上移</source>
+    <translation>Move up</translation>
+  </text>
+  <text>
+    <source>上限请输入整数。</source>
+    <translation>Enter a whole number for the limit.</translation>
+  </text>
+  <text>
+    <source>下一历史区域</source>
+    <translation>Next capture region</translation>
+  </text>
+  <text>
+    <source>下移</source>
+    <translation>Move down</translation>
+  </text>
+  <text>
+    <source>不再提醒音频录制警告</source>
+    <translation>Do not show audio recording warnings again</translation>
+  </text>
+  <text>
+    <source>不包含鼠标指针</source>
+    <translation>Exclude mouse cursor</translation>
+  </text>
+  <text>
+    <source>不可用</source>
+    <translation>Unavailable</translation>
+  </text>
+  <text>
+    <source>不支持录制中途改变尺寸的视频。</source>
+    <translation>Videos that change dimensions during recording are unsupported.</translation>
+  </text>
+  <text>
+    <source>不支持此分隔符。</source>
+    <translation>Unsupported delimiter.</translation>
+  </text>
+  <text>
+    <source>不支持此历史记录类型。</source>
+    <translation>Unsupported history kind.</translation>
+  </text>
+  <text>
+    <source>不支持此录制格式。</source>
+    <translation>Unsupported recording format.</translation>
+  </text>
+  <text>
+    <source>不支持的文件名变量：</source>
+    <translation>Unsupported filename variable: </translation>
+  </text>
+  <text>
+    <source>不显示</source>
+    <translation>Hide</translation>
+  </text>
+  <text>
+    <source>不检测</source>
+    <translation>Disabled</translation>
+  </text>
+  <text>
+    <source>不缩小</source>
+    <translation>Do not reduce</translation>
+  </text>
+  <text>
+    <source>不自动开始采集</source>
+    <translation>Do not capture automatically</translation>
+  </text>
+  <text>
+    <source>不自动换行</source>
+    <translation>No wrapping</translation>
+  </text>
+  <text>
+    <source>不透明度</source>
+    <translation>Opacity</translation>
+  </text>
+  <text>
+    <source>丢弃当前录制并从头开始？</source>
+    <translation>Discard this recording and start again?</translation>
+  </text>
+  <text>
+    <source>丢弃录制</source>
+    <translation>Discard recording</translation>
+  </text>
+  <text>
+    <source>中</source>
+    <translation>Medium</translation>
+  </text>
+  <text>
+    <source>中文标点</source>
+    <translation>Full-width punctuation</translation>
+  </text>
+  <text>
+    <source>中键动作</source>
+    <translation>Middle-click action</translation>
+  </text>
+  <text>
+    <source>中键单击</source>
+    <translation>Middle click</translation>
+  </text>
+  <text>
+    <source>中键单击动作</source>
+    <translation>Middle-click action</translation>
+  </text>
+  <text>
+    <source>中键双击</source>
+    <translation>Middle double click</translation>
+  </text>
+  <text>
+    <source>中键拖动</source>
+    <translation>Middle drag</translation>
+  </text>
+  <text>
+    <source>中键缩放模式</source>
+    <translation>Middle-click zoom mode</translation>
+  </text>
+  <text>
+    <source>主屏幕中心</source>
+    <translation>Center of primary display</translation>
+  </text>
+  <text>
+    <source>主机</source>
+    <translation>Host</translation>
+  </text>
+  <text>
+    <source>主题、强调色或界面字体无效。</source>
+    <translation>The theme, accent color, or interface font is invalid.</translation>
+  </text>
+  <text>
+    <source>主题与字体</source>
+    <translation>Theme and font</translation>
+  </text>
+  <text>
+    <source>主题模式</source>
+    <translation>Theme</translation>
+  </text>
+  <text>
+    <source>主题颜色</source>
+    <translation>Accent color</translation>
+  </text>
+  <text>
+    <source>九宫格</source>
+    <translation>Nine-part grid</translation>
+  </text>
+  <text>
+    <source>二维码内容（确认后复制）</source>
+    <translation>QR content (confirm to copy)</translation>
+  </text>
+  <text>
+    <source>二维码检测模式</source>
+    <translation>QR detection mode</translation>
+  </text>
+  <text>
+    <source>交换宽高</source>
+    <translation>Swap width and height</translation>
+  </text>
+  <text>
+    <source>仅图像文件</source>
+    <translation>Image files only</translation>
+  </text>
+  <text>
+    <source>仅窗口</source>
+    <translation>Windows only</translation>
+  </text>
+  <text>
+    <source>从一次截图开始。
+框选、标注，再复制或钉到桌面。</source>
+    <translation>Start with a screenshot.
+Select, annotate, then copy or pin it to your desktop.</translation>
+  </text>
+  <text>
+    <source>从图片发起翻译时留档</source>
+    <translation>Archive when translating an image</translation>
+  </text>
+  <text>
+    <source>从头播放</source>
+    <translation>Play from start</translation>
+  </text>
+  <text>
+    <source>代理主机需要有效主机名或 IP 地址。</source>
+    <translation>The proxy host must be a valid hostname or IP address.</translation>
+  </text>
+  <text>
+    <source>代理端口可连接，保存后应用到联网服务</source>
+    <translation>The proxy port is reachable. Save to apply it to online services.</translation>
+  </text>
+  <text>
+    <source>代理类型</source>
+    <translation>Proxy type</translation>
+  </text>
+  <text>
+    <source>代理连接未通过</source>
+    <translation>Proxy connection failed</translation>
+  </text>
+  <text>
+    <source>代理连接超时，请检查主机与端口。</source>
+    <translation>The proxy connection timed out. Check the host and port.</translation>
+  </text>
+  <text>
+    <source>以当前位置为开始</source>
+    <translation>Set start here</translation>
+  </text>
+  <text>
+    <source>以当前位置为结束</source>
+    <translation>Set end here</translation>
+  </text>
+  <text>
+    <source>以管理员身份运行</source>
+    <translation>Run as administrator</translation>
+  </text>
+  <text>
+    <source>以管理员身份重新启动</source>
+    <translation>Restart as administrator</translation>
+  </text>
+  <text>
+    <source>任务栏托盘</source>
+    <translation>System tray</translation>
+  </text>
+  <text>
+    <source>任意位置换行</source>
+    <translation>Wrap anywhere</translation>
+  </text>
+  <text>
+    <source>任意角度</source>
+    <translation>Any angle</translation>
+  </text>
+  <text>
+    <source>任意角度直线</source>
+    <translation>Free-angle straight lines</translation>
+  </text>
+  <text>
+    <source>使用全局鼠标截图时显示遮罩</source>
+    <translation>Show a mask for global mouse captures</translation>
+  </text>
+  <text>
+    <source>使用支持 DeskSnip 服务协议的地址；仅在点击“请求服务”后发送图片或文字。</source>
+    <translation>Use an endpoint supporting the DeskSnip service protocol. Images or text are sent only when you click Request service.</translation>
+  </text>
+  <text>
+    <source>使用此区域</source>
+    <translation>Use this region</translation>
+  </text>
+  <text>
+    <source>使用边框控制窗口大小</source>
+    <translation>Resize the window from its border</translation>
+  </text>
+  <text>
+    <source>使用预设路径快速录制 MP4</source>
+    <translation>Use the preset path for quick MP4 recordings</translation>
+  </text>
+  <text>
+    <source>例如 zh / en / ja</source>
+    <translation>For example, zh / en / ja</translation>
+  </text>
+  <text>
+    <source>侧键 1</source>
+    <translation>Side button 1</translation>
+  </text>
+  <text>
+    <source>侧键 2</source>
+    <translation>Side button 2</translation>
+  </text>
+  <text>
+    <source>保存</source>
+    <translation>Save</translation>
+  </text>
+  <text>
+    <source>保存 / 复制图像质量</source>
+    <translation>Image save / copy quality</translation>
+  </text>
+  <text>
+    <source>保存 / 复制时的图像类型</source>
+    <translation>Image to save / copy</translation>
+  </text>
+  <text>
+    <source>保存 / 复制通用设置</source>
+    <translation>General save / copy options</translation>
+  </text>
+  <text>
+    <source>保存…</source>
+    <translation>Save…</translation>
+  </text>
+  <text>
+    <source>保存中 {0:0}%</source>
+    <translation>Saving {0:0}%</translation>
+  </text>
+  <text>
+    <source>保存位置</source>
+    <translation>Save location</translation>
+  </text>
+  <text>
+    <source>保存偏好</source>
+    <translation>Save preferences</translation>
+  </text>
+  <text>
+    <source>保存到文件</source>
+    <translation>Save to file</translation>
+  </text>
+  <text>
+    <source>保存到目录</source>
+    <translation>Save to folder</translation>
+  </text>
+  <text>
+    <source>保存后更新界面，不改变识别内容或服务语言</source>
+    <translation>Update the interface on save; recognition content and service languages stay unchanged</translation>
+  </text>
+  <text>
+    <source>保存后添加当前账号的 DeskSnip 钉图入口</source>
+    <translation>Add a DeskSnip image-pin command for this Windows account on save</translation>
+  </text>
+  <text>
+    <source>保存图片</source>
+    <translation>Save image</translation>
+  </text>
+  <text>
+    <source>保存图片…</source>
+    <translation>Save image…</translation>
+  </text>
+  <text>
+    <source>保存对话框样式</source>
+    <translation>Save dialog style</translation>
+  </text>
+  <text>
+    <source>保存录制</source>
+    <translation>Save recording</translation>
+  </text>
+  <text>
+    <source>保存成功</source>
+    <translation>After saving</translation>
+  </text>
+  <text>
+    <source>保存文件的扩展名需要与录制格式一致。</source>
+    <translation>The file extension must match the recording format.</translation>
+  </text>
+  <text>
+    <source>保存文本</source>
+    <translation>Save text</translation>
+  </text>
+  <text>
+    <source>保存文本…</source>
+    <translation>Save text…</translation>
+  </text>
+  <text>
+    <source>保存本地结果</source>
+    <translation>Save local results</translation>
+  </text>
+  <text>
+    <source>保存目录</source>
+    <translation>Save folder</translation>
+  </text>
+  <text>
+    <source>保存目录需要完整路径。</source>
+    <translation>The save folder must be a full path.</translation>
+  </text>
+  <text>
+    <source>保存设置</source>
+    <translation>Save settings</translation>
+  </text>
+  <text>
+    <source>保存质量或自动清理上限无效。</source>
+    <translation>The save quality or automatic cleanup limit is invalid.</translation>
+  </text>
+  <text>
+    <source>保存通知</source>
+    <translation>Save notification</translation>
+  </text>
+  <text>
+    <source>保存钉图</source>
+    <translation>Save pin</translation>
+  </text>
+  <text>
+    <source>保存钉图布局</source>
+    <translation>Save pin layout</translation>
+  </text>
+  <text>
+    <source>保存钉图状态</source>
+    <translation>Save pin state</translation>
+  </text>
+  <text>
+    <source>保存预设</source>
+    <translation>Save preset</translation>
+  </text>
+  <text>
+    <source>保留天数</source>
+    <translation>Days to keep</translation>
+  </text>
+  <text>
+    <source>保留换行</source>
+    <translation>Keep line breaks</translation>
+  </text>
+  <text>
+    <source>保留的历史截图区域数量</source>
+    <translation>Number of recent capture regions</translation>
+  </text>
+  <text>
+    <source>保留的历史截图数量</source>
+    <translation>Number of recent captures</translation>
+  </text>
+  <text>
+    <source>保留的历史钉图数量</source>
+    <translation>Number of closed pins to keep</translation>
+  </text>
+  <text>
+    <source>保留透明</source>
+    <translation>Keep transparency</translation>
+  </text>
+  <text>
+    <source>修改后点击保存生效</source>
+    <translation>Save to apply your changes</translation>
+  </text>
+  <text>
+    <source>修改文字</source>
+    <translation>Edit text</translation>
+  </text>
+  <text>
+    <source>修改标题</source>
+    <translation>Rename</translation>
+  </text>
+  <text>
+    <source>修饰键</source>
+    <translation>Modifier</translation>
+  </text>
+  <text>
+    <source>倍速需要在 0.2–2 之间。</source>
+    <translation>Playback speed must be between 0.2 and 2.</translation>
+  </text>
+  <text>
+    <source>倒计时</source>
+    <translation>Countdown</translation>
+  </text>
+  <text>
+    <source>偏好配置</source>
+    <translation>Preferences</translation>
+  </text>
+  <text>
+    <source>偏好配置|*.json</source>
+    <translation>Preference files|*.json</translation>
+  </text>
+  <text>
+    <source>偏好配置结构已过期。</source>
+    <translation>Preference schema is out of date.</translation>
+  </text>
+  <text>
+    <source>停止并丢弃当前录制？</source>
+    <translation>Stop and discard this recording?</translation>
+  </text>
+  <text>
+    <source>停止并保存</source>
+    <translation>Stop and save</translation>
+  </text>
+  <text>
+    <source>停止并保存录制</source>
+    <translation>Stop and save recording</translation>
+  </text>
+  <text>
+    <source>元素检测边距</source>
+    <translation>Element detection padding</translation>
+  </text>
+  <text>
+    <source>全局动作快捷键不能相同。</source>
+    <translation>Global action shortcuts must be different.</translation>
+  </text>
+  <text>
+    <source>全局动作配置无效。</source>
+    <translation>The global action settings are invalid.</translation>
+  </text>
+  <text>
+    <source>全局序号连续编号</source>
+    <translation>Continuous numbering across editors</translation>
+  </text>
+  <text>
+    <source>全局快捷键不能相同。</source>
+    <translation>Global shortcuts must be different.</translation>
+  </text>
+  <text>
+    <source>全局快捷键已恢复。</source>
+    <translation>Global shortcuts restored.</translation>
+  </text>
+  <text>
+    <source>全局拖动需要修饰键</source>
+    <translation>Global drag requires a modifier</translation>
+  </text>
+  <text>
+    <source>全局鼠标</source>
+    <translation>Global Mouse</translation>
+  </text>
+  <text>
+    <source>全局鼠标忽略进程</source>
+    <translation>Processes ignored by global mouse</translation>
+  </text>
+  <text>
+    <source>全局鼠标截图</source>
+    <translation>Global mouse capture</translation>
+  </text>
+  <text>
+    <source>全局鼠标需要修饰键与拖动组合；未开放的动作不能启用。</source>
+    <translation>Global mouse requires a modifier and a drag gesture; unavailable actions cannot be enabled.</translation>
+  </text>
+  <text>
+    <source>全屏应用中禁用快捷键</source>
+    <translation>Disable shortcuts in full-screen applications</translation>
+  </text>
+  <text>
+    <source>公式 </source>
+    <translation>Formula </translation>
+  </text>
+  <text>
+    <source>公式嵌套过深，源码仍可导出。</source>
+    <translation>The formula nesting is too deep. You can still export the source.</translation>
+  </text>
+  <text>
+    <source>公式识别</source>
+    <translation>Formula recognition</translation>
+  </text>
+  <text>
+    <source>公式预览过大，源码仍可导出。</source>
+    <translation>The formula preview is too large. You can still export the source.</translation>
+  </text>
+  <text>
+    <source>关于</source>
+    <translation>About</translation>
+  </text>
+  <text>
+    <source>关闭</source>
+    <translation>Close</translation>
+  </text>
+  <text>
+    <source>关闭主窗口时收起到托盘</source>
+    <translation>Minimize to the tray when closing the main window</translation>
+  </text>
+  <text>
+    <source>关闭当前钉图？关闭后可从历史恢复。</source>
+    <translation>Close this pin? You can restore it from history.</translation>
+  </text>
+  <text>
+    <source>关闭截图</source>
+    <translation>Close capture</translation>
+  </text>
+  <text>
+    <source>关闭所有钉图</source>
+    <translation>Close all pins</translation>
+  </text>
+  <text>
+    <source>关闭所选</source>
+    <translation>Close selected</translation>
+  </text>
+  <text>
+    <source>关闭窗口</source>
+    <translation>Close window</translation>
+  </text>
+  <text>
+    <source>关闭钉图</source>
+    <translation>Close pin</translation>
+  </text>
+  <text>
+    <source>关闭（可在控制台恢复）</source>
+    <translation>Close (restore from the main window)</translation>
+  </text>
+  <text>
+    <source>其他全局快捷键已禁用，禁用 / 恢复快捷键仍可使用。</source>
+    <translation>Other global shortcuts are disabled. The disable / restore shortcut still works.</translation>
+  </text>
+  <text>
+    <source>兼容 GDI 模式</source>
+    <translation>Compatible GDI mode</translation>
+  </text>
+  <text>
+    <source>内置快捷键</source>
+    <translation>Built-in Shortcuts</translation>
+  </text>
+  <text>
+    <source>内置快捷键配置无效。</source>
+    <translation>Built-in shortcut settings are invalid.</translation>
+  </text>
+  <text>
+    <source>内置服务商适配暂未开放；协议服务使用地址与访问密钥</source>
+    <translation>Built-in providers are not available; configure an endpoint and access key for your service</translation>
+  </text>
+  <text>
+    <source>冻结桌面图像需要匹配物理范围并使用 BGRA32 格式。</source>
+    <translation>Frozen desktop must match physical bounds and BGRA32 format.</translation>
+  </text>
+  <text>
+    <source>准备录屏</source>
+    <translation>Prepare recording</translation>
+  </text>
+  <text>
+    <source>准备识别…</source>
+    <translation>Preparing recognition…</translation>
+  </text>
+  <text>
+    <source>减少</source>
+    <translation>Decrease</translation>
+  </text>
+  <text>
+    <source>几何形状</source>
+    <translation>Geometry</translation>
+  </text>
+  <text>
+    <source>分享分析数据</source>
+    <translation>Share analytics</translation>
+  </text>
+  <text>
+    <source>分组与批量管理</source>
+    <translation>Groups and batch actions</translation>
+  </text>
+  <text>
+    <source>分组名称</source>
+    <translation>Group name</translation>
+  </text>
+  <text>
+    <source>分组颜色 #RRGGBB</source>
+    <translation>Group color #RRGGBB</translation>
+  </text>
+  <text>
+    <source>切换 UI 检测</source>
+    <translation>Toggle UI detection</translation>
+  </text>
+  <text>
+    <source>切换交互</source>
+    <translation>Toggle interaction</translation>
+  </text>
+  <text>
+    <source>切换窗口 / 控件</source>
+    <translation>Switch window / control</translation>
+  </text>
+  <text>
+    <source>切换钉图分组</source>
+    <translation>Switch pin group</translation>
+  </text>
+  <text>
+    <source>切换颜色格式</source>
+    <translation>Switch color format</translation>
+  </text>
+  <text>
+    <source>删除</source>
+    <translation>Delete</translation>
+  </text>
+  <text>
+    <source>删除列</source>
+    <translation>Delete column</translation>
+  </text>
+  <text>
+    <source>删除动作：</source>
+    <translation>Delete action: </translation>
+  </text>
+  <text>
+    <source>删除序号时同步调整其他序号</source>
+    <translation>Renumber other items when deleting a number</translation>
+  </text>
+  <text>
+    <source>删除所选素材</source>
+    <translation>Delete selected media</translation>
+  </text>
+  <text>
+    <source>删除标注</source>
+    <translation>Delete annotation</translation>
+  </text>
+  <text>
+    <source>删除素材</source>
+    <translation>Delete media</translation>
+  </text>
+  <text>
+    <source>删除组并保留钉图</source>
+    <translation>Delete group and keep pins</translation>
+  </text>
+  <text>
+    <source>删除行</source>
+    <translation>Delete row</translation>
+  </text>
+  <text>
+    <source>删除这些可恢复片段和独立音轨？已导出的视频保留。</source>
+    <translation>Delete these recoverable segments and separate audio tracks? Exported videos are kept.</translation>
+  </text>
+  <text>
+    <source>刷新</source>
+    <translation>Refresh</translation>
+  </text>
+  <text>
+    <source>刷新窗口画面</source>
+    <translation>Refresh window capture</translation>
+  </text>
+  <text>
+    <source>前往系统页设置源语言与目标语言</source>
+    <translation>Set source and target languages on the System page.</translation>
+  </text>
+  <text>
+    <source>剪贴板</source>
+    <translation>Clipboard</translation>
+  </text>
+  <text>
+    <source>剪贴板忙，请重试。</source>
+    <translation>The clipboard is busy. Try again.</translation>
+  </text>
+  <text>
+    <source>剪贴板没有图片。</source>
+    <translation>The clipboard does not contain an image.</translation>
+  </text>
+  <text>
+    <source>剪贴板里没有图片。可以先截图、复制图片，或使用“打开图片”。</source>
+    <translation>There is no image on the clipboard. Capture or copy an image, or use “Open image”.</translation>
+  </text>
+  <text>
+    <source>剪辑导出</source>
+    <translation>Export clip</translation>
+  </text>
+  <text>
+    <source>剪辑导出需要 FFmpeg；基础回放可继续使用。</source>
+    <translation>Clip export requires FFmpeg. Basic playback remains available.</translation>
+  </text>
+  <text>
+    <source>剪辑开始和结束时间需在视频时长内，结束时间大于开始时间。</source>
+    <translation>Clip times must be within the video duration, with the end after the start.</translation>
+  </text>
+  <text>
+    <source>功能</source>
+    <translation>Features</translation>
+  </text>
+  <text>
+    <source>功能按钮调整</source>
+    <translation>Customize action buttons</translation>
+  </text>
+  <text>
+    <source>加粗项表示与默认值不同，修改保留在当前设置窗口中。</source>
+    <translation>Bold values differ from defaults. Your changes stay in this window until saved.</translation>
+  </text>
+  <text>
+    <source>动作</source>
+    <translation>Actions</translation>
+  </text>
+  <text>
+    <source>动态</source>
+    <translation>Animated</translation>
+  </text>
+  <text>
+    <source>动态截图</source>
+    <translation>Animated capture</translation>
+  </text>
+  <text>
+    <source>动态钉图</source>
+    <translation>Animated pin</translation>
+  </text>
+  <text>
+    <source>包含鼠标指针</source>
+    <translation>Include the mouse cursor</translation>
+  </text>
+  <text>
+    <source>匹配失败后可填写重叠像素；留空为自动匹配。</source>
+    <translation>If matching fails, enter the overlap in pixels. Leave empty for automatic matching.</translation>
+  </text>
+  <text>
+    <source>十字</source>
+    <translation>Crosshair</translation>
+  </text>
+  <text>
+    <source>十字和轮廓</source>
+    <translation>Crosshair and outline</translation>
+  </text>
+  <text>
+    <source>升序</source>
+    <translation>Ascending</translation>
+  </text>
+  <text>
+    <source>升级配置</source>
+    <translation>Update options</translation>
+  </text>
+  <text>
+    <source>单击动作</source>
+    <translation>Single-click action</translation>
+  </text>
+  <text>
+    <source>单词边界或任意位置换行</source>
+    <translation>Word boundaries or anywhere</translation>
+  </text>
+  <text>
+    <source>历史另存为</source>
+    <translation>Save history item as</translation>
+  </text>
+  <text>
+    <source>历史选区</source>
+    <translation>Recent region</translation>
+  </text>
+  <text>
+    <source>历史钉图</source>
+    <translation>Pin history item</translation>
+  </text>
+  <text>
+    <source>原图</source>
+    <translation>Original image</translation>
+  </text>
+  <text>
+    <source>原始图像</source>
+    <translation>Original image</translation>
+  </text>
+  <text>
+    <source>原始大小 / 切回</source>
+    <translation>Original size / toggle back</translation>
+  </text>
+  <text>
+    <source>原始标点</source>
+    <translation>Original punctuation</translation>
+  </text>
+  <text>
+    <source>原文 / 请求文字</source>
+    <translation>Original / request text</translation>
+  </text>
+  <text>
+    <source>去除空格</source>
+    <translation>Remove spaces</translation>
+  </text>
+  <text>
+    <source>参数无效。</source>
+    <translation>Invalid argument.</translation>
+  </text>
+  <text>
+    <source>双击动作</source>
+    <translation>Double-click action</translation>
+  </text>
+  <text>
+    <source>双击箭头退出当前标注工具</source>
+    <translation>Double-click an arrow to leave the current tool</translation>
+  </text>
+  <text>
+    <source>双击贴图文本选择</source>
+    <translation>Double-click text selection in pins</translation>
+  </text>
+  <text>
+    <source>双向箭头</source>
+    <translation>Double-ended arrow</translation>
+  </text>
+  <text>
+    <source>反斜杠</source>
+    <translation>Backslash</translation>
+  </text>
+  <text>
+    <source>反色</source>
+    <translation>Invert colors</translation>
+  </text>
+  <text>
+    <source>发布通道暂未开放</source>
+    <translation>Release channels are not available yet</translation>
+  </text>
+  <text>
+    <source>发现可恢复的录制片段，可从“录制恢复”继续保存。</source>
+    <translation>Recoverable recording segments were found. Open “Recording recovery” to save them.</translation>
+  </text>
+  <text>
+    <source>发送原图</source>
+    <translation>Send original image</translation>
+  </text>
+  <text>
+    <source>取消</source>
+    <translation>Cancel</translation>
+  </text>
+  <text>
+    <source>取消 / 退出</source>
+    <translation>Cancel / exit</translation>
+  </text>
+  <text>
+    <source>取消导出</source>
+    <translation>Cancel export</translation>
+  </text>
+  <text>
+    <source>取消截图</source>
+    <translation>Cancel capture</translation>
+  </text>
+  <text>
+    <source>取消置顶时显示任务栏图标</source>
+    <translation>Show a taskbar icon when the pin is not always on top</translation>
+  </text>
+  <text>
+    <source>取消请求</source>
+    <translation>Cancel request</translation>
+  </text>
+  <text>
+    <source>变换钉图</source>
+    <translation>Transform pin</translation>
+  </text>
+  <text>
+    <source>另存为…</source>
+    <translation>Save as…</translation>
+  </text>
+  <text>
+    <source>只框选会滚动的内容，避开固定标题和滚动条。</source>
+    <translation>Select only scrolling content; avoid fixed headings and scrollbars.</translation>
+  </text>
+  <text>
+    <source>右移</source>
+    <translation>Move right</translation>
+  </text>
+  <text>
+    <source>右键单击</source>
+    <translation>Right click</translation>
+  </text>
+  <text>
+    <source>右键双击</source>
+    <translation>Right double click</translation>
+  </text>
+  <text>
+    <source>右键拖动</source>
+    <translation>Right drag</translation>
+  </text>
+  <text>
+    <source>右键菜单模式</source>
+    <translation>Explorer context menu</translation>
+  </text>
+  <text>
+    <source>合并小键盘与主键盘数字键</source>
+    <translation>Treat numpad and main number keys as equivalent</translation>
+  </text>
+  <text>
+    <source>合并换行</source>
+    <translation>Merge line breaks</translation>
+  </text>
+  <text>
+    <source>合并选区</source>
+    <translation>Merge selection</translation>
+  </text>
+  <text>
+    <source>同一场景的内置快捷键不能重复。</source>
+    <translation>Built-in shortcuts must be unique within each context.</translation>
+  </text>
+  <text>
+    <source>同名文件过多，请修改命名模板。</source>
+    <translation>There are too many files with the same name. Change the filename template.</translation>
+  </text>
+  <text>
+    <source>同场景的重复组合会阻止保存。截图和钉图先匹配各自场景，再匹配通用键位。</source>
+    <translation>Duplicate shortcuts in the same context prevent saving. Capture and pin shortcuts take priority over common shortcuts.</translation>
+  </text>
+  <text>
+    <source>向上 / 向左</source>
+    <translation>Up / left</translation>
+  </text>
+  <text>
+    <source>向上移动</source>
+    <translation>Move up</translation>
+  </text>
+  <text>
+    <source>向下 / 向右</source>
+    <translation>Down / right</translation>
+  </text>
+  <text>
+    <source>向下移动</source>
+    <translation>Move down</translation>
+  </text>
+  <text>
+    <source>向其他应用自动粘贴暂未开放</source>
+    <translation>Automatic pasting into other applications is not available yet</translation>
+  </text>
+  <text>
+    <source>向右旋转</source>
+    <translation>Rotate right</translation>
+  </text>
+  <text>
+    <source>向右移动</source>
+    <translation>Move right</translation>
+  </text>
+  <text>
+    <source>向左旋转</source>
+    <translation>Rotate left</translation>
+  </text>
+  <text>
+    <source>向左移动</source>
+    <translation>Move left</translation>
+  </text>
+  <text>
+    <source>启动恢复活动钉图</source>
+    <translation>Restore active pins at startup</translation>
+  </text>
+  <text>
+    <source>启动时恢复未关闭的钉图</source>
+    <translation>Restore open pins at startup</translation>
+  </text>
+  <text>
+    <source>启用</source>
+    <translation>Enabled</translation>
+  </text>
+  <text>
+    <source>启用 / 禁用二次编辑</source>
+    <translation>Toggle secondary editing</translation>
+  </text>
+  <text>
+    <source>启用穿透时不透明度上限（%）</source>
+    <translation>Maximum opacity in click-through mode (%)</translation>
+  </text>
+  <text>
+    <source>启用自动保存（按下方选中的操作类型留档）</source>
+    <translation>Enable automatic saving for the actions selected below</translation>
+  </text>
+  <text>
+    <source>启用自动清理早于指定天数的留档</source>
+    <translation>Clean up archives older than the specified number of days</translation>
+  </text>
+  <text>
+    <source>启用颜色格式与顺序</source>
+    <translation>Enabled color formats and order</translation>
+  </text>
+  <text>
+    <source>命名模板</source>
+    <translation>Filename template</translation>
+  </text>
+  <text>
+    <source>响应快捷键</source>
+    <translation>Respond to shortcuts</translation>
+  </text>
+  <text>
+    <source>固定 / 释放放大镜</source>
+    <translation>Lock / unlock magnifier</translation>
+  </text>
+  <text>
+    <source>固定与延时截图</source>
+    <translation>Fixed and delayed captures</translation>
+  </text>
+  <text>
+    <source>固定位置直接截取；否则先显示选区</source>
+    <translation>Capture the fixed position directly; otherwise show the selection</translation>
+  </text>
+  <text>
+    <source>图像</source>
+    <translation>Image</translation>
+  </text>
+  <text>
+    <source>图像尺寸或像素数据无效，长图最多 5000 万像素。</source>
+    <translation>The image dimensions or pixel data are invalid. Long images support up to 50 million pixels.</translation>
+  </text>
+  <text>
+    <source>图像文件|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff</source>
+    <translation>Image files|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff</translation>
+  </text>
+  <text>
+    <source>图像编辑</source>
+    <translation>Image editor</translation>
+  </text>
+  <text>
+    <source>图像路径需要 1–32768 个 UTF-8 字节。</source>
+    <translation>The image path must contain 1–32768 UTF-8 bytes.</translation>
+  </text>
+  <text>
+    <source>图像钉图</source>
+    <translation>Image pin</translation>
+  </text>
+  <text>
+    <source>图像钉图已禁用，请在钉图设置中启用。</source>
+    <translation>Image pins are disabled. Enable them in Pin settings.</translation>
+  </text>
+  <text>
+    <source>图内文本选择暂未开放</source>
+    <translation>Text selection inside images is not available yet</translation>
+  </text>
+  <text>
+    <source>图片 / 文本翻译</source>
+    <translation>Image / text translation</translation>
+  </text>
+  <text>
+    <source>图片|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|所有文件|*.*</source>
+    <translation>Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|All files|*.*</translation>
+  </text>
+  <text>
+    <source>图片尺寸或内容无效。</source>
+    <translation>The image dimensions or content are invalid.</translation>
+  </text>
+  <text>
+    <source>图片已保存；历史已更新。</source>
+    <translation>Image saved; history updated.</translation>
+  </text>
+  <text>
+    <source>图片已快速保存。</source>
+    <translation>Image quick-saved.</translation>
+  </text>
+  <text>
+    <source>图片无法解码。</source>
+    <translation>The image could not be decoded.</translation>
+  </text>
+  <text>
+    <source>图片格式</source>
+    <translation>Image format</translation>
+  </text>
+  <text>
+    <source>图片编码无效。</source>
+    <translation>The image encoding is invalid.</translation>
+  </text>
+  <text>
+    <source>图片过大，请使用小于一亿像素的图片。</source>
+    <translation>The image is too large. Use an image smaller than 100 million pixels.</translation>
+  </text>
+  <text>
+    <source>圆头</source>
+    <translation>Round</translation>
+  </text>
+  <text>
+    <source>圆角</source>
+    <translation>Round</translation>
+  </text>
+  <text>
+    <source>圆角控制点显示</source>
+    <translation>Rounded-corner control points</translation>
+  </text>
+  <text>
+    <source>圆角矩形</source>
+    <translation>Rounded rectangle</translation>
+  </text>
+  <text>
+    <source>坐标、尺寸和延时请输入整数。</source>
+    <translation>Enter whole numbers for position, size, and delay.</translation>
+  </text>
+  <text>
+    <source>坐标或尺寸无效，请输入桌面范围内的整数。</source>
+    <translation>Position or size is invalid. Enter whole numbers within the desktop.</translation>
+  </text>
+  <text>
+    <source>垂直</source>
+    <translation>Vertical</translation>
+  </text>
+  <text>
+    <source>垂直翻转</source>
+    <translation>Flip vertically</translation>
+  </text>
+  <text>
+    <source>垂直采集</source>
+    <translation>Vertical capture</translation>
+  </text>
+  <text>
+    <source>基于中心</source>
+    <translation>Center</translation>
+  </text>
+  <text>
+    <source>基于右上角</source>
+    <translation>Top right</translation>
+  </text>
+  <text>
+    <source>基于右下角</source>
+    <translation>Bottom right</translation>
+  </text>
+  <text>
+    <source>基于左上角</source>
+    <translation>Top left</translation>
+  </text>
+  <text>
+    <source>基于左下角</source>
+    <translation>Bottom left</translation>
+  </text>
+  <text>
+    <source>基于鼠标</source>
+    <translation>Mouse position</translation>
+  </text>
+  <text>
+    <source>基础版钉图支持静态图片；录屏可在历史中播放或另存为。</source>
+    <translation>Pins currently support still images. Play or save recordings from history.</translation>
+  </text>
+  <text>
+    <source>填充</source>
+    <translation>Fill</translation>
+  </text>
+  <text>
+    <source>增加</source>
+    <translation>Increase</translation>
+  </text>
+  <text>
+    <source>增加亮度</source>
+    <translation>Increase brightness</translation>
+  </text>
+  <text>
+    <source>增加透明度</source>
+    <translation>Increase transparency</translation>
+  </text>
+  <text>
+    <source>声音</source>
+    <translation>Sound</translation>
+  </text>
+  <text>
+    <source>声音在开始录制时固定</source>
+    <translation>Audio settings are fixed at recording start</translation>
+  </text>
+  <text>
+    <source>声音设备与高级选项</source>
+    <translation>Audio devices and advanced options</translation>
+  </text>
+  <text>
+    <source>复制</source>
+    <translation>Copy</translation>
+  </text>
+  <text>
+    <source>复制 / 源码导出定界符</source>
+    <translation>Copy / source export delimiters</translation>
+  </text>
+  <text>
+    <source>复制 DPI 限制无效。</source>
+    <translation>The clipboard DPI limit is invalid.</translation>
+  </text>
+  <text>
+    <source>复制为 BMP 文件</source>
+    <translation>Copy as a BMP file</translation>
+  </text>
+  <text>
+    <source>复制为 JPEG 文件</source>
+    <translation>Copy as a JPEG file</translation>
+  </text>
+  <text>
+    <source>复制为 PNG 文件</source>
+    <translation>Copy as a PNG file</translation>
+  </text>
+  <text>
+    <source>复制全部后关闭</source>
+    <translation>Close after copying all</translation>
+  </text>
+  <text>
+    <source>复制全部文字后关闭校对窗口</source>
+    <translation>Close the review window after copying all text</translation>
+  </text>
+  <text>
+    <source>复制内容</source>
+    <translation>Copy content</translation>
+  </text>
+  <text>
+    <source>复制内容并关闭</source>
+    <translation>Copy content and close</translation>
+  </text>
+  <text>
+    <source>复制原始图片</source>
+    <translation>Copy original image</translation>
+  </text>
+  <text>
+    <source>复制图像为文件</source>
+    <translation>Copy image as a file</translation>
+  </text>
+  <text>
+    <source>复制图片</source>
+    <translation>Copy image</translation>
+  </text>
+  <text>
+    <source>复制图片时同时提供 PNG 文件</source>
+    <translation>Include a PNG file when copying images</translation>
+  </text>
+  <text>
+    <source>复制图片时留档</source>
+    <translation>Archive when copying an image</translation>
+  </text>
+  <text>
+    <source>复制录制文件</source>
+    <translation>Copy recording file</translation>
+  </text>
+  <text>
+    <source>复制截图</source>
+    <translation>Copy capture</translation>
+  </text>
+  <text>
+    <source>复制截图后自动粘贴到输入焦点</source>
+    <translation>Paste copied captures into the focused field</translation>
+  </text>
+  <text>
+    <source>复制文件</source>
+    <translation>Copy file</translation>
+  </text>
+  <text>
+    <source>复制文字</source>
+    <translation>Copy text</translation>
+  </text>
+  <text>
+    <source>复制文本</source>
+    <translation>Copy text</translation>
+  </text>
+  <text>
+    <source>复制标注</source>
+    <translation>Duplicate annotation</translation>
+  </text>
+  <text>
+    <source>复制结果</source>
+    <translation>Copy result</translation>
+  </text>
+  <text>
+    <source>复制识别结果</source>
+    <translation>Copy recognition result</translation>
+  </text>
+  <text>
+    <source>复制路径</source>
+    <translation>Copy path</translation>
+  </text>
+  <text>
+    <source>复制选区</source>
+    <translation>Copy selection</translation>
+  </text>
+  <text>
+    <source>复制钉图</source>
+    <translation>Copy pin</translation>
+  </text>
+  <text>
+    <source>复制颜色</source>
+    <translation>Copy color</translation>
+  </text>
+  <text>
+    <source>复制鼠标坐标</source>
+    <translation>Copy mouse coordinates</translation>
+  </text>
+  <text>
+    <source>外观</source>
+    <translation>Appearance</translation>
+  </text>
+  <text>
+    <source>多行排版</source>
+    <translation>Multiline layout</translation>
+  </text>
+  <text>
+    <source>多边形</source>
+    <translation>Polygon</translation>
+  </text>
+  <text>
+    <source>多边形选区</source>
+    <translation>Polygon selection</translation>
+  </text>
+  <text>
+    <source>多边形选区圆角暂未开放</source>
+    <translation>Rounded polygon selections are not available yet</translation>
+  </text>
+  <text>
+    <source>多选</source>
+    <translation>Multi-select</translation>
+  </text>
+  <text>
+    <source>大</source>
+    <translation>Large</translation>
+  </text>
+  <text>
+    <source>始终显示</source>
+    <translation>Always show</translation>
+  </text>
+  <text>
+    <source>媒体处理未完成；原文件和录制素材保留，可检查编码器或重新导出。</source>
+    <translation>Media processing did not finish. The original file and recorded material are preserved; check the encoder or export again.</translation>
+  </text>
+  <text>
+    <source>媒体处理程序无法启动。</source>
+    <translation>The media processor could not start.</translation>
+  </text>
+  <text>
+    <source>媒体输出为空。</source>
+    <translation>The media output is empty.</translation>
+  </text>
+  <text>
+    <source>字体</source>
+    <translation>Font</translation>
+  </text>
+  <text>
+    <source>字体名称无效。</source>
+    <translation>Invalid font family.</translation>
+  </text>
+  <text>
+    <source>字体或字号无效。</source>
+    <translation>The font or text size is invalid.</translation>
+  </text>
+  <text>
+    <source>字号</source>
+    <translation>Font size</translation>
+  </text>
+  <text>
+    <source>完成截图</source>
+    <translation>Finish capture</translation>
+  </text>
+  <text>
+    <source>完成长截图</source>
+    <translation>Finish long capture</translation>
+  </text>
+  <text>
+    <source>完整 HTTPS 请求地址；本地模拟服务可用 HTTP</source>
+    <translation>Full HTTPS endpoint; local mock services may use HTTP</translation>
+  </text>
+  <text>
+    <source>定位文件</source>
+    <translation>Show file in folder</translation>
+  </text>
+  <text>
+    <source>实心箭头</source>
+    <translation>Filled arrow</translation>
+  </text>
+  <text>
+    <source>实线</source>
+    <translation>Solid</translation>
+  </text>
+  <text>
+    <source>宽</source>
+    <translation>Width</translation>
+  </text>
+  <text>
+    <source>宽高必须大于零。</source>
+    <translation>Width and height must be greater than zero.</translation>
+  </text>
+  <text>
+    <source>密钥环境变量名</source>
+    <translation>Key environment variable</translation>
+  </text>
+  <text>
+    <source>密钥环境变量名无效。</source>
+    <translation>The key environment variable name is invalid.</translation>
+  </text>
+  <text>
+    <source>密钥由 Windows 为当前账号加密保存。偏好导出不包含密钥、服务地址和环境变量名。</source>
+    <translation>Windows encrypts the key for the current account. Exported preferences exclude keys, service addresses, and environment variable names.</translation>
+  </text>
+  <text>
+    <source>导入偏好</source>
+    <translation>Import preferences</translation>
+  </text>
+  <text>
+    <source>导入偏好…</source>
+    <translation>Import preferences…</translation>
+  </text>
+  <text>
+    <source>导出 / 导入</source>
+    <translation>Export / Import</translation>
+  </text>
+  <text>
+    <source>导出 GIF</source>
+    <translation>Export GIF</translation>
+  </text>
+  <text>
+    <source>导出 MP4</source>
+    <translation>Export MP4</translation>
+  </text>
+  <text>
+    <source>导出 WebP</source>
+    <translation>Export WebP</translation>
+  </text>
+  <text>
+    <source>导出…</source>
+    <translation>Export…</translation>
+  </text>
+  <text>
+    <source>导出偏好</source>
+    <translation>Export preferences</translation>
+  </text>
+  <text>
+    <source>导出完成。</source>
+    <translation>Export complete.</translation>
+  </text>
+  <text>
+    <source>导出已修改偏好…</source>
+    <translation>Export modified preferences…</translation>
+  </text>
+  <text>
+    <source>导出已修改的偏好；导入时合并到当前设置，点击保存后生效。</source>
+    <translation>Export modified preferences. Imports are merged into your draft and applied when you save.</translation>
+  </text>
+  <text>
+    <source>导出编码器</source>
+    <translation>Export encoder</translation>
+  </text>
+  <text>
+    <source>导出表格选区</source>
+    <translation>Export table selection</translation>
+  </text>
+  <text>
+    <source>导出识别结果</source>
+    <translation>Export recognition result</translation>
+  </text>
+  <text>
+    <source>导出选区…</source>
+    <translation>Export selection…</translation>
+  </text>
+  <text>
+    <source>将标注内容限制在选区内</source>
+    <translation>Limit annotations to the selection</translation>
+  </text>
+  <text>
+    <source>小</source>
+    <translation>Small</translation>
+  </text>
+  <text>
+    <source>小键盘 </source>
+    <translation>Numpad </translation>
+  </text>
+  <text>
+    <source>小键盘 *</source>
+    <translation>Numpad *</translation>
+  </text>
+  <text>
+    <source>小键盘 +</source>
+    <translation>Numpad +</translation>
+  </text>
+  <text>
+    <source>小键盘 -</source>
+    <translation>Numpad -</translation>
+  </text>
+  <text>
+    <source>小键盘 .</source>
+    <translation>Numpad .</translation>
+  </text>
+  <text>
+    <source>小键盘 /</source>
+    <translation>Numpad /</translation>
+  </text>
+  <text>
+    <source>尖角</source>
+    <translation>Miter</translation>
+  </text>
+  <text>
+    <source>尚无结果可保存。</source>
+    <translation>There is no result to save.</translation>
+  </text>
+  <text>
+    <source>尚未检测到滚动，请滚动后再采集。</source>
+    <translation>No scrolling was detected. Scroll before capturing again.</translation>
+  </text>
+  <text>
+    <source>尺寸线</source>
+    <translation>Dimension line</translation>
+  </text>
+  <text>
+    <source>局部放大</source>
+    <translation>Local magnifier</translation>
+  </text>
+  <text>
+    <source>屏幕 </source>
+    <translation>Display </translation>
+  </text>
+  <text>
+    <source>工具栏图标大小</source>
+    <translation>Toolbar icon size</translation>
+  </text>
+  <text>
+    <source>左移</source>
+    <translation>Move left</translation>
+  </text>
+  <text>
+    <source>左键单击</source>
+    <translation>Left click</translation>
+  </text>
+  <text>
+    <source>左键双击</source>
+    <translation>Left double click</translation>
+  </text>
+  <text>
+    <source>左键双击动作</source>
+    <translation>Left double-click action</translation>
+  </text>
+  <text>
+    <source>左键拖动</source>
+    <translation>Left drag</translation>
+  </text>
+  <text>
+    <source>已保存素材</source>
+    <translation>Saved material</translation>
+  </text>
+  <text>
+    <source>已保留检测前的图像。</source>
+    <translation>The image from before detection has been kept.</translation>
+  </text>
+  <text>
+    <source>已关闭上限</source>
+    <translation>Closed-pin limit</translation>
+  </text>
+  <text>
+    <source>已取消导出，原文件和素材保留。</source>
+    <translation>Export canceled. Original files and media are kept.</translation>
+  </text>
+  <text>
+    <source>已复制原始识别词。右侧保留校对结果。</source>
+    <translation>Original recognized word copied. Reviewed text stays on the right.</translation>
+  </text>
+  <text>
+    <source>已复制图片到剪贴板；历史已保存。</source>
+    <translation>Image copied to the clipboard; history saved.</translation>
+  </text>
+  <text>
+    <source>已完成的片段可恢复；崩溃前最后未收尾的片段可能丢失。</source>
+    <translation>Completed segments can be recovered. The final unfinished segment before a crash may be lost.</translation>
+  </text>
+  <text>
+    <source>已恢复上次结果和原图，可继续编辑，无需联网。</source>
+    <translation>Previous results and the original image restored. Continue editing without a network request.</translation>
+  </text>
+  <text>
+    <source>已恢复全部默认值，保存后生效</source>
+    <translation>All defaults restored; save to apply</translation>
+  </text>
+  <text>
+    <source>已恢复本页默认值，保存后生效</source>
+    <translation>Page defaults restored. Save to apply.</translation>
+  </text>
+  <text>
+    <source>已按手工重叠拼接。</source>
+    <translation>Stitched using the manual overlap.</translation>
+  </text>
+  <text>
+    <source>已暂停，暂停时间不计入录制</source>
+    <translation>Paused; paused time is excluded from the recording</translation>
+  </text>
+  <text>
+    <source>已禁用</source>
+    <translation>Disabled</translation>
+  </text>
+  <text>
+    <source>已选中：拖动移动 · Alt 拖动复制 · Delete 删除 · Esc 取消选择</source>
+    <translation>Selected: drag to move · Alt+drag duplicate · Delete remove · Esc deselect</translation>
+  </text>
+  <text>
+    <source>带压缩预览的现代保存窗口暂未开放</source>
+    <translation>The modern save dialog with compression preview is not available yet</translation>
+  </text>
+  <text>
+    <source>帧尺寸不匹配。</source>
+    <translation>Frame size mismatch.</translation>
+  </text>
+  <text>
+    <source>帧尺寸或方向无效。</source>
+    <translation>The frame dimensions or direction are invalid.</translation>
+  </text>
+  <text>
+    <source>帧或时间戳无效。</source>
+    <translation>Frame or timestamp is invalid.</translation>
+  </text>
+  <text>
+    <source>帧率</source>
+    <translation>Frame rate</translation>
+  </text>
+  <text>
+    <source>平头</source>
+    <translation>Flat</translation>
+  </text>
+  <text>
+    <source>平滑切换动画暂未开放</source>
+    <translation>Smooth transition animations are not available yet</translation>
+  </text>
+  <text>
+    <source>平滑笔迹</source>
+    <translation>Smooth handwriting</translation>
+  </text>
+  <text>
+    <source>平滑缩放</source>
+    <translation>Smooth zoom</translation>
+  </text>
+  <text>
+    <source>平滑缩放放大镜内容</source>
+    <translation>Smooth scaling in the magnifier</translation>
+  </text>
+  <text>
+    <source>平滑鼠标轨迹</source>
+    <translation>Smooth mouse movement</translation>
+  </text>
+  <text>
+    <source>序号</source>
+    <translation>Number</translation>
+  </text>
+  <text>
+    <source>序号引线尚未实现，当前使用圆形序号</source>
+    <translation>Number leader arrows are not available; circular numbers are used</translation>
+  </text>
+  <text>
+    <source>序号文字大小</source>
+    <translation>Number text size</translation>
+  </text>
+  <text>
+    <source>序号箭头大小</source>
+    <translation>Number arrow size</translation>
+  </text>
+  <text>
+    <source>序号背景颜色</source>
+    <translation>Number background color</translation>
+  </text>
+  <text>
+    <source>序号默认从 0 开始</source>
+    <translation>Start numbering from 0 by default</translation>
+  </text>
+  <text>
+    <source>应用</source>
+    <translation>Apply</translation>
+  </text>
+  <text>
+    <source>延时秒数（0–30）</source>
+    <translation>Delay in seconds (0–30)</translation>
+  </text>
+  <text>
+    <source>开启 / 关闭鼠标穿透</source>
+    <translation>Toggle click-through</translation>
+  </text>
+  <text>
+    <source>开始 / 结束秒</source>
+    <translation>Start / end seconds</translation>
+  </text>
+  <text>
+    <source>开始倒计时</source>
+    <translation>Start countdown</translation>
+  </text>
+  <text>
+    <source>开始倒计时（秒）</source>
+    <translation>Start delay (seconds)</translation>
+  </text>
+  <text>
+    <source>开始录制</source>
+    <translation>Start recording</translation>
+  </text>
+  <text>
+    <source>开始录屏 / 暂停继续</source>
+    <translation>Start recording / Pause or resume</translation>
+  </text>
+  <text>
+    <source>开始截图</source>
+    <translation>Start capture</translation>
+  </text>
+  <text>
+    <source>开始长截图</source>
+    <translation>Start long capture</translation>
+  </text>
+  <text>
+    <source>开机后自动启动</source>
+    <translation>Start with Windows</translation>
+  </text>
+  <text>
+    <source>当前使用已确认的可配置服务接口</source>
+    <translation>Currently uses a configurable service endpoint</translation>
+  </text>
+  <text>
+    <source>当前免安装版本</source>
+    <translation>Current portable release</translation>
+  </text>
+  <text>
+    <source>当前图像</source>
+    <translation>Current image</translation>
+  </text>
+  <text>
+    <source>当前没有可以复制的文本。</source>
+    <translation>There is no text to copy.</translation>
+  </text>
+  <text>
+    <source>当前版本以普通权限运行</source>
+    <translation>This version runs with standard permissions</translation>
+  </text>
+  <text>
+    <source>当前颜色 {0} · Shift 正方形 · Alt 对称调整</source>
+    <translation>Color {0} · Shift square · Alt symmetric resize</translation>
+  </text>
+  <text>
+    <source>录制 / 暂停</source>
+    <translation>Record / pause</translation>
+  </text>
+  <text>
+    <source>录制中断</source>
+    <translation>Recording interrupted</translation>
+  </text>
+  <text>
+    <source>录制前调整</source>
+    <translation>Adjust before recording</translation>
+  </text>
+  <text>
+    <source>录制区域</source>
+    <translation>Recording region</translation>
+  </text>
+  <text>
+    <source>录制区域至少需要 2 × 2 像素。</source>
+    <translation>The recording region must be at least 2 × 2 pixels.</translation>
+  </text>
+  <text>
+    <source>录制尚未开始。</source>
+    <translation>Not started.</translation>
+  </text>
+  <text>
+    <source>录制已保存，历史中可播放和另存为。</source>
+    <translation>Recording saved. Play it or save a copy from history.</translation>
+  </text>
+  <text>
+    <source>录制已经开始。</source>
+    <translation>Already started.</translation>
+  </text>
+  <text>
+    <source>录制帧率</source>
+    <translation>Recording frame rate</translation>
+  </text>
+  <text>
+    <source>录制开始后声音参数已固定</source>
+    <translation>Audio settings are fixed once recording starts</translation>
+  </text>
+  <text>
+    <source>录制恢复</source>
+    <translation>Recording recovery</translation>
+  </text>
+  <text>
+    <source>录制文件名模板</source>
+    <translation>Recording filename template</translation>
+  </text>
+  <text>
+    <source>录制文件已复制，可粘贴到文件夹或支持文件的应用。</source>
+    <translation>Recording file copied. Paste it into a folder or an application that accepts files.</translation>
+  </text>
+  <text>
+    <source>录制时工具栏显示模式</source>
+    <translation>Recording toolbar visibility</translation>
+  </text>
+  <text>
+    <source>录制时长</source>
+    <translation>Recording duration</translation>
+  </text>
+  <text>
+    <source>录制未能完成保存</source>
+    <translation>The recording could not be saved</translation>
+  </text>
+  <text>
+    <source>录制标识无效。</source>
+    <translation>Invalid recording identity.</translation>
+  </text>
+  <text>
+    <source>录制格式</source>
+    <translation>Recording format</translation>
+  </text>
+  <text>
+    <source>录制格式无效。</source>
+    <translation>Invalid recording format.</translation>
+  </text>
+  <text>
+    <source>录制片段必须位于当前素材目录且已保存。</source>
+    <translation>Recording segments must be saved inside the current material folder.</translation>
+  </text>
+  <text>
+    <source>录制画质、倒计时或编码器无效。</source>
+    <translation>The recording quality, countdown, or encoder is invalid.</translation>
+  </text>
+  <text>
+    <source>录制画面中隐藏工具栏（屏幕仍可操作）</source>
+    <translation>Exclude the toolbar from recordings</translation>
+  </text>
+  <text>
+    <source>录制素材记录无效。</source>
+    <translation>Invalid recording draft.</translation>
+  </text>
+  <text>
+    <source>录制设置</source>
+    <translation>Recording settings</translation>
+  </text>
+  <text>
+    <source>录制默认值</source>
+    <translation>Recording defaults</translation>
+  </text>
+  <text>
+    <source>录屏</source>
+    <translation>Recording</translation>
+  </text>
+  <text>
+    <source>形状工具</source>
+    <translation>Shape tools</translation>
+  </text>
+  <text>
+    <source>形状标注</source>
+    <translation>Shape annotations</translation>
+  </text>
+  <text>
+    <source>彩色 DeskSnip 图标</source>
+    <translation>Color DeskSnip icon</translation>
+  </text>
+  <text>
+    <source>快捷标注设置</source>
+    <translation>Quick annotation settings</translation>
+  </text>
+  <text>
+    <source>快捷标注面板边距</source>
+    <translation>Quick annotation panel padding</translation>
+  </text>
+  <text>
+    <source>快捷键</source>
+    <translation>Shortcuts</translation>
+  </text>
+  <text>
+    <source>快捷键 / 动作</source>
+    <translation>Shortcuts / Actions</translation>
+  </text>
+  <text>
+    <source>快捷键主键无效。</source>
+    <translation>The shortcut's main key is invalid.</translation>
+  </text>
+  <text>
+    <source>快捷键修饰键无效或重复。</source>
+    <translation>The shortcut has invalid or duplicate modifiers.</translation>
+  </text>
+  <text>
+    <source>快捷键场景无效。</source>
+    <translation>The shortcut context is invalid.</translation>
+  </text>
+  <text>
+    <source>快捷键忽略进程</source>
+    <translation>Processes ignored by shortcuts</translation>
+  </text>
+  <text>
+    <source>快捷键格式无效。</source>
+    <translation>The shortcut format is invalid.</translation>
+  </text>
+  <text>
+    <source>快捷键的主键无效。</source>
+    <translation>The shortcut's main key is invalid.</translation>
+  </text>
+  <text>
+    <source>快捷键的修饰键无效或重复。</source>
+    <translation>The shortcut modifiers are invalid or duplicated.</translation>
+  </text>
+  <text>
+    <source>快捷键被占用：</source>
+    <translation>Shortcut already in use: </translation>
+  </text>
+  <text>
+    <source>快捷键配置无效。</source>
+    <translation>Hotkey configuration is invalid.</translation>
+  </text>
+  <text>
+    <source>快捷键需要修饰键，例如 Ctrl+Alt+A。</source>
+    <translation>Shortcuts need a modifier, for example Ctrl+Alt+A.</translation>
+  </text>
+  <text>
+    <source>快速保存</source>
+    <translation>Quick save</translation>
+  </text>
+  <text>
+    <source>快速保存文件命名</source>
+    <translation>Quick-save filename</translation>
+  </text>
+  <text>
+    <source>快速保存格式无效。</source>
+    <translation>The quick-save format is invalid.</translation>
+  </text>
+  <text>
+    <source>快速录制</source>
+    <translation>Quick recording</translation>
+  </text>
+  <text>
+    <source>快速录制目录</source>
+    <translation>Quick recording folder</translation>
+  </text>
+  <text>
+    <source>快速录制目录需要完整路径。</source>
+    <translation>The quick-recording folder must be a full path.</translation>
+  </text>
+  <text>
+    <source>快速截图</source>
+    <translation>Quick capture</translation>
+  </text>
+  <text>
+    <source>快速截图保存</source>
+    <translation>Quick capture and save</translation>
+  </text>
+  <text>
+    <source>忽略复制按键宏</source>
+    <translation>Ignore copy key macros</translation>
+  </text>
+  <text>
+    <source>忽略文字识别调整</source>
+    <translation>Adjust without OCR</translation>
+  </text>
+  <text>
+    <source>忽略进程只填写进程名，例如 example.exe，不填路径。</source>
+    <translation>Enter process names such as example.exe, not file paths.</translation>
+  </text>
+  <text>
+    <source>忽略进程名单过长。</source>
+    <translation>The ignored process list is too long.</translation>
+  </text>
+  <text>
+    <source>忽略进程名单（</source>
+    <translation>Ignored processes (</translation>
+  </text>
+  <text>
+    <source>忽略进程名单（0）…</source>
+    <translation>Ignored processes (0)…</translation>
+  </text>
+  <text>
+    <source>忽略进程名单（{0}）…</source>
+    <translation>Ignored processes ({0})…</translation>
+  </text>
+  <text>
+    <source>忽略进程已修改，保存后生效</source>
+    <translation>Ignored processes updated; save to apply</translation>
+  </text>
+  <text>
+    <source>性能采集与 HDR 转换暂未开放</source>
+    <translation>Performance capture and HDR conversion are not available yet</translation>
+  </text>
+  <text>
+    <source>恢复上次结果</source>
+    <translation>Restore previous result</translation>
+  </text>
+  <text>
+    <source>恢复不透明</source>
+    <translation>Restore full opacity</translation>
+  </text>
+  <text>
+    <source>恢复为 MP4…</source>
+    <translation>Recover as MP4…</translation>
+  </text>
+  <text>
+    <source>恢复仅修改当前设置窗口。取消可放弃；已保存的图片、钉图和录制素材保留。</source>
+    <translation>Restore changes only this settings draft. Cancel to discard it; saved images, pins, and recording media are kept.</translation>
+  </text>
+  <text>
+    <source>恢复全部默认值</source>
+    <translation>Restore all defaults</translation>
+  </text>
+  <text>
+    <source>恢复完成，素材保留，可继续回放和剪辑。</source>
+    <translation>Recovery complete. Media is kept for playback and editing.</translation>
+  </text>
+  <text>
+    <source>恢复已取消，完成片段和原输出保留。</source>
+    <translation>Recovery canceled. Completed segments and the original output are kept.</translation>
+  </text>
+  <text>
+    <source>恢复录制</source>
+    <translation>Recover recording</translation>
+  </text>
+  <text>
+    <source>恢复所选</source>
+    <translation>Restore selected</translation>
+  </text>
+  <text>
+    <source>恢复最近关闭的钉图</source>
+    <translation>Restore last closed pin</translation>
+  </text>
+  <text>
+    <source>恢复本页默认</source>
+    <translation>Reset page</translation>
+  </text>
+  <text>
+    <source>恢复识别结果</source>
+    <translation>Restore recognition result</translation>
+  </text>
+  <text>
+    <source>恢复钉图</source>
+    <translation>Restore pin</translation>
+  </text>
+  <text>
+    <source>恢复钉图的顺序</source>
+    <translation>Pin restoration order</translation>
+  </text>
+  <text>
+    <source>恢复默认</source>
+    <translation>Restore defaults</translation>
+  </text>
+  <text>
+    <source>截取</source>
+    <translation>Capture</translation>
+  </text>
+  <text>
+    <source>截取屏幕</source>
+    <translation>Capture screen</translation>
+  </text>
+  <text>
+    <source>截图</source>
+    <translation>Screenshot</translation>
+  </text>
+  <text>
+    <source>截图、标注、图片钉图、区域录屏、识别与翻译</source>
+    <translation>Screenshots, annotations, image pins, region recordings, recognition, and translation</translation>
+  </text>
+  <text>
+    <source>截图、标注、钉图，让桌面信息随手可用。</source>
+    <translation>Capture, annotate, and pin information from your desktop.</translation>
+  </text>
+  <text>
+    <source>截图与钉图</source>
+    <translation>Capture and Pin</translation>
+  </text>
+  <text>
+    <source>截图位置</source>
+    <translation>Capture position</translation>
+  </text>
+  <text>
+    <source>截图动作</source>
+    <translation>Capture action</translation>
+  </text>
+  <text>
+    <source>截图区域为空。</source>
+    <translation>Empty capture region.</translation>
+  </text>
+  <text>
+    <source>截图和录屏保存在本机</source>
+    <translation>Captures and recordings stay on this device</translation>
+  </text>
+  <text>
+    <source>截图完成时留档</source>
+    <translation>Archive when a capture completes</translation>
+  </text>
+  <text>
+    <source>截图已保存，点击通知</source>
+    <translation>Capture saved; click the notification</translation>
+  </text>
+  <text>
+    <source>截图已复制；历史已保存。</source>
+    <translation>Capture copied; history saved.</translation>
+  </text>
+  <text>
+    <source>截图并保存</source>
+    <translation>Capture and save</translation>
+  </text>
+  <text>
+    <source>截图并复制</source>
+    <translation>Capture and copy</translation>
+  </text>
+  <text>
+    <source>截图并复制文字</source>
+    <translation>Capture and copy text</translation>
+  </text>
+  <text>
+    <source>截图并快速保存</source>
+    <translation>Capture and quick save</translation>
+  </text>
+  <text>
+    <source>截图并编辑</source>
+    <translation>Capture and edit</translation>
+  </text>
+  <text>
+    <source>截图并翻译</source>
+    <translation>Capture and translate</translation>
+  </text>
+  <text>
+    <source>截图并钉图</source>
+    <translation>Capture and pin</translation>
+  </text>
+  <text>
+    <source>截图时未选区域的颜色</source>
+    <translation>Capture mask color</translation>
+  </text>
+  <text>
+    <source>截图时自动添加水印</source>
+    <translation>Add a watermark automatically on capture</translation>
+  </text>
+  <text>
+    <source>截图时钉图</source>
+    <translation>Pin capture</translation>
+  </text>
+  <text>
+    <source>截图模式</source>
+    <translation>Capture mode</translation>
+  </text>
+  <text>
+    <source>截图边框</source>
+    <translation>Capture border</translation>
+  </text>
+  <text>
+    <source>截图选框</source>
+    <translation>Selection frame</translation>
+  </text>
+  <text>
+    <source>截图预设</source>
+    <translation>Capture presets</translation>
+  </text>
+  <text>
+    <source>截图预设无效。</source>
+    <translation>Invalid capture preset.</translation>
+  </text>
+  <text>
+    <source>截图预设读取失败，原文件保留。</source>
+    <translation>The capture presets could not be read. The original file is preserved.</translation>
+  </text>
+  <text>
+    <source>截图预设配置无效。</source>
+    <translation>Invalid capture profiles.</translation>
+  </text>
+  <text>
+    <source>所有动作均已添加</source>
+    <translation>All actions have been added</translation>
+  </text>
+  <text>
+    <source>所有工具使用相同颜色</source>
+    <translation>Use the same color for all tools</translation>
+  </text>
+  <text>
+    <source>手动 / 快速保存后复制文件</source>
+    <translation>Copy the file after manual / quick saves</translation>
+  </text>
+  <text>
+    <source>手动 / 快速保存后复制路径</source>
+    <translation>Copy the path after manual / quick saves</translation>
+  </text>
+  <text>
+    <source>手动 / 快速保存时留档</source>
+    <translation>Archive when saving manually / quickly</translation>
+  </text>
+  <text>
+    <source>手动保存</source>
+    <translation>Manual save</translation>
+  </text>
+  <text>
+    <source>手动保存、快速录制与自动留档使用各自的独立模板。</source>
+    <translation>Manual saves, quick recordings, and automatic archives use separate templates.</translation>
+  </text>
+  <text>
+    <source>手动启用</source>
+    <translation>Enable manually</translation>
+  </text>
+  <text>
+    <source>手动更新</source>
+    <translation>Manual updates</translation>
+  </text>
+  <text>
+    <source>打开 / 编辑</source>
+    <translation>Open / edit</translation>
+  </text>
+  <text>
+    <source>打开 DeskSnip</source>
+    <translation>Open DeskSnip</translation>
+  </text>
+  <text>
+    <source>打开历史</source>
+    <translation>Open history item</translation>
+  </text>
+  <text>
+    <source>打开图片</source>
+    <translation>Open image</translation>
+  </text>
+  <text>
+    <source>打开图片…</source>
+    <translation>Open image…</translation>
+  </text>
+  <text>
+    <source>打开录制文件夹</source>
+    <translation>Open recordings folder</translation>
+  </text>
+  <text>
+    <source>打开控制台</source>
+    <translation>Open main window</translation>
+  </text>
+  <text>
+    <source>打开文件夹</source>
+    <translation>Open folder</translation>
+  </text>
+  <text>
+    <source>打开标注编辑器</source>
+    <translation>Open annotation editor</translation>
+  </text>
+  <text>
+    <source>打开留档文件夹</source>
+    <translation>Open archive folder</translation>
+  </text>
+  <text>
+    <source>打开联网识别</source>
+    <translation>Open online recognition</translation>
+  </text>
+  <text>
+    <source>打开设置</source>
+    <translation>Open settings</translation>
+  </text>
+  <text>
+    <source>托盘图标</source>
+    <translation>Tray icon</translation>
+  </text>
+  <text>
+    <source>托盘图标颜色</source>
+    <translation>Tray icon color</translation>
+  </text>
+  <text>
+    <source>托盘菜单</source>
+    <translation>Tray menu</translation>
+  </text>
+  <text>
+    <source>托盘隐藏时保留工具栏，以便停止录制</source>
+    <translation>The toolbar stays visible when the tray is hidden so you can stop recording</translation>
+  </text>
+  <text>
+    <source>执行保存后的动作</source>
+    <translation>Post-save action</translation>
+  </text>
+  <text>
+    <source>批量保存</source>
+    <translation>Batch save</translation>
+  </text>
+  <text>
+    <source>折线</source>
+    <translation>Polyline</translation>
+  </text>
+  <text>
+    <source>折线圆角</source>
+    <translation>Polyline corner radius</translation>
+  </text>
+  <text>
+    <source>折线截图</source>
+    <translation>Polyline capture</translation>
+  </text>
+  <text>
+    <source>折线端点样式</source>
+    <translation>Polyline end caps</translation>
+  </text>
+  <text>
+    <source>折线连接样式</source>
+    <translation>Polyline joins</translation>
+  </text>
+  <text>
+    <source>拆分选区</source>
+    <translation>Split selection</translation>
+  </text>
+  <text>
+    <source>拖出内容</source>
+    <translation>Drag content out</translation>
+  </text>
+  <text>
+    <source>拖动排序及逐按钮隐藏暂未开放</source>
+    <translation>Drag sorting and hiding individual buttons are not available yet</translation>
+  </text>
+  <text>
+    <source>拖动控制条</source>
+    <translation>Drag toolbar</translation>
+  </text>
+  <text>
+    <source>拖动框选 · Enter 复制 · Ctrl+T 钉图 · Ctrl+S 保存 · Space 工具栏 · Esc 取消</source>
+    <translation>Drag to select · Enter copy · Ctrl+T pin · Ctrl+S save · Space toolbar · Esc cancel</translation>
+  </text>
+  <text>
+    <source>拖动框选区域 · Esc 取消</source>
+    <translation>Drag to select a region · Esc cancel</translation>
+  </text>
+  <text>
+    <source>按 Alt 键显示</source>
+    <translation>Show while holding Alt</translation>
+  </text>
+  <text>
+    <source>按下快捷键</source>
+    <translation>Press a shortcut</translation>
+  </text>
+  <text>
+    <source>按住 Shift 时的画笔模式</source>
+    <translation>Pencil mode while holding Shift</translation>
+  </text>
+  <text>
+    <source>按关闭时间</source>
+    <translation>By close time</translation>
+  </text>
+  <text>
+    <source>按创建时间</source>
+    <translation>By creation time</translation>
+  </text>
+  <text>
+    <source>按键 / 鼠标销毁钉图确认</source>
+    <translation>Confirm pin destruction by keyboard / mouse</translation>
+  </text>
+  <text>
+    <source>按键关闭截图时需要确认</source>
+    <translation>Confirm closing a capture by keyboard</translation>
+  </text>
+  <text>
+    <source>按键关闭钉图需要确认</source>
+    <translation>Confirm closing a pin by keyboard</translation>
+  </text>
+  <text>
+    <source>按键匹配</source>
+    <translation>Key matching</translation>
+  </text>
+  <text>
+    <source>按键宏检测暂未开放</source>
+    <translation>Key macro detection is not available yet</translation>
+  </text>
+  <text>
+    <source>排序保留首行</source>
+    <translation>Keep the first row when sorting</translation>
+  </text>
+  <text>
+    <source>控制点</source>
+    <translation>Control points</translation>
+  </text>
+  <text>
+    <source>提示、历史与鼠标</source>
+    <translation>Hints, history, and mouse</translation>
+  </text>
+  <text>
+    <source>插入列</source>
+    <translation>Insert column</translation>
+  </text>
+  <text>
+    <source>插入行</source>
+    <translation>Insert row</translation>
+  </text>
+  <text>
+    <source>撤回上一帧</source>
+    <translation>Undo last frame</translation>
+  </text>
+  <text>
+    <source>撤回最后一步</source>
+    <translation>Undo last step</translation>
+  </text>
+  <text>
+    <source>撤销</source>
+    <translation>Undo</translation>
+  </text>
+  <text>
+    <source>撤销标注</source>
+    <translation>Undo annotation</translation>
+  </text>
+  <text>
+    <source>播放 / 暂停</source>
+    <translation>Play / pause</translation>
+  </text>
+  <text>
+    <source>操作未完成，请重试。</source>
+    <translation>The action could not be completed. Try again.</translation>
+  </text>
+  <text>
+    <source>支持</source>
+    <translation>Supported</translation>
+  </text>
+  <text>
+    <source>支持 #AARRGGBB 透明度</source>
+    <translation>Supports #AARRGGBB transparency</translation>
+  </text>
+  <text>
+    <source>支持{0}钉图</source>
+    <translation>Enable {0} pins</translation>
+  </text>
+  <text>
+    <source>支持图像钉图</source>
+    <translation>Enable image pins</translation>
+  </text>
+  <text>
+    <source>收起到托盘</source>
+    <translation>Minimize to tray</translation>
+  </text>
+  <text>
+    <source>改标题</source>
+    <translation>Rename</translation>
+  </text>
+  <text>
+    <source>放大</source>
+    <translation>Zoom in</translation>
+  </text>
+  <text>
+    <source>放大倍率 / 效果强度</source>
+    <translation>Magnification / effect strength</translation>
+  </text>
+  <text>
+    <source>放大镜</source>
+    <translation>Magnifier</translation>
+  </text>
+  <text>
+    <source>放大镜中的合成叠层暂未开放</source>
+    <translation>Composite overlays in the magnifier are not available yet</translation>
+  </text>
+  <text>
+    <source>放大镜倍数</source>
+    <translation>Magnifier zoom</translation>
+  </text>
+  <text>
+    <source>放大镜内容：</source>
+    <translation>Magnifier content:</translation>
+  </text>
+  <text>
+    <source>放大镜内容：中心框线</source>
+    <translation>Magnifier: center frame</translation>
+  </text>
+  <text>
+    <source>放大镜内容：十字线</source>
+    <translation>Magnifier: crosshair</translation>
+  </text>
+  <text>
+    <source>放大镜内容：网格线</source>
+    <translation>Magnifier: grid</translation>
+  </text>
+  <text>
+    <source>放大镜内容：鼠标坐标</source>
+    <translation>Magnifier: mouse coordinates</translation>
+  </text>
+  <text>
+    <source>放大镜显示快捷键提示</source>
+    <translation>Show shortcut hints in the magnifier</translation>
+  </text>
+  <text>
+    <source>放大镜网格线颜色</source>
+    <translation>Magnifier grid color</translation>
+  </text>
+  <text>
+    <source>放弃当前截图？</source>
+    <translation>Discard the current capture?</translation>
+  </text>
+  <text>
+    <source>放弃录制</source>
+    <translation>Discard recording</translation>
+  </text>
+  <text>
+    <source>效果强度 / 放大倍率</source>
+    <translation>Effect strength / magnification</translation>
+  </text>
+  <text>
+    <source>数据</source>
+    <translation>Data</translation>
+  </text>
+  <text>
+    <source>数据路径不能包含符号链接或目录联接。</source>
+    <translation>Data paths cannot contain links or junctions.</translation>
+  </text>
+  <text>
+    <source>文件</source>
+    <translation>File</translation>
+  </text>
+  <text>
+    <source>文件名模板</source>
+    <translation>Filename template</translation>
+  </text>
+  <text>
+    <source>文件名模板需要 1–300 字符。</source>
+    <translation>The filename template must contain 1–300 characters.</translation>
+  </text>
+  <text>
+    <source>文件名预览</source>
+    <translation>Filename preview</translation>
+  </text>
+  <text>
+    <source>文件已保存，剪贴板当前忙，未完成保存后的复制。</source>
+    <translation>The file was saved, but the clipboard is busy. The post-save copy could not complete.</translation>
+  </text>
+  <text>
+    <source>文件扩展名无效。</source>
+    <translation>The file extension is invalid.</translation>
+  </text>
+  <text>
+    <source>文件无法写入或读取，请检查位置、磁盘空间和文件占用。</source>
+    <translation>The file could not be read or written. Check its location, free disk space, and whether another application is using it.</translation>
+  </text>
+  <text>
+    <source>文件没有可读取的视频流。</source>
+    <translation>The file has no readable video stream.</translation>
+  </text>
+  <text>
+    <source>文字</source>
+    <translation>Text</translation>
+  </text>
+  <text>
+    <source>文字 / 表格 / 公式 / 文档识别时留档</source>
+    <translation>Archive text / table / formula / document recognition</translation>
+  </text>
+  <text>
+    <source>文字|*.txt</source>
+    <translation>Text|*.txt</translation>
+  </text>
+  <text>
+    <source>文字与序号</source>
+    <translation>Text and numbers</translation>
+  </text>
+  <text>
+    <source>文字与水印</source>
+    <translation>Text and watermark</translation>
+  </text>
+  <text>
+    <source>文字底色</source>
+    <translation>Text background</translation>
+  </text>
+  <text>
+    <source>文字识别</source>
+    <translation>Text recognition</translation>
+  </text>
+  <text>
+    <source>文字识别排版无效。</source>
+    <translation>The text recognition layout is invalid.</translation>
+  </text>
+  <text>
+    <source>文字钉图</source>
+    <translation>Text pin</translation>
+  </text>
+  <text>
+    <source>文字钉图暂未开放</source>
+    <translation>Text pins are not available yet</translation>
+  </text>
+  <text>
+    <source>文本</source>
+    <translation>Text</translation>
+  </text>
+  <text>
+    <source>文本内边距</source>
+    <translation>Text padding</translation>
+  </text>
+  <text>
+    <source>文本字体</source>
+    <translation>Text font</translation>
+  </text>
+  <text>
+    <source>文本已保存。</source>
+    <translation>Text saved.</translation>
+  </text>
+  <text>
+    <source>文本已复制。</source>
+    <translation>Text copied.</translation>
+  </text>
+  <text>
+    <source>文本布局</source>
+    <translation>Text layout</translation>
+  </text>
+  <text>
+    <source>文本颜色</source>
+    <translation>Text color</translation>
+  </text>
+  <text>
+    <source>文本高亮颜色</source>
+    <translation>Text highlight color</translation>
+  </text>
+  <text>
+    <source>文档为空。</source>
+    <translation>Empty document.</translation>
+  </text>
+  <text>
+    <source>文档识别</source>
+    <translation>Document recognition</translation>
+  </text>
+  <text>
+    <source>文档预览</source>
+    <translation>Document preview</translation>
+  </text>
+  <text>
+    <source>文档预览未完成，源码保留：</source>
+    <translation>Document preview failed; source kept: </translation>
+  </text>
+  <text>
+    <source>斜角</source>
+    <translation>Bevel</translation>
+  </text>
+  <text>
+    <source>新建</source>
+    <translation>New</translation>
+  </text>
+  <text>
+    <source>新建分组</source>
+    <translation>New group</translation>
+  </text>
+  <text>
+    <source>新建钉图时保持其他钉图隐藏状态</source>
+    <translation>Keep other pins hidden when creating a new pin</translation>
+  </text>
+  <text>
+    <source>新建钉图窗口置顶</source>
+    <translation>Keep new pins always on top</translation>
+  </text>
+  <text>
+    <source>新预设</source>
+    <translation>New preset</translation>
+  </text>
+  <text>
+    <source>方头</source>
+    <translation>Square</translation>
+  </text>
+  <text>
+    <source>无</source>
+    <translation>None</translation>
+  </text>
+  <text>
+    <source>无代理</source>
+    <translation>No proxy</translation>
+  </text>
+  <text>
+    <source>无修饰键</source>
+    <translation>None</translation>
+  </text>
+  <text>
+    <source>无动作</source>
+    <translation>No action</translation>
+  </text>
+  <text>
+    <source>无定界符</source>
+    <translation>No delimiters</translation>
+  </text>
+  <text>
+    <source>无操作</source>
+    <translation>No action</translation>
+  </text>
+  <text>
+    <source>无法分配桌面图像，请缩小捕获范围。</source>
+    <translation>The desktop image could not be allocated. Choose a smaller capture region.</translation>
+  </text>
+  <text>
+    <source>无法启用全局鼠标动作。</source>
+    <translation>Global mouse actions could not be enabled.</translation>
+  </text>
+  <text>
+    <source>无法连接识别服务，原图和旧结果保留。请检查服务地址和网络。</source>
+    <translation>Could not connect to the recognition service. The original image and previous result are preserved. Check the service address and network.</translation>
+  </text>
+  <text>
+    <source>时间与裁剪请输入有效数字。</source>
+    <translation>Enter valid numbers for time and crop.</translation>
+  </text>
+  <text>
+    <source>显示 / 隐藏光标</source>
+    <translation>Show / hide cursor</translation>
+  </text>
+  <text>
+    <source>显示 / 隐藏全部钉图</source>
+    <translation>Show / hide all pins</translation>
+  </text>
+  <text>
+    <source>显示 / 隐藏工具栏</source>
+    <translation>Show / hide toolbar</translation>
+  </text>
+  <text>
+    <source>显示 / 隐藏快捷键提示</source>
+    <translation>Show / hide shortcut hints</translation>
+  </text>
+  <text>
+    <source>显示 HTML 样式</source>
+    <translation>HTML display style</translation>
+  </text>
+  <text>
+    <source>显示信息栏</source>
+    <translation>Show information bar</translation>
+  </text>
+  <text>
+    <source>显示八个方向</source>
+    <translation>Eight handles</translation>
+  </text>
+  <text>
+    <source>显示名称</source>
+    <translation>Display name</translation>
+  </text>
+  <text>
+    <source>显示四个方向</source>
+    <translation>Four handles</translation>
+  </text>
+  <text>
+    <source>显示在托盘菜单</source>
+    <translation>Show in the tray menu</translation>
+  </text>
+  <text>
+    <source>显示已关闭记录</source>
+    <translation>Show closed pins</translation>
+  </text>
+  <text>
+    <source>显示开始 / 停止按钮</source>
+    <translation>Show start / stop buttons</translation>
+  </text>
+  <text>
+    <source>显示录制工具栏</source>
+    <translation>Show recording toolbar</translation>
+  </text>
+  <text>
+    <source>显示录制工具栏（隐藏时从托盘停止并保存）</source>
+    <translation>Show recording toolbar (when hidden, stop and save from the tray)</translation>
+  </text>
+  <text>
+    <source>显示快捷键提示（F1 临时切换）</source>
+    <translation>Show shortcut hints (F1 toggles temporarily)</translation>
+  </text>
+  <text>
+    <source>显示所选</source>
+    <translation>Show selected</translation>
+  </text>
+  <text>
+    <source>显示放大镜</source>
+    <translation>Show magnifier</translation>
+  </text>
+  <text>
+    <source>显示放大镜 / 辅助线</source>
+    <translation>Show magnifier / guides</translation>
+  </text>
+  <text>
+    <source>显示文本菜单</source>
+    <translation>Show text menu</translation>
+  </text>
+  <text>
+    <source>显示次要按钮区域</source>
+    <translation>Show secondary action area</translation>
+  </text>
+  <text>
+    <source>显示画笔轮廓的最小宽度</source>
+    <translation>Minimum width for pencil outline</translation>
+  </text>
+  <text>
+    <source>显示窗口阴影</source>
+    <translation>Show window shadow</translation>
+  </text>
+  <text>
+    <source>显示缩放</source>
+    <translation>Display zoom</translation>
+  </text>
+  <text>
+    <source>显示缩放（导出保持原始尺寸）</source>
+    <translation>Display zoom (export keeps original dimensions)</translation>
+  </text>
+  <text>
+    <source>显示菜单快捷键</source>
+    <translation>Show menu shortcuts</translation>
+  </text>
+  <text>
+    <source>显示识别确认窗口的时机</source>
+    <translation>When to show the recognition dialog</translation>
+  </text>
+  <text>
+    <source>显示辅助线</source>
+    <translation>Show guides</translation>
+  </text>
+  <text>
+    <source>显示选框切换动画</source>
+    <translation>Animate selection transitions</translation>
+  </text>
+  <text>
+    <source>显示通知</source>
+    <translation>Show notifications</translation>
+  </text>
+  <text>
+    <source>显示锁定提示</source>
+    <translation>Show lock hint</translation>
+  </text>
+  <text>
+    <source>普通权限</source>
+    <translation>Standard permissions</translation>
+  </text>
+  <text>
+    <source>智能分段</source>
+    <translation>Smart paragraphs</translation>
+  </text>
+  <text>
+    <source>暂停录制</source>
+    <translation>Pause recording</translation>
+  </text>
+  <text>
+    <source>暂无动作，点击“添加新动作”开始配置。</source>
+    <translation>No actions. Click “Add action” to start.</translation>
+  </text>
+  <text>
+    <source>更多录制操作</source>
+    <translation>More recording actions</translation>
+  </text>
+  <text>
+    <source>更多截图操作</source>
+    <translation>More capture actions</translation>
+  </text>
+  <text>
+    <source>更多编辑操作</source>
+    <translation>More editing actions</translation>
+  </text>
+  <text>
+    <source>更新</source>
+    <translation>Updates</translation>
+  </text>
+  <text>
+    <source>替换剪贴板图片</source>
+    <translation>Replace with clipboard image</translation>
+  </text>
+  <text>
+    <source>替换钉图</source>
+    <translation>Replace pin</translation>
+  </text>
+  <text>
+    <source>替换钉图时的动作</source>
+    <translation>Action when replacing a pin</translation>
+  </text>
+  <text>
+    <source>最后一帧</source>
+    <translation>Last frame</translation>
+  </text>
+  <text>
+    <source>最终导出编码器</source>
+    <translation>Export encoder</translation>
+  </text>
+  <text>
+    <source>最近记录</source>
+    <translation>Recent history</translation>
+  </text>
+  <text>
+    <source>有效</source>
+    <translation>Valid</translation>
+  </text>
+  <text>
+    <source>有道（尚未接入）</source>
+    <translation>Youdao (not integrated)</translation>
+  </text>
+  <text>
+    <source>服务协议和配置示例见随包使用说明中的联网服务章节。配置后通过联网识别窗口明确请求服务。</source>
+    <translation>See the online service chapter in the included guide for the protocol and examples. Send requests from the online recognition window after configuration.</translation>
+  </text>
+  <text>
+    <source>服务响应超时，原图和旧结果保留，可重试或延长超时。</source>
+    <translation>The service timed out. The original image and previous result are preserved. Try again or increase the timeout.</translation>
+  </text>
+  <text>
+    <source>服务商 API ID</source>
+    <translation>Provider API ID</translation>
+  </text>
+  <text>
+    <source>服务地址</source>
+    <translation>Service endpoint</translation>
+  </text>
+  <text>
+    <source>服务地址需要 HTTPS；本地模拟服务可使用 http://127.0.0.1。地址不能包含账号密码或片段。</source>
+    <translation>The service address requires HTTPS; local mock services may use http://127.0.0.1. Addresses must not contain credentials or fragments.</translation>
+  </text>
+  <text>
+    <source>服务没有返回公式源码。</source>
+    <translation>The service did not return formula source.</translation>
+  </text>
+  <text>
+    <source>服务没有返回有效内容，原结果保留。</source>
+    <translation>The service returned no valid content. The previous result is preserved.</translation>
+  </text>
+  <text>
+    <source>服务没有返回表格单元格。</source>
+    <translation>The service did not return table cells.</translation>
+  </text>
+  <text>
+    <source>服务结果为空。</source>
+    <translation>The service result is empty.</translation>
+  </text>
+  <text>
+    <source>服务结果过大，原图和旧结果保留。</source>
+    <translation>The service result is too large. The original image and previous result are preserved.</translation>
+  </text>
+  <text>
+    <source>服务语言设置无效。</source>
+    <translation>The service language settings are invalid.</translation>
+  </text>
+  <text>
+    <source>服务请求失败（HTTP {0}）。原图和旧结果保留，请检查地址、密钥及服务状态。</source>
+    <translation>The service request failed (HTTP {0}). The original image and previous result are preserved. Check the address, key, and service status.</translation>
+  </text>
+  <text>
+    <source>服务超时需要为 5–300 秒。</source>
+    <translation>The service timeout must be 5–300 seconds.</translation>
+  </text>
+  <text>
+    <source>服务返回格式或内容大小无效，原结果保留。</source>
+    <translation>The service response format or size is invalid. The previous result is preserved.</translation>
+  </text>
+  <text>
+    <source>服务配图合计超过 4800 万像素。</source>
+    <translation>The service images exceed 48 million pixels in total.</translation>
+  </text>
+  <text>
+    <source>服务配图扩展名与类型不一致。</source>
+    <translation>A service image extension does not match its type.</translation>
+  </text>
+  <text>
+    <source>服务配图无效或过大，原结果保留。</source>
+    <translation>A service image is invalid or too large. The previous result is preserved.</translation>
+  </text>
+  <text>
+    <source>服务配图类型与内容不一致。</source>
+    <translation>A service image type does not match its content.</translation>
+  </text>
+  <text>
+    <source>服务配置无效。</source>
+    <translation>The service settings are invalid.</translation>
+  </text>
+  <text>
+    <source>服务需要返回 DeskSnip 识别协议的 JSON，原结果保留。</source>
+    <translation>The service must return JSON using the DeskSnip recognition protocol. The previous result is preserved.</translation>
+  </text>
+  <text>
+    <source>未完成录制</source>
+    <translation>Unfinished recording</translation>
+  </text>
+  <text>
+    <source>未找到此钉图。</source>
+    <translation>Unknown pin.</translation>
+  </text>
+  <text>
+    <source>未指定本机数据目录，无法保存密钥。</source>
+    <translation>A local data folder is required to save the key.</translation>
+  </text>
+  <text>
+    <source>未检测到二维码。</source>
+    <translation>No QR code was detected.</translation>
+  </text>
+  <text>
+    <source>未检测到文本；原图保留，可切换语言重试。</source>
+    <translation>No text detected. The original image is kept; try another recognition language.</translation>
+  </text>
+  <text>
+    <source>未检测到系统音频设备。</source>
+    <translation>No system audio device was found.</translation>
+  </text>
+  <text>
+    <source>未检测到麦克风设备。</source>
+    <translation>No microphone device was found.</translation>
+  </text>
+  <text>
+    <source>未绑定</source>
+    <translation>Unassigned</translation>
+  </text>
+  <text>
+    <source>本地保存未完成，旧结果保留：</source>
+    <translation>Local save failed; previous results kept: </translation>
+  </text>
+  <text>
+    <source>本地处理 · Windows 桌面工具</source>
+    <translation>Local processing · Windows desktop tool</translation>
+  </text>
+  <text>
+    <source>本地应用</source>
+    <translation>Local application</translation>
+  </text>
+  <text>
+    <source>本地数据读取失败，已使用默认值；原文件保留。</source>
+    <translation>Local data could not be read. Defaults are in use; the original file is preserved.</translation>
+  </text>
+  <text>
+    <source>本地文字识别</source>
+    <translation>Local text recognition</translation>
+  </text>
+  <text>
+    <source>本地识别引擎不可用，请检查 Windows 语言组件。原图保留。</source>
+    <translation>Local recognition is unavailable. Check Windows language components. The original image is kept.</translation>
+  </text>
+  <text>
+    <source>本地隐私遮挡</source>
+    <translation>Local privacy masking</translation>
+  </text>
+  <text>
+    <source>本机密钥文件无效。</source>
+    <translation>The local key file is invalid.</translation>
+  </text>
+  <text>
+    <source>本机访问密钥</source>
+    <translation>Local access key</translation>
+  </text>
+  <text>
+    <source>本机识别结果无效。</source>
+    <translation>The local recognition result is invalid.</translation>
+  </text>
+  <text>
+    <source>本机识别结果过大。</source>
+    <translation>The local recognition result is too large.</translation>
+  </text>
+  <text>
+    <source>查看声音状态</source>
+    <translation>View audio status</translation>
+  </text>
+  <text>
+    <source>查看录制参数</source>
+    <translation>View recording settings</translation>
+  </text>
+  <text>
+    <source>标注</source>
+    <translation>Annotation</translation>
+  </text>
+  <text>
+    <source>标注不透明度</source>
+    <translation>Annotation opacity</translation>
+  </text>
+  <text>
+    <source>标注二次编辑</source>
+    <translation>Secondary annotation editing</translation>
+  </text>
+  <text>
+    <source>标注工具栏</source>
+    <translation>Annotation toolbar</translation>
+  </text>
+  <text>
+    <source>标注工具栏配置无效。</source>
+    <translation>The annotation toolbar settings are invalid.</translation>
+  </text>
+  <text>
+    <source>标注工具记忆未保存，已编辑图片仍保留。</source>
+    <translation>The last tool preference could not be saved. Your edited image has been kept.</translation>
+  </text>
+  <text>
+    <source>标注控制线</source>
+    <translation>Annotation control lines</translation>
+  </text>
+  <text>
+    <source>标注样式</source>
+    <translation>Annotation style</translation>
+  </text>
+  <text>
+    <source>标注样式参数无效。</source>
+    <translation>The annotation style parameters are invalid.</translation>
+  </text>
+  <text>
+    <source>标注绘制参数无效。</source>
+    <translation>The annotation drawing parameters are invalid.</translation>
+  </text>
+  <text>
+    <source>标注至少需要一个点。</source>
+    <translation>An annotation needs a point.</translation>
+  </text>
+  <text>
+    <source>标注设置选项无效。</source>
+    <translation>The annotation settings are invalid.</translation>
+  </text>
+  <text>
+    <source>标点处理</source>
+    <translation>Punctuation</translation>
+  </text>
+  <text>
+    <source>标题位置</source>
+    <translation>Title position</translation>
+  </text>
+  <text>
+    <source>标题需要 1–128 字符。</source>
+    <translation>The title must contain 1–128 characters.</translation>
+  </text>
+  <text>
+    <source>格式</source>
+    <translation>Format</translation>
+  </text>
+  <text>
+    <source>格式有效</source>
+    <translation>Valid shortcut</translation>
+  </text>
+  <text>
+    <source>格式有效，保存后检查系统占用</source>
+    <translation>Valid format; system conflicts are checked on save</translation>
+  </text>
+  <text>
+    <source>桌面工具栏显示</source>
+    <translation>Desktop toolbar visibility</translation>
+  </text>
+  <text>
+    <source>桌面悬浮球与工具栏暂未开放</source>
+    <translation>Desktop floating buttons and toolbars are not available yet</translation>
+  </text>
+  <text>
+    <source>桌面捕获失败。</source>
+    <translation>Desktop capture failed.</translation>
+  </text>
+  <text>
+    <source>桌面钉图</source>
+    <translation>Desktop pins</translation>
+  </text>
+  <text>
+    <source>检查更新</source>
+    <translation>Check for updates</translation>
+  </text>
+  <text>
+    <source>检测元素</source>
+    <translation>Detect elements</translation>
+  </text>
+  <text>
+    <source>检测到 {0} 处隐私区域，添加马赛克？</source>
+    <translation>Found {0} areas of private information. Add mosaic masks?</translation>
+  </text>
+  <text>
+    <source>检测文本并复制</source>
+    <translation>Recognize and copy text</translation>
+  </text>
+  <text>
+    <source>棋盘图像</source>
+    <translation>Checkerboard</translation>
+  </text>
+  <text>
+    <source>椭圆</source>
+    <translation>Ellipse</translation>
+  </text>
+  <text>
+    <source>椭圆选区</source>
+    <translation>Ellipse selection</translation>
+  </text>
+  <text>
+    <source>模拟滚轮向上</source>
+    <translation>Simulate wheel up</translation>
+  </text>
+  <text>
+    <source>模拟滚轮向下</source>
+    <translation>Simulate wheel down</translation>
+  </text>
+  <text>
+    <source>模板中的日期或时间格式无效。</source>
+    <translation>The date or time format in the template is invalid.</translation>
+  </text>
+  <text>
+    <source>模糊</source>
+    <translation>Blur</translation>
+  </text>
+  <text>
+    <source>横向</source>
+    <translation>Horizontal</translation>
+  </text>
+  <text>
+    <source>橡皮擦</source>
+    <translation>Eraser</translation>
+  </text>
+  <text>
+    <source>橡皮擦允许二次编辑</source>
+    <translation>Enable secondary editing with the eraser</translation>
+  </text>
+  <text>
+    <source>正在保存录制，请稍候</source>
+    <translation>Saving recording…</translation>
+  </text>
+  <text>
+    <source>正在停止预览和导出，原文件保留…</source>
+    <translation>Stopping preview and export; the original file is kept…</translation>
+  </text>
+  <text>
+    <source>正在导出 GIF，请稍候…</source>
+    <translation>Exporting GIF…</translation>
+  </text>
+  <text>
+    <source>正在导出 {0:0}%…</source>
+    <translation>Exporting {0:0}%…</translation>
+  </text>
+  <text>
+    <source>正在恢复…</source>
+    <translation>Recovering…</translation>
+  </text>
+  <text>
+    <source>正在本机检测手机号与邮箱…</source>
+    <translation>Detecting phone numbers and emails locally…</translation>
+  </text>
+  <text>
+    <source>正在本机识别…</source>
+    <translation>Recognizing locally…</translation>
+  </text>
+  <text>
+    <source>正在请求服务…原图和旧结果保留。</source>
+    <translation>Requesting the service… Original image and previous results are kept.</translation>
+  </text>
+  <text>
+    <source>正在读取视频信息…</source>
+    <translation>Reading video information…</translation>
+  </text>
+  <text>
+    <source>正在验证代理连接…</source>
+    <translation>Checking the proxy connection…</translation>
+  </text>
+  <text>
+    <source>此功能尚未开放，设置保留在此处方便对照</source>
+    <translation>This feature is not available yet; the option is shown for reference</translation>
+  </text>
+  <text>
+    <source>此功能需要 FFmpeg。请在设置中选择本机 ffmpeg.exe，或将它加入 PATH；基础 MP4/GIF 录制仍可使用。</source>
+    <translation>This feature requires FFmpeg. Select your local ffmpeg.exe in Settings or add it to PATH. Basic MP4 / GIF recording remains available.</translation>
+  </text>
+  <text>
+    <source>此行为暂未开放</source>
+    <translation>This action is not available yet</translation>
+  </text>
+  <text>
+    <source>此钉图类型尚未开放</source>
+    <translation>This pin type is not available yet</translation>
+  </text>
+  <text>
+    <source>此钉图类型暂未开放</source>
+    <translation>This pin type is not available yet</translation>
+  </text>
+  <text>
+    <source>每次在录制设置中选择</source>
+    <translation>Ask in recording settings each time</translation>
+  </text>
+  <text>
+    <source>水印</source>
+    <translation>Watermark</translation>
+  </text>
+  <text>
+    <source>水印文字</source>
+    <translation>Watermark text</translation>
+  </text>
+  <text>
+    <source>水印文字需要 1–256 字符。</source>
+    <translation>Watermark text must contain 1–256 characters.</translation>
+  </text>
+  <text>
+    <source>水平</source>
+    <translation>Horizontal</translation>
+  </text>
+  <text>
+    <source>水平 / 垂直直线</source>
+    <translation>Horizontal / vertical lines</translation>
+  </text>
+  <text>
+    <source>水平翻转</source>
+    <translation>Flip horizontally</translation>
+  </text>
+  <text>
+    <source>水平采集</source>
+    <translation>Horizontal capture</translation>
+  </text>
+  <text>
+    <source>水平镜像</source>
+    <translation>Flip horizontally</translation>
+  </text>
+  <text>
+    <source>永久删除所选钉图和恢复记录？</source>
+    <translation>Permanently delete the selected pins and their recovery records?</translation>
+  </text>
+  <text>
+    <source>永久销毁当前钉图？此操作不能从关闭历史恢复。</source>
+    <translation>Permanently destroy this pin? It cannot be restored from closed-pin history.</translation>
+  </text>
+  <text>
+    <source>没有上次结果。</source>
+    <translation>No previous result is available.</translation>
+  </text>
+  <text>
+    <source>没有可恢复的已完成片段。</source>
+    <translation>There are no completed segments to recover.</translation>
+  </text>
+  <text>
+    <source>没有可用的本地识别语言。请在 Windows 设置的“语言和区域”中安装相应语言及基本输入功能后重试。</source>
+    <translation>No local recognition language is available. Install the language and basic typing features under Language &amp; region in Windows Settings, then try again.</translation>
+  </text>
+  <text>
+    <source>浅色</source>
+    <translation>Light</translation>
+  </text>
+  <text>
+    <source>深色</source>
+    <translation>Dark</translation>
+  </text>
+  <text>
+    <source>深色背景</source>
+    <translation>Dark background</translation>
+  </text>
+  <text>
+    <source>添加</source>
+    <translation>Add</translation>
+  </text>
+  <text>
+    <source>添加动作</source>
+    <translation>Add action</translation>
+  </text>
+  <text>
+    <source>添加文字</source>
+    <translation>Add text</translation>
+  </text>
+  <text>
+    <source>添加新动作…</source>
+    <translation>Add action…</translation>
+  </text>
+  <text>
+    <source>清空全部</source>
+    <translation>Clear all</translation>
+  </text>
+  <text>
+    <source>清空当前拼接结果并重新开始？</source>
+    <translation>Clear the stitched result and start again?</translation>
+  </text>
+  <text>
+    <source>清空快捷键：</source>
+    <translation>Clear shortcut: </translation>
+  </text>
+  <text>
+    <source>清空所有动作</source>
+    <translation>Clear all actions</translation>
+  </text>
+  <text>
+    <source>清空所有快捷键</source>
+    <translation>Clear all shortcuts</translation>
+  </text>
+  <text>
+    <source>清空标注</source>
+    <translation>Clear annotations</translation>
+  </text>
+  <text>
+    <source>清除本机已保存密钥</source>
+    <translation>Clear the saved local key</translation>
+  </text>
+  <text>
+    <source>源语言</source>
+    <translation>Source language</translation>
+  </text>
+  <text>
+    <source>滚动后持续采集</source>
+    <translation>Keep capturing after scrolling</translation>
+  </text>
+  <text>
+    <source>滚轮</source>
+    <translation>Wheel</translation>
+  </text>
+  <text>
+    <source>滚轮不透明度步长（%）</source>
+    <translation>Wheel opacity step (%)</translation>
+  </text>
+  <text>
+    <source>滚轮切换上层 / 下层元素</source>
+    <translation>Use the wheel to select parent / child elements</translation>
+  </text>
+  <text>
+    <source>滚轮缩放 · Ctrl+滚轮调透明度
+右键管理 · 拖动移动</source>
+    <translation>Wheel to zoom · Ctrl+wheel for opacity
+Right-click to manage · Drag to move</translation>
+  </text>
+  <text>
+    <source>滚轮缩放步长（%）</source>
+    <translation>Wheel zoom step (%)</translation>
+  </text>
+  <text>
+    <source>滚轮调整选区大小</source>
+    <translation>Resize the selection with the wheel</translation>
+  </text>
+  <text>
+    <source>灰度</source>
+    <translation>Grayscale</translation>
+  </text>
+  <text>
+    <source>点击同类标注重新编辑 · Alt 拖动复制 · 选择模式可选任意对象</source>
+    <translation>Click matching annotations to edit · Alt+drag duplicate · Selection mode selects any object</translation>
+  </text>
+  <text>
+    <source>点击后按快捷键；Backspace / Delete 清空</source>
+    <translation>Click and press a shortcut; Backspace / Delete clears it</translation>
+  </text>
+  <text>
+    <source>点击调整 X / Y / 宽 / 高、锁定比例和九宫格</source>
+    <translation>Click to adjust X / Y / width / height, aspect lock, and grid</translation>
+  </text>
+  <text>
+    <source>点击输入框后按组合键；Backspace / Delete 清空。绿色表示格式有效，实际系统占用在保存后提示。</source>
+    <translation>Click a field and press a shortcut; Backspace / Delete clears it. Green means valid syntax. System conflicts are reported on save.</translation>
+  </text>
+  <text>
+    <source>点击选区外时自动扩展选区</source>
+    <translation>Expand the selection when clicking outside it</translation>
+  </text>
+  <text>
+    <source>点击通知后</source>
+    <translation>Notification click action</translation>
+  </text>
+  <text>
+    <source>点线</source>
+    <translation>Dotted</translation>
+  </text>
+  <text>
+    <source>版本</source>
+    <translation>Version</translation>
+  </text>
+  <text>
+    <source>版本通道</source>
+    <translation>Release channel</translation>
+  </text>
+  <text>
+    <source>现代颜色窗口暂未开放</source>
+    <translation>The modern color picker is not available yet</translation>
+  </text>
+  <text>
+    <source>用 DeskSnip 钉住图片</source>
+    <translation>Pin image with DeskSnip</translation>
+  </text>
+  <text>
+    <source>用逗号排列：HashHex,Rgb,Bgr,Hex,Hsv,Hsl</source>
+    <translation>Comma-separated: HashHex,Rgb,Bgr,Hex,Hsv,Hsl</translation>
+  </text>
+  <text>
+    <source>由自定义服务处理</source>
+    <translation>Handled by the custom service</translation>
+  </text>
+  <text>
+    <source>画笔</source>
+    <translation>Pencil</translation>
+  </text>
+  <text>
+    <source>画笔与高亮</source>
+    <translation>Pencil and highlighter</translation>
+  </text>
+  <text>
+    <source>画笔光标类型</source>
+    <translation>Pencil cursor</translation>
+  </text>
+  <text>
+    <source>画笔橡皮擦</source>
+    <translation>Brush eraser</translation>
+  </text>
+  <text>
+    <source>画笔轮廓宽度或快捷面板边距无效。</source>
+    <translation>The pencil outline width or quick-panel padding is invalid.</translation>
+  </text>
+  <text>
+    <source>画笔遮挡</source>
+    <translation>Brush cover</translation>
+  </text>
+  <text>
+    <source>画笔马赛克</source>
+    <translation>Brush mosaic</translation>
+  </text>
+  <text>
+    <source>画质</source>
+    <translation>Quality</translation>
+  </text>
+  <text>
+    <source>画质、帧率或编码器无效。</source>
+    <translation>The quality, frame rate, or encoder is invalid.</translation>
+  </text>
+  <text>
+    <source>画面裁剪区域无效。</source>
+    <translation>The video crop region is invalid.</translation>
+  </text>
+  <text>
+    <source>界面字体</source>
+    <translation>Interface font</translation>
+  </text>
+  <text>
+    <source>界面语言</source>
+    <translation>Interface language</translation>
+  </text>
+  <text>
+    <source>界面语言无效，请选择简体中文、English 或跟随系统。</source>
+    <translation>Choose Simplified Chinese, English, or Follow system.</translation>
+  </text>
+  <text>
+    <source>留档容量（MB）</source>
+    <translation>Archive size limit (MB)</translation>
+  </text>
+  <text>
+    <source>留档目录</source>
+    <translation>Archive folder</translation>
+  </text>
+  <text>
+    <source>留空从 PATH 查找；声音、WebP、剪辑和恢复需要</source>
+    <translation>Leave empty to search PATH; required for audio, WebP, editing, and recovery</translation>
+  </text>
+  <text>
+    <source>留空使用 recordings</source>
+    <translation>Leave empty to use recordings</translation>
+  </text>
+  <text>
+    <source>留空使用本机已保存密钥；环境变量优先</source>
+    <translation>Leave blank to use the saved local key; the environment variable takes priority.</translation>
+  </text>
+  <text>
+    <source>留空使用本机数据目录下的 quick-saves</source>
+    <translation>Leave empty to use quick-saves in the local data folder</translation>
+  </text>
+  <text>
+    <source>留空使用本机数据目录下的 recordings</source>
+    <translation>Leave empty to use recordings in the local data folder</translation>
+  </text>
+  <text>
+    <source>留空使用独立本机目录 auto-saves；文件添加 DeskSnip-auto- 标识以便安全清理</source>
+    <translation>Leave empty to use the local auto-saves folder; files get a DeskSnip-auto- prefix for safe cleanup</translation>
+  </text>
+  <text>
+    <source>留空保留；保存设置时更新</source>
+    <translation>Leave blank to keep the saved key; changes apply when you save settings.</translation>
+  </text>
+  <text>
+    <source>留空跟随 Windows；例如 zh-Hans-CN / en-US</source>
+    <translation>Leave empty to follow Windows; for example, zh-Hans-CN / en-US</translation>
+  </text>
+  <text>
+    <source>白色</source>
+    <translation>White</translation>
+  </text>
+  <text>
+    <source>白色背景</source>
+    <translation>White background</translation>
+  </text>
+  <text>
+    <source>百度（尚未接入）</source>
+    <translation>Baidu (not integrated)</translation>
+  </text>
+  <text>
+    <source>目录尚不存在，请先保存文件或选择已有目录。</source>
+    <translation>The folder does not exist yet. Save a file first or choose an existing folder.</translation>
+  </text>
+  <text>
+    <source>目标语言</source>
+    <translation>Target language</translation>
+  </text>
+  <text>
+    <source>直接切换</source>
+    <translation>Switch immediately</translation>
+  </text>
+  <text>
+    <source>直接复制总开关开启时跳过确认</source>
+    <translation>Skip the dialog when direct copying is enabled</translation>
+  </text>
+  <text>
+    <source>直线</source>
+    <translation>Line</translation>
+  </text>
+  <text>
+    <source>相对 / 绝对坐标</source>
+    <translation>Relative / absolute coordinates</translation>
+  </text>
+  <text>
+    <source>矩形</source>
+    <translation>Rectangle</translation>
+  </text>
+  <text>
+    <source>矩形橡皮擦</source>
+    <translation>Rectangle eraser</translation>
+  </text>
+  <text>
+    <source>矩形选区</source>
+    <translation>Rectangle selection</translation>
+  </text>
+  <text>
+    <source>示例</source>
+    <translation>Sample</translation>
+  </text>
+  <text>
+    <source>禁用</source>
+    <translation>Disabled</translation>
+  </text>
+  <text>
+    <source>禁用 / 恢复其他快捷键</source>
+    <translation>Disable / Restore other shortcuts</translation>
+  </text>
+  <text>
+    <source>禁用 / 恢复快捷键</source>
+    <translation>Disable / restore shortcuts</translation>
+  </text>
+  <text>
+    <source>禁用鼠标滚轮调整标注工具</source>
+    <translation>Disable wheel adjustment of annotation tools</translation>
+  </text>
+  <text>
+    <source>移入分组</source>
+    <translation>Move to group</translation>
+  </text>
+  <text>
+    <source>移动 / 调整</source>
+    <translation>Move / resize</translation>
+  </text>
+  <text>
+    <source>移动缩略图区域</source>
+    <translation>Move thumbnail region</translation>
+  </text>
+  <text>
+    <source>移回可见屏幕</source>
+    <translation>Move onto a visible display</translation>
+  </text>
+  <text>
+    <source>移回屏幕</source>
+    <translation>Move onto screen</translation>
+  </text>
+  <text>
+    <source>移除换行符</source>
+    <translation>Remove line breaks</translation>
+  </text>
+  <text>
+    <source>移除空格</source>
+    <translation>Remove spaces</translation>
+  </text>
+  <text>
+    <source>窗口</source>
+    <translation>Window</translation>
+  </text>
+  <text>
+    <source>窗口置顶</source>
+    <translation>Always on top</translation>
+  </text>
+  <text>
+    <source>窗口钉图</source>
+    <translation>Window pin</translation>
+  </text>
+  <text>
+    <source>窗口钉图暂未开放</source>
+    <translation>Window pins are not available yet</translation>
+  </text>
+  <text>
+    <source>端口</source>
+    <translation>Port</translation>
+  </text>
+  <text>
+    <source>第一帧</source>
+    <translation>First frame</translation>
+  </text>
+  <text>
+    <source>简体中文</source>
+    <translation>简体中文</translation>
+  </text>
+  <text>
+    <source>管理员启动暂未开放</source>
+    <translation>Launching as administrator is not available yet</translation>
+  </text>
+  <text>
+    <source>箭头</source>
+    <translation>Arrow</translation>
+  </text>
+  <text>
+    <source>箭头与线条</source>
+    <translation>Arrows and lines</translation>
+  </text>
+  <text>
+    <source>箭头标注</source>
+    <translation>Arrow annotations</translation>
+  </text>
+  <text>
+    <source>箭头样式</source>
+    <translation>Arrow style</translation>
+  </text>
+  <text>
+    <source>精确位置与尺寸</source>
+    <translation>Exact position and size</translation>
+  </text>
+  <text>
+    <source>精细缩放</source>
+    <translation>Fine zoom</translation>
+  </text>
+  <text>
+    <source>系统</source>
+    <translation>System</translation>
+  </text>
+  <text>
+    <source>系统代理 / 无代理无需手动验证</source>
+    <translation>System proxy / No proxy does not need a manual connection check.</translation>
+  </text>
+  <text>
+    <source>系统声</source>
+    <translation>System audio</translation>
+  </text>
+  <text>
+    <source>系统声音</source>
+    <translation>System audio</translation>
+  </text>
+  <text>
+    <source>系统声音设备</source>
+    <translation>System audio device</translation>
+  </text>
+  <text>
+    <source>系统声音：已开启</source>
+    <translation>System audio: on</translation>
+  </text>
+  <text>
+    <source>系统声音：未开启</source>
+    <translation>System audio: off</translation>
+  </text>
+  <text>
+    <source>系统播放器无法解码，仍可尝试通过 FFmpeg 导出。</source>
+    <translation>The system player cannot decode this file. You can still try exporting with FFmpeg.</translation>
+  </text>
+  <text>
+    <source>系统播放声音</source>
+    <translation>System playback audio</translation>
+  </text>
+  <text>
+    <source>红色</source>
+    <translation>Red</translation>
+  </text>
+  <text>
+    <source>纯文本最大宽度</source>
+    <translation>Maximum plain-text width</translation>
+  </text>
+  <text>
+    <source>纵向</source>
+    <translation>Vertical</translation>
+  </text>
+  <text>
+    <source>线型</source>
+    <translation>Line style</translation>
+  </text>
+  <text>
+    <source>线宽（px）</source>
+    <translation>Line width (px)</translation>
+  </text>
+  <text>
+    <source>组合重复</source>
+    <translation>Duplicate binding</translation>
+  </text>
+  <text>
+    <source>经典系统窗口</source>
+    <translation>Classic system dialog</translation>
+  </text>
+  <text>
+    <source>结果会显示在这里，可校对后复制或导出。</source>
+    <translation>Results appear here. Review them before copying or exporting.</translation>
+  </text>
+  <text>
+    <source>结果已复制。</source>
+    <translation>Result copied.</translation>
+  </text>
+  <text>
+    <source>继续录制</source>
+    <translation>Resume recording</translation>
+  </text>
+  <text>
+    <source>继续标注</source>
+    <translation>Continue annotating</translation>
+  </text>
+  <text>
+    <source>绿色</source>
+    <translation>Green</translation>
+  </text>
+  <text>
+    <source>编码与输出</source>
+    <translation>Encoding and output</translation>
+  </text>
+  <text>
+    <source>编码后退出录制界面（关闭时自动打开成片）</source>
+    <translation>Close recording UI after encoding (otherwise open the result)</translation>
+  </text>
+  <text>
+    <source>编码器</source>
+    <translation>Encoder</translation>
+  </text>
+  <text>
+    <source>编辑</source>
+    <translation>Edit</translation>
+  </text>
+  <text>
+    <source>编辑分组</source>
+    <translation>Edit group</translation>
+  </text>
+  <text>
+    <source>编辑动作</source>
+    <translation>Edit action</translation>
+  </text>
+  <text>
+    <source>编辑动作：</source>
+    <translation>Edit action: </translation>
+  </text>
+  <text>
+    <source>编辑后的结果和原图已保存到本机。</source>
+    <translation>Edited results and the original image saved locally.</translation>
+  </text>
+  <text>
+    <source>编辑截图（全部工具）</source>
+    <translation>Edit capture (all tools)</translation>
+  </text>
+  <text>
+    <source>编辑按钮…</source>
+    <translation>Edit buttons…</translation>
+  </text>
+  <text>
+    <source>编辑文字</source>
+    <translation>Edit text</translation>
+  </text>
+  <text>
+    <source>编辑调色板…</source>
+    <translation>Edit palette…</translation>
+  </text>
+  <text>
+    <source>编辑颜色调色板</source>
+    <translation>Edit color palette</translation>
+  </text>
+  <text>
+    <source>缩小</source>
+    <translation>Zoom out</translation>
+  </text>
+  <text>
+    <source>缩放</source>
+    <translation>Zoom</translation>
+  </text>
+  <text>
+    <source>缩放、透明度与显示</source>
+    <translation>Zoom, opacity, and display</translation>
+  </text>
+  <text>
+    <source>缩放与透明度使用滚轮，移动和拖出内容使用拖动组合。</source>
+    <translation>Zoom and opacity use the wheel; moving and dragging content use drag gestures.</translation>
+  </text>
+  <text>
+    <source>缩略图</source>
+    <translation>Thumbnail</translation>
+  </text>
+  <text>
+    <source>缩略图与窗口行为</source>
+    <translation>Thumbnails and window behavior</translation>
+  </text>
+  <text>
+    <source>缩略图模式文字选择</source>
+    <translation>Text selection in thumbnail mode</translation>
+  </text>
+  <text>
+    <source>缩略图模式滚轮缩放</source>
+    <translation>Wheel zoom in thumbnail mode</translation>
+  </text>
+  <text>
+    <source>缩略图缩放模式</source>
+    <translation>Thumbnail zoom mode</translation>
+  </text>
+  <text>
+    <source>网络代理</source>
+    <translation>Network proxy</translation>
+  </text>
+  <text>
+    <source>置顶 / 取消置顶</source>
+    <translation>Toggle always on top</translation>
+  </text>
+  <text>
+    <source>翻译</source>
+    <translation>Translation</translation>
+  </text>
+  <text>
+    <source>翻译服务</source>
+    <translation>Translation service</translation>
+  </text>
+  <text>
+    <source>联网文字识别</source>
+    <translation>Online text recognition</translation>
+  </text>
+  <text>
+    <source>联网服务</source>
+    <translation>Online service</translation>
+  </text>
+  <text>
+    <source>联网识别</source>
+    <translation>Online recognition</translation>
+  </text>
+  <text>
+    <source>联网识别 / 翻译</source>
+    <translation>Online recognition / translation</translation>
+  </text>
+  <text>
+    <source>聚光与放大</source>
+    <translation>Spotlight and magnifier</translation>
+  </text>
+  <text>
+    <source>聚光灯</source>
+    <translation>Spotlight</translation>
+  </text>
+  <text>
+    <source>背景颜色</source>
+    <translation>Background color</translation>
+  </text>
+  <text>
+    <source>自动</source>
+    <translation>Automatic</translation>
+  </text>
+  <text>
+    <source>自动保存 / 留档</source>
+    <translation>Automatic save / archive</translation>
+  </text>
+  <text>
+    <source>自动保存命名模板</source>
+    <translation>Automatic save filename template</translation>
+  </text>
+  <text>
+    <source>自动保存图片格式</source>
+    <translation>Automatic save image format</translation>
+  </text>
+  <text>
+    <source>自动保存索引无效，原文件保留。</source>
+    <translation>The automatic save index is invalid. Original files are preserved.</translation>
+  </text>
+  <text>
+    <source>自动分段</source>
+    <translation>Automatic paragraphs</translation>
+  </text>
+  <text>
+    <source>自动发送使用统计</source>
+    <translation>Send usage statistics automatically</translation>
+  </text>
+  <text>
+    <source>自动处理检测到的隐私区域</source>
+    <translation>Automatically process detected private information</translation>
+  </text>
+  <text>
+    <source>自动换行模式</source>
+    <translation>Text wrapping</translation>
+  </text>
+  <text>
+    <source>自动更新暂未开放，请使用新版本免安装包</source>
+    <translation>Automatic updates are not available; use the new portable package</translation>
+  </text>
+  <text>
+    <source>自动检查更新暂未开放</source>
+    <translation>Automatic update checks are not available yet</translation>
+  </text>
+  <text>
+    <source>自动检测暂未开放；编辑器可手动识别二维码</source>
+    <translation>Automatic detection is not available; recognize QR codes manually in the editor</translation>
+  </text>
+  <text>
+    <source>自动留档未完成，当前图片仍可复制、保存或钉图。请检查自动保存目录和容量。</source>
+    <translation>Automatic archiving failed. You can still copy, save, or pin the image. Check the archive folder and size limit.</translation>
+  </text>
+  <text>
+    <source>自动硬件</source>
+    <translation>Automatic hardware</translation>
+  </text>
+  <text>
+    <source>自动硬件 / 软件回退</source>
+    <translation>Automatic hardware / software fallback</translation>
+  </text>
+  <text>
+    <source>自动隐私马赛克</source>
+    <translation>Automatic privacy mosaic</translation>
+  </text>
+  <text>
+    <source>自动马赛克</source>
+    <translation>Automatic mosaic</translation>
+  </text>
+  <text>
+    <source>自动（PNG）</source>
+    <translation>Automatic (PNG)</translation>
+  </text>
+  <text>
+    <source>自定义</source>
+    <translation>Custom</translation>
+  </text>
+  <text>
+    <source>自定义协议服务</source>
+    <translation>Custom protocol service</translation>
+  </text>
+  <text>
+    <source>自定义截图</source>
+    <translation>Custom capture</translation>
+  </text>
+  <text>
+    <source>自定义颜色</source>
+    <translation>Custom color</translation>
+  </text>
+  <text>
+    <source>自由形状</source>
+    <translation>Freeform</translation>
+  </text>
+  <text>
+    <source>自由形状或多边形至少需要三个点。</source>
+    <translation>Freeform and polygon selections need at least three points.</translation>
+  </text>
+  <text>
+    <source>自由形状选区</source>
+    <translation>Freeform selection</translation>
+  </text>
+  <text>
+    <source>自适应屏幕 DPI</source>
+    <translation>Adapt to display DPI</translation>
+  </text>
+  <text>
+    <source>至少 1 MB；最新一张始终保留，仅清理本应用登记的留档</source>
+    <translation>At least 1 MB; the newest image is always kept; only DeskSnip archive files are cleaned up</translation>
+  </text>
+  <text>
+    <source>英文标点</source>
+    <translation>Half-width punctuation</translation>
+  </text>
+  <text>
+    <source>荧光笔</source>
+    <translation>Highlighter</translation>
+  </text>
+  <text>
+    <source>菜单</source>
+    <translation>Menu</translation>
+  </text>
+  <text>
+    <source>蓝色</source>
+    <translation>Blue</translation>
+  </text>
+  <text>
+    <source>虚线</source>
+    <translation>Dashed</translation>
+  </text>
+  <text>
+    <source>表格合并区域无效。</source>
+    <translation>The table merge region is invalid.</translation>
+  </text>
+  <text>
+    <source>表格合并区域重叠。</source>
+    <translation>The table merge regions overlap.</translation>
+  </text>
+  <text>
+    <source>表格导出范围无效。</source>
+    <translation>The table export range is invalid.</translation>
+  </text>
+  <text>
+    <source>表格尺寸、单元格或内容大小无效。</source>
+    <translation>The table dimensions, cells, or content size are invalid.</translation>
+  </text>
+  <text>
+    <source>表格至少保留一列。</source>
+    <translation>The table must keep at least one column.</translation>
+  </text>
+  <text>
+    <source>表格至少保留一行。</source>
+    <translation>The table must keep at least one row.</translation>
+  </text>
+  <text>
+    <source>表格识别</source>
+    <translation>Table recognition</translation>
+  </text>
+  <text>
+    <source>表格选区已导出。</source>
+    <translation>Table selection exported.</translation>
+  </text>
+  <text>
+    <source>裁剪 X / Y / 宽 / 高</source>
+    <translation>Crop X / Y / width / height</translation>
+  </text>
+  <text>
+    <source>裁剪区域超出图片。</source>
+    <translation>The crop region extends outside the image.</translation>
+  </text>
+  <text>
+    <source>裁剪请输入非负整数像素。</source>
+    <translation>Enter nonnegative whole-pixel values for the crop.</translation>
+  </text>
+  <text>
+    <source>裁掉当前画面之前</source>
+    <translation>Crop before the current frame</translation>
+  </text>
+  <text>
+    <source>裁掉当前画面之后</source>
+    <translation>Crop after the current frame</translation>
+  </text>
+  <text>
+    <source>覆盖同名录制（关闭时添加数字后缀）</source>
+    <translation>Overwrite recordings with the same name (otherwise add a numeric suffix)</translation>
+  </text>
+  <text>
+    <source>覆盖同名文件（关闭时添加数字后缀）</source>
+    <translation>Overwrite files with the same name (otherwise add a numeric suffix)</translation>
+  </text>
+  <text>
+    <source>覆盖同名留档（关闭时添加数字后缀）</source>
+    <translation>Overwrite archives with the same name (otherwise add a numeric suffix)</translation>
+  </text>
+  <text>
+    <source>视频尺寸超出处理范围。</source>
+    <translation>The video dimensions exceed the processing limit.</translation>
+  </text>
+  <text>
+    <source>视频帧缓冲区尺寸不匹配。</source>
+    <translation>The video frame buffer dimensions do not match.</translation>
+  </text>
+  <text>
+    <source>视频时长无法读取。</source>
+    <translation>The video duration could not be read.</translation>
+  </text>
+  <text>
+    <source>视频没有可导出的帧。</source>
+    <translation>The video has no frames to export.</translation>
+  </text>
+  <text>
+    <source>视频行宽不匹配。</source>
+    <translation>The video row stride does not match.</translation>
+  </text>
+  <text>
+    <source>视频解码失败。</source>
+    <translation>Video decoding failed.</translation>
+  </text>
+  <text>
+    <source>解除全部穿透 / 锁定</source>
+    <translation>Disable all click-through / locks</translation>
+  </text>
+  <text>
+    <source>解除鼠标穿透</source>
+    <translation>Disable click-through</translation>
+  </text>
+  <text>
+    <source>记住上次使用的扩展名</source>
+    <translation>Remember the last file extension</translation>
+  </text>
+  <text>
+    <source>记住工具栏子工具选择</source>
+    <translation>Remember toolbar subtools</translation>
+  </text>
+  <text>
+    <source>记住截图中最后使用的标注工具</source>
+    <translation>Remember the last annotation tool for screenshots</translation>
+  </text>
+  <text>
+    <source>记住钉图上最后使用的标注工具</source>
+    <translation>Remember the last annotation tool for pins</translation>
+  </text>
+  <text>
+    <source>记忆标注工具无效。</source>
+    <translation>The remembered annotation tool is invalid.</translation>
+  </text>
+  <text>
+    <source>设置</source>
+    <translation>Settings</translation>
+  </text>
+  <text>
+    <source>设置分类</source>
+    <translation>Settings categories</translation>
+  </text>
+  <text>
+    <source>设置数值超出允许范围。</source>
+    <translation>A setting value is outside its allowed range.</translation>
+  </text>
+  <text>
+    <source>设置标注工具：几何形状</source>
+    <translation>Set tool: geometry</translation>
+  </text>
+  <text>
+    <source>设置标注工具：序号</source>
+    <translation>Set tool: number</translation>
+  </text>
+  <text>
+    <source>设置标注工具：折线</source>
+    <translation>Set tool: polyline</translation>
+  </text>
+  <text>
+    <source>设置标注工具：放大镜</source>
+    <translation>Set tool: magnifier</translation>
+  </text>
+  <text>
+    <source>设置标注工具：文字</source>
+    <translation>Set tool: text</translation>
+  </text>
+  <text>
+    <source>设置标注工具：橡皮擦</source>
+    <translation>Set tool: eraser</translation>
+  </text>
+  <text>
+    <source>设置标注工具：水印</source>
+    <translation>Set tool: watermark</translation>
+  </text>
+  <text>
+    <source>设置标注工具：画笔</source>
+    <translation>Set tool: pencil</translation>
+  </text>
+  <text>
+    <source>设置标注工具：箭头</source>
+    <translation>Set tool: arrow</translation>
+  </text>
+  <text>
+    <source>设置标注工具：聚光灯</source>
+    <translation>Set tool: spotlight</translation>
+  </text>
+  <text>
+    <source>设置标注工具：遮挡</source>
+    <translation>Set tool: cover</translation>
+  </text>
+  <text>
+    <source>设置标注工具：马赛克</source>
+    <translation>Set tool: mosaic</translation>
+  </text>
+  <text>
+    <source>设置标注工具：高亮</source>
+    <translation>Set tool: highlighter</translation>
+  </text>
+  <text>
+    <source>设置选项无效：</source>
+    <translation>Invalid setting option: </translation>
+  </text>
+  <text>
+    <source>访问密钥</source>
+    <translation>Access key</translation>
+  </text>
+  <text>
+    <source>访问密钥无效。</source>
+    <translation>The access key is invalid.</translation>
+  </text>
+  <text>
+    <source>访问密钥格式无效，请检查本机密钥或环境变量。</source>
+    <translation>The access key format is invalid. Check the local key or environment variable.</translation>
+  </text>
+  <text>
+    <source>识别与翻译服务</source>
+    <translation>Recognition and translation service</translation>
+  </text>
+  <text>
+    <source>识别二维码</source>
+    <translation>Read QR code</translation>
+  </text>
+  <text>
+    <source>识别剪贴板</source>
+    <translation>Recognize clipboard</translation>
+  </text>
+  <text>
+    <source>识别图片最多 3200 万像素，单边不超过 20000 像素。</source>
+    <translation>Recognition images support up to 32 million pixels, with each side no longer than 20000 pixels.</translation>
+  </text>
+  <text>
+    <source>识别完成后直接复制（关闭时显示校对窗口）</source>
+    <translation>Copy recognition results directly (otherwise show the review window)</translation>
+  </text>
+  <text>
+    <source>识别完成；请对照原图校正。</source>
+    <translation>Recognition complete. Review the text against the original image.</translation>
+  </text>
+  <text>
+    <source>识别操作无效。</source>
+    <translation>The recognition operation is invalid.</translation>
+  </text>
+  <text>
+    <source>识别文字</source>
+    <translation>Recognize text</translation>
+  </text>
+  <text>
+    <source>识别文字已复制。</source>
+    <translation>Recognized text copied.</translation>
+  </text>
+  <text>
+    <source>识别未完成；已有结果和原图保留，可重试。</source>
+    <translation>Recognition failed. Existing results and the original image are kept; you can retry.</translation>
+  </text>
+  <text>
+    <source>识别语言</source>
+    <translation>Recognition language</translation>
+  </text>
+  <text>
+    <source>识别请求类型、内容或语言无效。</source>
+    <translation>The recognition request type, content, or language is invalid.</translation>
+  </text>
+  <text>
+    <source>语言</source>
+    <translation>Language</translation>
+  </text>
+  <text>
+    <source>请先修正正在编辑的单元格。</source>
+    <translation>Correct the cell being edited first.</translation>
+  </text>
+  <text>
+    <source>请先在“设置 → 联网服务”配置支持 DeskSnip 协议的服务地址。</source>
+    <translation>Configure a service supporting the DeskSnip protocol in “Settings → Online Services” first.</translation>
+  </text>
+  <text>
+    <source>请先选择一张或多张钉图。</source>
+    <translation>Select one or more pins first.</translation>
+  </text>
+  <text>
+    <source>请先选择一条 MP4 录制，或在开始录制时直接选择 GIF 格式。</source>
+    <translation>Select an MP4 recording first, or choose GIF when starting a recording.</translation>
+  </text>
+  <text>
+    <source>请先采集一帧。</source>
+    <translation>Capture a frame first.</translation>
+  </text>
+  <text>
+    <source>请填写 1–24 个 #RRGGBB 颜色，用逗号分隔</source>
+    <translation>Enter 1–24 #RRGGBB colors separated by commas</translation>
+  </text>
+  <text>
+    <source>请求原图需要 PNG 格式。</source>
+    <translation>The request image must use PNG format.</translation>
+  </text>
+  <text>
+    <source>请求已取消，原图和旧结果保留。</source>
+    <translation>Request canceled. Original image and previous results are kept.</translation>
+  </text>
+  <text>
+    <source>请求成功，可编辑结果；已保存到本机。</source>
+    <translation>Request successful. You can edit the results; they have been saved locally.</translation>
+  </text>
+  <text>
+    <source>请求服务</source>
+    <translation>Send request</translation>
+  </text>
+  <text>
+    <source>请求超时（秒）</source>
+    <translation>Request timeout (seconds)</translation>
+  </text>
+  <text>
+    <source>请至少启用一种有效颜色格式，不能重复。</source>
+    <translation>Enable at least one valid color format without duplicates.</translation>
+  </text>
+  <text>
+    <source>请输入字体与 1–480 的字号。</source>
+    <translation>Enter a font and a size between 1 and 480.</translation>
+  </text>
+  <text>
+    <source>请选择 MP4、GIF 或 WebP 文件。</source>
+    <translation>Choose an MP4, GIF, or WebP file.</translation>
+  </text>
+  <text>
+    <source>请选择 PNG、JPEG、BMP 或 TIFF 文件。</source>
+    <translation>Choose a PNG, JPEG, BMP, or TIFF file.</translation>
+  </text>
+  <text>
+    <source>请选择一条图片记录进行文字识别。</source>
+    <translation>Select an image from history to recognize its text.</translation>
+  </text>
+  <text>
+    <source>请选择专用的数据目录。</source>
+    <translation>Use a dedicated data directory.</translation>
+  </text>
+  <text>
+    <source>请选择可用的 FFmpeg 可执行文件。</source>
+    <translation>Choose a valid FFmpeg executable.</translation>
+  </text>
+  <text>
+    <source>请选择图片记录，或从“联网识别 / 翻译”输入文字。</source>
+    <translation>Select an image from history, or enter text in “Online recognition / translation”.</translation>
+  </text>
+  <text>
+    <source>请选择有效选项。</source>
+    <translation>Choose a valid option.</translation>
+  </text>
+  <text>
+    <source>请选择连续矩形单元格。</source>
+    <translation>Select a contiguous rectangular range of cells.</translation>
+  </text>
+  <text>
+    <source>调整标注按钮</source>
+    <translation>Customize annotation buttons</translation>
+  </text>
+  <text>
+    <source>调整透明度</source>
+    <translation>Adjust opacity</translation>
+  </text>
+  <text>
+    <source>调整钉图以确保显示</source>
+    <translation>Keep pins visible on available displays</translation>
+  </text>
+  <text>
+    <source>调色板已修改，保存后生效</source>
+    <translation>Palette updated; save to apply</translation>
+  </text>
+  <text>
+    <source>调色板需要 1–24 个 #RRGGBB 颜色，用逗号分隔。</source>
+    <translation>The palette needs 1–24 #RRGGBB colors separated by commas.</translation>
+  </text>
+  <text>
+    <source>账号 / 会员</source>
+    <translation>Account / Membership</translation>
+  </text>
+  <text>
+    <source>跟随主题</source>
+    <translation>Follow theme</translation>
+  </text>
+  <text>
+    <source>跟随系统</source>
+    <translation>Follow system</translation>
+  </text>
+  <text>
+    <source>跟随系统代理</source>
+    <translation>Use system proxy</translation>
+  </text>
+  <text>
+    <source>跨行合并表格需要先拆分后排序。</source>
+    <translation>Split cells merged across rows before sorting.</translation>
+  </text>
+  <text>
+    <source>路径超出数据目录。</source>
+    <translation>Path escapes data directory.</translation>
+  </text>
+  <text>
+    <source>转换全角标点</source>
+    <translation>Convert to full-width punctuation</translation>
+  </text>
+  <text>
+    <source>转换半角标点</source>
+    <translation>Convert to half-width punctuation</translation>
+  </text>
+  <text>
+    <source>轮廓</source>
+    <translation>Outline</translation>
+  </text>
+  <text>
+    <source>轮廓箭头</source>
+    <translation>Outline arrow</translation>
+  </text>
+  <text>
+    <source>轮廓至少需要三个点。</source>
+    <translation>The outline needs at least three points.</translation>
+  </text>
+  <text>
+    <source>软件</source>
+    <translation>Software</translation>
+  </text>
+  <text>
+    <source>辅助线</source>
+    <translation>Guides</translation>
+  </text>
+  <text>
+    <source>辅助线显示放大镜</source>
+    <translation>Show magnifier with guides</translation>
+  </text>
+  <text>
+    <source>输出目录需要完整路径。</source>
+    <translation>Output directory must be absolute.</translation>
+  </text>
+  <text>
+    <source>还原</source>
+    <translation>Reset</translation>
+  </text>
+  <text>
+    <source>进入长截图</source>
+    <translation>Start long capture</translation>
+  </text>
+  <text>
+    <source>进入长截图后</source>
+    <translation>When entering long capture</translation>
+  </text>
+  <text>
+    <source>连续帧的大小必须相同，方向需要为正向或反向。</source>
+    <translation>Consecutive frames must have the same dimensions and a forward or reverse direction.</translation>
+  </text>
+  <text>
+    <source>退出</source>
+    <translation>Exit</translation>
+  </text>
+  <text>
+    <source>适合屏幕</source>
+    <translation>Fit to screen</translation>
+  </text>
+  <text>
+    <source>选区 </source>
+    <translation>Selection </translation>
+  </text>
+  <text>
+    <source>选区 X 坐标</source>
+    <translation>Selection X</translation>
+  </text>
+  <text>
+    <source>选区 Y 坐标</source>
+    <translation>Selection Y</translation>
+  </text>
+  <text>
+    <source>选区中心线</source>
+    <translation>Selection center lines</translation>
+  </text>
+  <text>
+    <source>选区位置与尺寸</source>
+    <translation>Selection position and size</translation>
+  </text>
+  <text>
+    <source>选区太小，无法匹配重叠。</source>
+    <translation>The region is too small to match overlaps.</translation>
+  </text>
+  <text>
+    <source>选区宽度</source>
+    <translation>Selection width</translation>
+  </text>
+  <text>
+    <source>选区形状</source>
+    <translation>Selection shape</translation>
+  </text>
+  <text>
+    <source>选区边框宽度</source>
+    <translation>Selection border width</translation>
+  </text>
+  <text>
+    <source>选区边框线</source>
+    <translation>Selection border guides</translation>
+  </text>
+  <text>
+    <source>选区边框颜色</source>
+    <translation>Selection border color</translation>
+  </text>
+  <text>
+    <source>选区边缘互相冲突。</source>
+    <translation>Conflicting selection edges.</translation>
+  </text>
+  <text>
+    <source>选区高度</source>
+    <translation>Selection height</translation>
+  </text>
+  <text>
+    <source>选择 / 移动</source>
+    <translation>Select / move</translation>
+  </text>
+  <text>
+    <source>选择…</source>
+    <translation>Browse…</translation>
+  </text>
+  <text>
+    <source>选择全部文字</source>
+    <translation>Select all text</translation>
+  </text>
+  <text>
+    <source>选择所在屏幕 / 全部桌面</source>
+    <translation>Select current display / entire desktop</translation>
+  </text>
+  <text>
+    <source>选择操作，检查原图或文字，再请求服务。</source>
+    <translation>Choose an operation, check the image or text, then send the request.</translation>
+  </text>
+  <text>
+    <source>选择缩略图区域</source>
+    <translation>Select thumbnail region</translation>
+  </text>
+  <text>
+    <source>选择需要钉住的图像</source>
+    <translation>Choose an image to pin</translation>
+  </text>
+  <text>
+    <source>选择颜色</source>
+    <translation>Choose color</translation>
+  </text>
+  <text>
+    <source>透明度</source>
+    <translation>Opacity</translation>
+  </text>
+  <text>
+    <source>通用</source>
+    <translation>General</translation>
+  </text>
+  <text>
+    <source>遮挡</source>
+    <translation>Cover</translation>
+  </text>
+  <text>
+    <source>遮挡 {0} 处手机号/邮箱；请检查结果，可撤销或补画遮挡。</source>
+    <translation>Masked {0} phone numbers / emails. Review the result; undo or add more masks if needed.</translation>
+  </text>
+  <text>
+    <source>遮挡工具</source>
+    <translation>Cover tools</translation>
+  </text>
+  <text>
+    <source>部分已淘汰钉图文件正被占用，本次保留。</source>
+    <translation>Some retired pin image files are in use and have been kept.</translation>
+  </text>
+  <text>
+    <source>部分过期历史无法移除，本次保留这些文件。</source>
+    <translation>Some expired history files could not be removed and have been kept.</translation>
+  </text>
+  <text>
+    <source>部分过期历史正在使用，本次保留这些文件。</source>
+    <translation>Some expired history files are in use and have been kept.</translation>
+  </text>
+  <text>
+    <source>部分钉图文件缺失，原布局记录保留。</source>
+    <translation>Some pin image files are missing. The original layout records are preserved.</translation>
+  </text>
+  <text>
+    <source>部分钉图无法恢复，原记录和图片保留。</source>
+    <translation>Some pins could not be restored. Their records and images have been kept.</translation>
+  </text>
+  <text>
+    <source>配置包含不支持的字段或本机数据。</source>
+    <translation>The preferences contain unsupported fields or local data.</translation>
+  </text>
+  <text>
+    <source>配置后按住修饰键拖出区域。首次默认不绑定，避免覆盖已有鼠标操作；翻译与公式先打开确认窗口。</source>
+    <translation>After configuration, hold a modifier and drag a region. Global mouse is unassigned initially. Translation and formulas open a confirmation window first.</translation>
+  </text>
+  <text>
+    <source>配置和内容保存在本机；联网识别仅在明确请求时发送当前图片或文字。</source>
+    <translation>Settings and content stay on this device. Online recognition sends the current image or text only when you request it.</translation>
+  </text>
+  <text>
+    <source>配置字段值无效：</source>
+    <translation>Invalid preference value: </translation>
+  </text>
+  <text>
+    <source>配置文件为空。</source>
+    <translation>The preference file is empty.</translation>
+  </text>
+  <text>
+    <source>配置文件包含主题、快捷键、保存方式等可移植偏好。本机目录、FFmpeg 路径和服务地址 / 密钥不导出。</source>
+    <translation>Export includes portable preferences such as themes, shortcuts, and save options. Local folders, the FFmpeg path, and service endpoints / keys are excluded.</translation>
+  </text>
+  <text>
+    <source>配置文件过大。</source>
+    <translation>The preference file is too large.</translation>
+  </text>
+  <text>
+    <source>配置无效，已使用默认值；原文件保留。</source>
+    <translation>The settings are invalid. Defaults are in use; the original file is preserved.</translation>
+  </text>
+  <text>
+    <source>配置服务地址 / 密钥</source>
+    <translation>Configure service endpoint / key</translation>
+  </text>
+  <text>
+    <source>配置格式或版本无效。</source>
+    <translation>The preference format or version is invalid.</translation>
+  </text>
+  <text>
+    <source>配置硬件加速 / 编码器</source>
+    <translation>Configure hardware acceleration / encoder</translation>
+  </text>
+  <text>
+    <source>采集下一帧</source>
+    <translation>Capture next frame</translation>
+  </text>
+  <text>
+    <source>采集当前画面</source>
+    <translation>Capture current frame</translation>
+  </text>
+  <text>
+    <source>重做</source>
+    <translation>Redo</translation>
+  </text>
+  <text>
+    <source>重做标注</source>
+    <translation>Redo annotation</translation>
+  </text>
+  <text>
+    <source>重叠像素</source>
+    <translation>Overlap (pixels)</translation>
+  </text>
+  <text>
+    <source>重叠像素请输入整数。</source>
+    <translation>Enter a whole number for overlap.</translation>
+  </text>
+  <text>
+    <source>重叠匹配不可靠。已有长图保留；回到最后成功位置或填写重叠像素继续。</source>
+    <translation>The overlap match is unreliable. The existing long image is preserved. Return to the last successful position or enter the overlap in pixels to continue.</translation>
+  </text>
+  <text>
+    <source>重叠匹配成功。</source>
+    <translation>Overlap matched.</translation>
+  </text>
+  <text>
+    <source>重复钉图时的动作</source>
+    <translation>Action for duplicate pins</translation>
+  </text>
+  <text>
+    <source>重新开始</source>
+    <translation>Start again</translation>
+  </text>
+  <text>
+    <source>重新录制</source>
+    <translation>Record again</translation>
+  </text>
+  <text>
+    <source>重新框选</source>
+    <translation>Select again</translation>
+  </text>
+  <text>
+    <source>重新识别</source>
+    <translation>Recognize again</translation>
+  </text>
+  <text>
+    <source>钉住剪贴板</source>
+    <translation>Pin clipboard</translation>
+  </text>
+  <text>
+    <source>钉住图像文件</source>
+    <translation>Pin image file</translation>
+  </text>
+  <text>
+    <source>钉住图片文件</source>
+    <translation>Pin image file</translation>
+  </text>
+  <text>
+    <source>钉到桌面</source>
+    <translation>Pin to desktop</translation>
+  </text>
+  <text>
+    <source>钉图</source>
+    <translation>Pin</translation>
+  </text>
+  <text>
+    <source>钉图分组引用无效。</source>
+    <translation>Invalid pin group reference.</translation>
+  </text>
+  <text>
+    <source>钉图分组无效。</source>
+    <translation>Invalid pin group.</translation>
+  </text>
+  <text>
+    <source>钉图工作区无效。</source>
+    <translation>Invalid pin workspace.</translation>
+  </text>
+  <text>
+    <source>钉图已锁定；L 解锁</source>
+    <translation>Pin locked; press L to unlock</translation>
+  </text>
+  <text>
+    <source>钉图布局无法读取，原文件保留。</source>
+    <translation>The pin layout could not be read. The original file is preserved.</translation>
+  </text>
+  <text>
+    <source>钉图时同时复制图片</source>
+    <translation>Also copy the image when pinning</translation>
+  </text>
+  <text>
+    <source>钉图时留档</source>
+    <translation>Archive when pinning</translation>
+  </text>
+  <text>
+    <source>钉图显示位置</source>
+    <translation>Pin position</translation>
+  </text>
+  <text>
+    <source>钉图标识无效。</source>
+    <translation>Invalid pin identity.</translation>
+  </text>
+  <text>
+    <source>钉图标题</source>
+    <translation>Pin title</translation>
+  </text>
+  <text>
+    <source>钉图窗口</source>
+    <translation>Pin window</translation>
+  </text>
+  <text>
+    <source>钉图窗口默认不透明度（%）</source>
+    <translation>Default pin opacity (%)</translation>
+  </text>
+  <text>
+    <source>钉图管理</source>
+    <translation>Pin manager</translation>
+  </text>
+  <text>
+    <source>钉图记录无效。</source>
+    <translation>Invalid pin record.</translation>
+  </text>
+  <text>
+    <source>钉图过大时自动缩小</source>
+    <translation>Shrink oversized pins automatically</translation>
+  </text>
+  <text>
+    <source>钉图鼠标动作无效。</source>
+    <translation>The pin mouse action is invalid.</translation>
+  </text>
+  <text>
+    <source>钉图鼠标操作</source>
+    <translation>Pin mouse actions</translation>
+  </text>
+  <text>
+    <source>销毁</source>
+    <translation>Destroy</translation>
+  </text>
+  <text>
+    <source>销毁所选</source>
+    <translation>Destroy selected</translation>
+  </text>
+  <text>
+    <source>销毁操作在管理器中固定确认</source>
+    <translation>The pin manager always confirms destruction</translation>
+  </text>
+  <text>
+    <source>销毁钉图</source>
+    <translation>Destroy pin</translation>
+  </text>
+  <text>
+    <source>锁定 / 解锁</source>
+    <translation>Lock / unlock</translation>
+  </text>
+  <text>
+    <source>锁定与二次确认</source>
+    <translation>Locking and confirmation</translation>
+  </text>
+  <text>
+    <source>锁定位置和尺寸</source>
+    <translation>Lock position and size</translation>
+  </text>
+  <text>
+    <source>锁定切换</source>
+    <translation>Toggle lock</translation>
+  </text>
+  <text>
+    <source>锁定时禁止按键关闭</source>
+    <translation>Prevent keyboard closing when locked</translation>
+  </text>
+  <text>
+    <source>锁定时禁止接受拖拽</source>
+    <translation>Prevent drops when locked</translation>
+  </text>
+  <text>
+    <source>锁定时禁止移动和缩放</source>
+    <translation>Prevent moving and resizing when locked</translation>
+  </text>
+  <text>
+    <source>锁定时禁止鼠标关闭</source>
+    <translation>Prevent mouse closing when locked</translation>
+  </text>
+  <text>
+    <source>锁定比例</source>
+    <translation>Lock aspect ratio</translation>
+  </text>
+  <text>
+    <source>锁定窗口颜色</source>
+    <translation>Locked window color</translation>
+  </text>
+  <text>
+    <source>锚点显示</source>
+    <translation>Selection handles</translation>
+  </text>
+  <text>
+    <source>键鼠轨迹录制暂未开放</source>
+    <translation>Keyboard and mouse overlays are not available yet</translation>
+  </text>
+  <text>
+    <source>长图输出</source>
+    <translation>Long image output</translation>
+  </text>
+  <text>
+    <source>长图达到 5000 万像素上限，请先保存再开始下一段。</source>
+    <translation>The long image reached the 50 million pixel limit. Save it before starting another segment.</translation>
+  </text>
+  <text>
+    <source>长截图</source>
+    <translation>Long capture</translation>
+  </text>
+  <text>
+    <source>长截图输出时留档</source>
+    <translation>Archive long capture outputs</translation>
+  </text>
+  <text>
+    <source>长截图采集</source>
+    <translation>Long capture</translation>
+  </text>
+  <text>
+    <source>长截图需要矩形选区。</source>
+    <translation>Long capture requires a rectangular selection.</translation>
+  </text>
+  <text>
+    <source>长文本钉图需要确认</source>
+    <translation>Confirm long text pins</translation>
+  </text>
+  <text>
+    <source>长文预览只显示前 20 万字符 / 2000 段，源码及导出仍保留完整内容。</source>
+    <translation>Long document previews show the first 200,000 characters / 2,000 paragraphs. Source and exports keep the full content.</translation>
+  </text>
+  <text>
+    <source>降低亮度</source>
+    <translation>Decrease brightness</translation>
+  </text>
+  <text>
+    <source>降序</source>
+    <translation>Descending</translation>
+  </text>
+  <text>
+    <source>隐私检测</source>
+    <translation>Privacy detection</translation>
+  </text>
+  <text>
+    <source>隐私检测未完成，原图和标注保留；可以手动遮挡。</source>
+    <translation>Privacy detection failed. Your image and annotations are kept; you can add masks manually.</translation>
+  </text>
+  <text>
+    <source>隐藏</source>
+    <translation>Hidden</translation>
+  </text>
+  <text>
+    <source>隐藏 / 显示所有钉图</source>
+    <translation>Hide / show all pins</translation>
+  </text>
+  <text>
+    <source>隐藏 / 显示所选以外的钉图</source>
+    <translation>Hide / Show other pins</translation>
+  </text>
+  <text>
+    <source>隐藏原窗口</source>
+    <translation>Hide original window</translation>
+  </text>
+  <text>
+    <source>隐藏所选</source>
+    <translation>Hide selected</translation>
+  </text>
+  <text>
+    <source>隐藏箭头控制点</source>
+    <translation>Hide arrow control points</translation>
+  </text>
+  <text>
+    <source>隐藏钉图</source>
+    <translation>Hide pin</translation>
+  </text>
+  <text>
+    <source>隐藏（从托盘停止）</source>
+    <translation>Hide (stop from the tray)</translation>
+  </text>
+  <text>
+    <source>需要文件路径。</source>
+    <translation>A file path is required.</translation>
+  </text>
+  <text>
+    <source>需要有效的屏幕范围。</source>
+    <translation>Screen bounds are required.</translation>
+  </text>
+  <text>
+    <source>需要有效的数值。</source>
+    <translation> requires a valid number.</translation>
+  </text>
+  <text>
+    <source>需要相对路径。</source>
+    <translation>A relative path is required.</translation>
+  </text>
+  <text>
+    <source>需要确认</source>
+    <translation>Ask</translation>
+  </text>
+  <text>
+    <source>震荡时隐藏其他钉图</source>
+    <translation>Hide other pins when shaking a pin</translation>
+  </text>
+  <text>
+    <source>音效播放时机</source>
+    <translation>Play sounds when</translation>
+  </text>
+  <text>
+    <source>音轨不是 RIFF WAV。</source>
+    <translation>The audio track is not RIFF WAV.</translation>
+  </text>
+  <text>
+    <source>音轨不是 WAV。</source>
+    <translation>The audio track is not WAV.</translation>
+  </text>
+  <text>
+    <source>音轨不是受支持的 WAV 文件。</source>
+    <translation>The audio track is not a supported WAV file.</translation>
+  </text>
+  <text>
+    <source>音量需要在 0–200% 之间。</source>
+    <translation>Volume must be between 0 and 200%.</translation>
+  </text>
+  <text>
+    <source>音频设备中断，已完成录制片段保留，可重新导出。</source>
+    <translation>The audio device was interrupted. Completed segments are preserved and can be exported again.</translation>
+  </text>
+  <text>
+    <source>音频设备未响应停止请求；素材保留，请重试。</source>
+    <translation>The audio device did not respond to the stop request. Recorded material is preserved; try again.</translation>
+  </text>
+  <text>
+    <source>顺时针旋转 90°</source>
+    <translation>Rotate 90° clockwise</translation>
+  </text>
+  <text>
+    <source>预览支持标题、列表、表格、公式和服务配图；Word 中公式保留 LaTeX 源码。</source>
+    <translation>Preview supports headings, lists, tables, formulas, and service images. Word exports keep formulas as LaTeX source.</translation>
+  </text>
+  <text>
+    <source>预览未完成，源码保留：</source>
+    <translation>Preview failed; source kept: </translation>
+  </text>
+  <text>
+    <source>预览需要 1–4096 字符的 LaTeX 公式。</source>
+    <translation>The preview requires a LaTeX formula of 1–4096 characters.</translation>
+  </text>
+  <text>
+    <source>预览：</source>
+    <translation>Preview: </translation>
+  </text>
+  <text>
+    <source>预设名称</source>
+    <translation>Preset name</translation>
+  </text>
+  <text>
+    <source>预设截图</source>
+    <translation>Preset capture</translation>
+  </text>
+  <text>
+    <source>预设选区超出当前桌面，请调整位置或尺寸。</source>
+    <translation>The preset region is outside the current desktop. Adjust its position or size.</translation>
+  </text>
+  <text>
+    <source>颜色</source>
+    <translation>Color</translation>
+  </text>
+  <text>
+    <source>颜色选择框样式</source>
+    <translation>Color picker style</translation>
+  </text>
+  <text>
+    <source>颜色需要 #RRGGBB 或 #AARRGGBB。</source>
+    <translation>Colors must use #RRGGBB or #AARRGGBB.</translation>
+  </text>
+  <text>
+    <source>首帧已保留，请回到原窗口缓慢滚动，再采集。</source>
+    <translation>First frame kept. Return to the original window, scroll slowly, then capture again.</translation>
+  </text>
+  <text>
+    <source>马赛克</source>
+    <translation>Mosaic</translation>
+  </text>
+  <text>
+    <source>马赛克与模糊</source>
+    <translation>Mosaic and blur</translation>
+  </text>
+  <text>
+    <source>马赛克与遮挡</source>
+    <translation>Mosaic and cover</translation>
+  </text>
+  <text>
+    <source>验证代理</source>
+    <translation>Check proxy</translation>
+  </text>
+  <text>
+    <source>验证代理连接</source>
+    <translation>Test proxy connection</translation>
+  </text>
+  <text>
+    <source>高</source>
+    <translation>Height</translation>
+  </text>
+  <text>
+    <source>高亮</source>
+    <translation>Highlighter</translation>
+  </text>
+  <text>
+    <source>麦克风</source>
+    <translation>Microphone</translation>
+  </text>
+  <text>
+    <source>麦克风设备</source>
+    <translation>Microphone device</translation>
+  </text>
+  <text>
+    <source>麦克风：已开启</source>
+    <translation>Microphone: on</translation>
+  </text>
+  <text>
+    <source>麦克风：未开启</source>
+    <translation>Microphone: off</translation>
+  </text>
+  <text>
+    <source>黄色</source>
+    <translation>Yellow</translation>
+  </text>
+  <text>
+    <source>黑色</source>
+    <translation>Black</translation>
+  </text>
+  <text>
+    <source>默认分组</source>
+    <translation>Default group</translation>
+  </text>
+  <text>
+    <source>默认分组不能删除。</source>
+    <translation>Default group cannot be removed.</translation>
+  </text>
+  <text>
+    <source>默认动作配置无效。</source>
+    <translation>The default action settings are invalid.</translation>
+  </text>
+  <text>
+    <source>默认图片格式</source>
+    <translation>Default image format</translation>
+  </text>
+  <text>
+    <source>默认录制目录</source>
+    <translation>Default recording folder</translation>
+  </text>
+  <text>
+    <source>默认录制系统声音</source>
+    <translation>Record system audio by default</translation>
+  </text>
+  <text>
+    <source>默认录制麦克风</source>
+    <translation>Record microphone by default</translation>
+  </text>
+  <text>
+    <source>默认文本可选择</source>
+    <translation>Allow text selection by default</translation>
+  </text>
+  <text>
+    <source>默认显示截图光标（` 临时切换）</source>
+    <translation>Show capture cursor by default (` toggles temporarily)</translation>
+  </text>
+  <text>
+    <source>默认模式</source>
+    <translation>Default mode</translation>
+  </text>
+  <text>
+    <source>默认画质</source>
+    <translation>Default quality</translation>
+  </text>
+  <text>
+    <source>默认行为可在截图设置中调整</source>
+    <translation>Adjust the default behavior in Screenshot settings</translation>
+  </text>
+  <text>
+    <source>默认透明层处理</source>
+    <translation>Default transparency display</translation>
+  </text>
+  <text>
+    <source>默认颜色</source>
+    <translation>Default color</translation>
+  </text>
+  <text>
+    <source>鼠标</source>
+    <translation>Mouse</translation>
+  </text>
+  <text>
+    <source>鼠标位置</source>
+    <translation>Mouse position</translation>
+  </text>
+  <text>
+    <source>鼠标关闭钉图需要确认</source>
+    <translation>Confirm closing a pin by mouse</translation>
+  </text>
+  <text>
+    <source>鼠标动作配置无效。</source>
+    <translation>Mouse action settings are invalid.</translation>
+  </text>
+  <text>
+    <source>鼠标向上移动</source>
+    <translation>Move cursor up</translation>
+  </text>
+  <text>
+    <source>鼠标向下移动</source>
+    <translation>Move cursor down</translation>
+  </text>
+  <text>
+    <source>鼠标向右移动</source>
+    <translation>Move cursor right</translation>
+  </text>
+  <text>
+    <source>鼠标向左移动</source>
+    <translation>Move cursor left</translation>
+  </text>
+  <text>
+    <source>鼠标悬停时显示</source>
+    <translation>Show on hover</translation>
+  </text>
+  <text>
+    <source>鼠标所在屏幕中心</source>
+    <translation>Center of the mouse's display</translation>
+  </text>
+  <text>
+    <source>鼠标指示线</source>
+    <translation>Mouse guides</translation>
+  </text>
+  <text>
+    <source>鼠标操作</source>
+    <translation>Mouse actions</translation>
+  </text>
+  <text>
+    <source>鼠标滚轮缩放模式</source>
+    <translation>Wheel zoom mode</translation>
+  </text>
+  <text>
+    <source>鼠标穿透时显示救援工具栏</source>
+    <translation>Show a rescue toolbar in click-through mode</translation>
+  </text>
+  <text>
+    <source>鼠标穿透时阴影颜色</source>
+    <translation>Click-through shadow color</translation>
+  </text>
+  <text>
+    <source>鼠标穿透（控制台 / 托盘可解除）</source>
+    <translation>Click-through (disable from the main window / tray)</translation>
+  </text>
+  <text>
+    <source>鼠标组合</source>
+    <translation>Mouse gesture</translation>
+  </text>
+  <text>
+    <source>鼠标组合重复，请为每个动作设置不同组合。</source>
+    <translation>Mouse bindings overlap. Choose a different gesture for each action.</translation>
+  </text>
+  <text>
+    <source>鼠标配置无效。</source>
+    <translation>The mouse settings are invalid.</translation>
+  </text>
+  <text>
+    <source>（每行一个 exe 名称）</source>
+    <translation> (one executable name per line)</translation>
+  </text>
+</strings>

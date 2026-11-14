@@ -12,7 +12,7 @@ public static class GifExporter
         if (fps < 1 || fps > 15) throw new ArgumentOutOfRangeException(nameof(fps));
         using (var reader = new VideoReader(source))
         {
-            if ((long)reader.Width * reader.Height > 2_073_600) throw new ArgumentException("GIF 转换最多支持 207 万像素。");
+            if ((long)reader.Width * reader.Height > 2_073_600) throw new ArgumentException(L.Get("GIF 转换最多支持 207 万像素。"));
             AtomicFile.Write(target, stream =>
             {
                 using (var writer = new GifWriter(stream, reader.Width, reader.Height, true))
@@ -28,7 +28,7 @@ public static class GifExporter
                         if (pending != null) writer.WriteFrame(pending.Pixels, TimeSpan.FromTicks(Math.Max(1, frame.Timestamp - pending.Timestamp)));
                         pending = frame; next = frame.Timestamp + TimeSpan.TicksPerSecond / fps;
                     }
-                    if (pending == null) throw new InvalidDataException("视频没有可导出的帧。");
+                    if (pending == null) throw new InvalidDataException(L.Get("视频没有可导出的帧。"));
                     writer.WriteFrame(pending.Pixels, TimeSpan.FromTicks(Math.Max(1, end - pending.Timestamp)));
                 }
             });

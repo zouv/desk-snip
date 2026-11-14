@@ -43,7 +43,7 @@ public sealed class VideoReader : IDisposable
             var sizeKey = new Guid("1652c33d-d6b2-4012-b834-72030849a37d");
             Mf.Check(Mf.Method<Mf.GetUlong>(actual, 8)(actual, ref sizeKey, out var dimensions));
             Width = checked((int)(dimensions >> 32)); Height = checked((int)(dimensions & 0xffffffff));
-            if (Width < 1 || Height < 1 || (long)Width * Height > 8_294_400) throw new ArgumentException("视频尺寸超出处理范围。");
+            if (Width < 1 || Height < 1 || (long)Width * Height > 8_294_400) throw new ArgumentException(L.Get("视频尺寸超出处理范围。"));
             var rateKey = new Guid("c459a2e8-3d2c-4e44-b132-fee5156c7bb0");
             var rateResult = Mf.Method<Mf.GetUlong>(actual, 8)(actual, ref rateKey, out var rate);
             FrameDuration = rateResult >= 0 && (rate >> 32) > 0 ? checked(TimeSpan.TicksPerSecond * (long)(rate & 0xffffffff) / (long)(rate >> 32)) : TimeSpan.TicksPerSecond / 15;
@@ -63,8 +63,8 @@ public sealed class VideoReader : IDisposable
             try
             {
                 Mf.Check(Mf.Method<Mf.ReadSample>(reader, 9)(reader, VideoStream, 0, out _, out var flags, out var time, out sample));
-                if ((flags & 1) != 0) throw new InvalidOperationException("视频解码失败。");
-                if ((flags & 0x30) != 0) throw new ArgumentException("不支持录制中途改变尺寸的视频。");
+                if ((flags & 1) != 0) throw new InvalidOperationException(L.Get("视频解码失败。"));
+                if ((flags & 0x30) != 0) throw new ArgumentException(L.Get("不支持录制中途改变尺寸的视频。"));
                 if (sample == IntPtr.Zero) { if ((flags & 2) != 0) return null; continue; }
                 var durationResult = Mf.Method<Mf.GetLong>(sample, 37)(sample, out var duration);
                 Mf.Check(Mf.Method<Mf.GetPointer>(sample, 41)(sample, out buffer));
@@ -75,7 +75,7 @@ public sealed class VideoReader : IDisposable
                     Mf.Check(Mf.Method<Mf.Lock2D>(imageBuffer, 3)(imageBuffer, out var scanline, out var pitch));
                     try
                     {
-                        if (Math.Abs(pitch) < Width * 4) throw new InvalidOperationException("视频行宽不匹配。");
+                        if (Math.Abs(pitch) < Width * 4) throw new InvalidOperationException(L.Get("视频行宽不匹配。"));
                         // Lock2D 给出的 scanline0 始终是顶行，保留带符号 pitch。
                         for (var y = 0; y < Height; y++) Marshal.Copy(IntPtr.Add(scanline, y * pitch), pixels, y * Width * 4, Width * 4);
                     }
@@ -87,7 +87,7 @@ public sealed class VideoReader : IDisposable
                     try
                     {
                         var pitch = Math.Abs(stride);
-                        if (pitch < Width * 4 || length < (long)pitch * Height) throw new InvalidOperationException("视频帧缓冲区尺寸不匹配。");
+                        if (pitch < Width * 4 || length < (long)pitch * Height) throw new InvalidOperationException(L.Get("视频帧缓冲区尺寸不匹配。"));
                         for (var y = 0; y < Height; y++) Marshal.Copy(IntPtr.Add(data, (stride < 0 ? Height - 1 - y : y) * pitch), pixels, y * Width * 4, Width * 4);
                     }
                     finally { Mf.Check(Mf.Method<Mf.Simple>(buffer, 4)(buffer)); }

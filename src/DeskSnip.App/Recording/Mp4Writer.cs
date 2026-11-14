@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using DeskSnip.App.Windows;
+using DeskSnip.Core;
 
 namespace DeskSnip.App.Recording;
 
@@ -16,11 +17,11 @@ public sealed class Mp4Writer : IDisposable
     private bool comInitialized;
     private bool complete;
     private long lastTimestamp = -1;
-    public Mp4Writer(string path, int width, int height, int fps)
+    public Mp4Writer(string path, int width, int height, int fps, int quality = 80)
     {
         if (width < 2 || height < 2 || width % 2 != 0 || height % 2 != 0 || width > 4096 || height > 4096 || (long)width * height > 8_294_400)
-            throw new ArgumentException("MP4 选区需为偶数尺寸，且不超过 4096 边长和 829 万像素，请缩小选区。");
-        if (fps < 1 || fps > 30) throw new ArgumentOutOfRangeException(nameof(fps));
+            throw new ArgumentException(L.Get("MP4 选区需为偶数尺寸，且不超过 4096 边长和 829 万像素，请缩小选区。"));
+        if (fps < 1 || fps > 60 || quality < 1 || quality > 100) throw new ArgumentOutOfRangeException(nameof(fps));
         this.width = width; this.height = height; nv12 = new byte[width * height * 3 / 2];
         IntPtr attributes = IntPtr.Zero, output = IntPtr.Zero, input = IntPtr.Zero;
         try
@@ -31,7 +32,7 @@ public sealed class Mp4Writer : IDisposable
             Mf.Uint(attributes, "08b845d8-2b74-4afe-9d53-be16d2d5ae4f", 1); // DISABLE_THROTTLING：节奏由录制循环控制。
             Mf.Check(Mf.MFCreateSinkWriterFromURL(path, IntPtr.Zero, attributes, out sink));
             Mf.Check(Mf.MFCreateMediaType(out output)); SetVideoType(output, "34363248-0000-0010-8000-00aa00389b71", fps);
-            Mf.Uint(output, "20332624-fb0d-4d9e-bd0d-cbf6786c102e", (uint)Math.Max(1_000_000, Math.Min(20_000_000, width * (double)height * fps * .18)));
+            Mf.Uint(output, "20332624-fb0d-4d9e-bd0d-cbf6786c102e", (uint)Math.Max(1_000_000, Math.Min(40_000_000, width * (double)height * fps * quality / 400)));
             Mf.Check(Mf.Method<Mf.AddStream>(sink, 3)(sink, output, out streamIndex));
             Mf.Check(Mf.MFCreateMediaType(out input)); SetVideoType(input, "3231564e-0000-0010-8000-00aa00389b71", fps); // NV12
             Mf.Uint(input, "644b4e48-1e02-4516-b0eb-c01ca9d49ac6", (uint)width);
@@ -56,7 +57,7 @@ public sealed class Mp4Writer : IDisposable
     {
         if (sink == IntPtr.Zero || complete) throw new ObjectDisposedException(nameof(Mp4Writer));
         if (bgra.Length != width * height * 4 || durationTicks <= 0 || timestampTicks < 0 || timestampTicks <= lastTimestamp)
-            throw new ArgumentException("Frame or timestamp is invalid.");
+            throw new ArgumentException(TextCatalog.Get("帧或时间戳无效。"));
         ConvertNv12(bgra);
         IntPtr sample = IntPtr.Zero, buffer = IntPtr.Zero;
         try

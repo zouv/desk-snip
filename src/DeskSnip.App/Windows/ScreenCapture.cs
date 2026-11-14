@@ -31,7 +31,7 @@ public sealed class FrameGrabber : IFrameSource
             var info = new Native.BitmapInfo { Size = 40, Width = region.Width, Height = -region.Height, Planes = 1, BitCount = 32 };
             bitmap = Native.CreateDIBSection(screen, ref info, 0, out bits, IntPtr.Zero, 0);
             if (screen == IntPtr.Zero || memory == IntPtr.Zero || bitmap == IntPtr.Zero || bits == IntPtr.Zero)
-                throw new Win32Exception("无法分配桌面图像，请缩小捕获范围。");
+                throw new Win32Exception(L.Get("无法分配桌面图像，请缩小捕获范围。"));
             previous = Native.SelectObject(memory, bitmap);
         }
         catch { Dispose(); throw; }
@@ -39,12 +39,19 @@ public sealed class FrameGrabber : IFrameSource
     public void Copy(byte[] destination, bool cursor)
     {
         if (bitmap == IntPtr.Zero) throw new ObjectDisposedException(nameof(FrameGrabber));
-        if (destination.Length != checked(region.Width * region.Height * 4)) throw new ArgumentException("Frame size mismatch.");
+        if (destination.Length != checked(region.Width * region.Height * 4)) throw new ArgumentException(TextCatalog.Get("帧尺寸不匹配。"));
         if (!Native.BitBlt(memory, 0, 0, region.Width, region.Height, screen, region.X, region.Y, 0x40cc0020))
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "桌面捕获失败。");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), L.Get("桌面捕获失败。"));
         if (cursor) DrawCursor();
         Marshal.Copy(bits, destination, 0, destination.Length);
         // GDI 的保留 alpha 字节不可靠，所有桌面像素设为不透明。
+        for (var i = 3; i < destination.Length; i += 4) destination[i] = 255;
+    }
+    internal void CopyCursorFrame(byte[] destination)
+    {
+        if (bitmap == IntPtr.Zero) throw new ObjectDisposedException(nameof(FrameGrabber));
+        if (destination.Length != checked(region.Width * region.Height * 4)) throw new ArgumentException(TextCatalog.Get("帧尺寸不匹配。"));
+        DrawCursor(); Marshal.Copy(bits, destination, 0, destination.Length);
         for (var i = 3; i < destination.Length; i += 4) destination[i] = 255;
     }
     private void DrawCursor()
@@ -70,7 +77,19 @@ public sealed class FrameGrabber : IFrameSource
 
 internal static class ScreenCapture
 {
+    [DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(Native.Point point, uint flags);
+    [DllImport("shcore.dll")] private static extern int GetDpiForMonitor(IntPtr monitor, int type, out uint x, out uint y);
+    internal static double MonitorScale(PixelPoint point)
+    {
+        var monitor = MonitorFromPoint(new Native.Point { X = (int)point.X, Y = (int)point.Y }, 2);
+        return GetDpiForMonitor(monitor, 0, out var x, out _) >= 0 && x > 0 ? x / 96d : 1;
+    }
     internal static PixelRect DesktopBounds => new PixelRect(Native.GetSystemMetrics(76), Native.GetSystemMetrics(77), Native.GetSystemMetrics(78), Native.GetSystemMetrics(79));
+    internal static PixelRect MonitorBounds(PixelPoint point)
+    {
+        var monitor = System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point((int)point.X, (int)point.Y)).Bounds;
+        return new PixelRect(monitor.X, monitor.Y, monitor.Width, monitor.Height);
+    }
     internal static BitmapSource Capture(PixelRect region, bool cursor)
     {
         using (var grabber = new FrameGrabber(region))
@@ -81,10 +100,21 @@ internal static class ScreenCapture
             image.Freeze(); return image;
         }
     }
+    internal static (BitmapSource Image, BitmapSource WithCursor) CapturePair(PixelRect region)
+    {
+        using (var grabber = new FrameGrabber(region))
+        {
+            var buffer = new byte[checked(region.Width * region.Height * 4)]; grabber.Copy(buffer, false);
+            var clean = BitmapSource.Create(region.Width, region.Height, 96, 96, PixelFormats.Bgra32, null, buffer, region.Width * 4); clean.Freeze();
+            grabber.CopyCursorFrame(buffer);
+            var cursor = BitmapSource.Create(region.Width, region.Height, 96, 96, PixelFormats.Bgra32, null, buffer, region.Width * 4); cursor.Freeze();
+            return (clean, cursor);
+        }
+    }
     internal static BitmapSource Crop(BitmapSource desktop, PixelRect bounds, PixelRect selection)
     {
         var clipped = selection.Intersect(bounds);
-        if (clipped.IsEmpty) throw new ArgumentException("Empty capture region.");
+        if (clipped.IsEmpty) throw new ArgumentException(TextCatalog.Get("截图区域为空。"));
         var image = new CroppedBitmap(desktop, new System.Windows.Int32Rect(clipped.X - bounds.X, clipped.Y - bounds.Y, clipped.Width, clipped.Height));
         image.Freeze(); return image;
     }

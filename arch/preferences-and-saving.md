@@ -1,0 +1,25 @@
+# 配置与保存
+
+- `AppPreferences` / `ReferencePreferences` 扩展 AppSettings；OnDeserializing 补旧配置默认值，Validate 校验枚举、颜色、范围和模板，Clone 深复制动作列表。可保存的参考项都有实际消费入口，不可用项只显示说明。
+- `AdoptLegacyPinPreferences` 仅为缺失的恢复/历史字段沿用 pins.json 原值，AppController 在 Configure 前原子保存迁移；新版明确值始终优先，避免初次升级启动后降上限清理旧图或恢复已禁用的钉图。
+- `ImageSaving.SaveNaming` 展开时间/尺寸/类型/标题模板，再净化文件名与设备保留名。`ChoosePath` 在指定管理目录添加数字后缀，只有覆盖选项开启时复用同名目标。
+- `AutomaticArchive` 为留档文件维护独立索引；按天数/容量仅清理已登记的 DeskSnip-auto-* 文件，最新一张即使超过容量也保留。总开关关闭不留档；年龄清理关闭仍执行容量限制，覆盖同名仅登记一次。
+- `AppController.Saving` 的 SaveImageManual/SaveImageToPath/SaveImageQuick 接截图、编辑器、钉图、长图；识别/翻译仅在实际请求或输出时按操作留档。手动、快速、MP4 快速录制与自动留档独立模板/格式/覆盖规则；手动格式记忆只在成功后更新。
+- 保存成功后按 SaveCopyFile/SaveCopyPath 复制文件/路径；快速图片保存可通知并点击定位/复制。AfterRecordingSaved 统一初次录制、历史另存、GIF 转换、回放导出和恢复完成后的复制/音效。CopyFileWithImage 提供图像和本机 PNG 文件，截图复制可按选区屏 DPI 缩小。ImageFiles 的 JPEG 质量 0 映射最低质量，SaveExif 仅在 JPEG/TIFF 写软件名/时间，不带原图私人元数据。
+- `PreferenceTransfer` 仅导出明确白名单内的非默认偏好与动作，不导出本机目录/FFmpeg 路径、服务凭据及代理连接信息。导入在克隆上应用并整体校验，再交给设置保存；未知或不支持字段拒绝，不改当前配置。
+- `SettingsWindow` 固定 15 类侧栏、右侧独立 ScrollViewer 及保存底栏，pageHost 裁切越界滚动内容以保护标题和底栏；Pages / ReferenceControls / Input partial 分组参考项。切页复用控件保留草稿；非默认项实时加粗，RestoreCurrentPage 只重置当前页字段。MirrorBoolean 让截图/钉图的 PinAlsoCopy 共用草稿；OptionalColorField 用单选切换默认/自定义颜色，保存原颜色草稿。
+- `EnableWhen` 多重勾选绑定控制依赖，禁用保留草稿；目录输入及浏览按钮一起联动，AutomaticSaveDays 同时依赖总开关及年龄清理。AddSavePreview/PreviewPath 使用独立模板、格式和类型，目录修改即时更新完整路径；自动保存预览包含实际 DeskSnip-auto- 前缀。
+- `Ui.ApplyThemeResources` 支持窗口自身的浅/深/系统资源，设置草稿在保存时应用到应用；字体可选本机字体也可输入，强调色用系统选择器。目录/FFmpeg 选择不写配置，只有保存才生效；文件名预览调用 `SaveNaming.Expand`，采用合成尺寸且不创建文件。
+- `InterfaceLanguage` 的系统/中文/English 选项保留草稿，AppController 仅保存成功后 L.Apply。ProductWindow 只刷新产品显示文字；SettingsWindow 同步所有独立页与专用快捷键显示，ChoiceItem 的标签弱订阅语言变化，Value/用户标题不变。服务源/目标语言与 OCR 语言各自独立。
+- `SettingsControlStyles.xaml` 仅在设置窗口合并，统一下拉、勾选、单选与页签的深浅背景；`FitLeft` 按可用宽度约束输入，Row 的 minimumEditorWidth 为鼠标组合保留 320 DIP，避免最小窗口截断修饰键；NumberInput 提供带边界的上下调整。内置页签使用 WrapPanel 保持原顺序，选中页签字重仅作用于页签文字。UI 验证等待布局完成后截取页首/页底。
+- 联网服务页在 partial 文件接线；语言位于系统页，凭据保留到保存事务。读取、切页、恢复本页和导出不写密钥；恢复服务默认只丢弃待保存的新密钥输入，清除已存密钥仍需勾选明确选项后保存。
+- `Hotkeys.Apply` 注册基础三动作和额外全局动作；托盘单击/双击/中键按偏好执行，双击取消延迟单击。ApplyTrayAppearance 支持图标模式/颜色；若录制中隐藏托盘，显示停止工具栏。热键暂停仅解除注册，不丢动作配置。
+- `CapturePreferenceRules` 为检测边距/外部点击扩展/颜色顺序/复制缩放提供 Core 规则；CaptureWindow / PixelMagnifier 消费检测、辅助线、边框/锚点、指针、放大镜和鼠标偏好。PinPreferenceRules 独立控制锁定限制与缩放基准点，PinWindow 应用步长、位置、背景/阴影、原图输出和穿透工具栏生命周期。
+- `SystemIntegrationChange` 只在保存变化的 StartWithWindows / ExplorerContextMenu 时修改 HKCU 专属入口，失败回滚；App 的 --background 支持后台自启，--pin-file 可走 PinFileChannel 通知已有实例。测试不得修改真实启动/右键配置。
+- 本地 OCR 窗口和直接复制共用默认排版/空格/标点；无结果/失败回到校对窗口。ServiceClient.CreateHandler 消费系统/无/HTTP 代理，VerifyProxy 只验证 TCP 连通。
+- `InputPreferences` 定义标注、内置键与鼠标偏好，旧配置通过 ReferencePreferenceNames 初始化。动作/内置/鼠标列表深复制，可移植导出排除本机进程名单。未改鼠标页时保留 null 与旧版四类绑定；DefaultPin 映射旧隐藏/锁定，默认全局鼠标关闭。
+- `SettingsWindow.Input` 逐行编辑动作/托盘/名称、清空与名单；ShortcutEditor 把真实按键转为易读文本，窄窗口允许长组合换行，SetCurrentValue 保留基础热键的双向绑定；FromDisplay 读取为原键名。只读不可用项经 L.BindReadOnlyLabel 单向绑定语言，侧栏长名称自动换行。草稿切页和重绘不丢失，RestoreInputPage 只恢复当前输入页。
+- `InputBindingCatalog` 分八个场景，三种未实现钉图类型禁用；ShortcutKeys.Match 子场景优先。Core 校验真实键名、别名、小键盘合并后冲突与重复鼠标组合；清空键位用空串覆盖默认值。翻译/文档/表格/公式快捷键打开相应确认窗口，未自动上传。
+- `PinPointerGesture` 区分单击与移动阈值后的拖动，PinWindow.Input 执行单击/双击/滚轮/侧键和任意绑定拖动；Ctrl 多选与图像拖出不互相触发。销毁仍确认，锁定关闭规则共用 PinPreferenceRules。
+- `Windows.GlobalMouse` 仅用户保存非空组合后注册低层钩子，忽略注入事件，按进程和忙碌状态判断；MouseGestureSession 产生物理像素区域，GlobalMouseOverlay 在成图前关闭。AppController.GlobalMouse 把区域分派给截图/识别/长截图/GIF 设置，翻译和公式先打开确认窗口。
+- JavaScript/通用 IPC、管理员启动、中英文以外的界面语言、自动更新、AVIF、更多贴图类型及云同步仍未实现，具体参考项见 docs/06-设置参考对照.md。
