@@ -14,6 +14,7 @@ using Xunit;
 
 namespace DeskSnip.Tests;
 
+[Collection("AnnotationToolDefaults")]
 public class CaptureUiTests
 {
     private static BitmapSource Image(int width, int height)
@@ -157,6 +158,90 @@ public class CaptureUiTests
         }
         var kind = CaptureWindow.AnnotationTool(CaptureAction.EditText); Assert.Equal(AnnotationKind.Text, kind); var editor = new EditorWindow(Image(200, 120), _ => { }, _ => null!, initialTool: kind);
         Assert.Equal(AnnotationKind.Text, Descendants((DependencyObject)editor.Content).OfType<AnnotationCanvas>().Single().Kind); editor.Close(); window.Close();
+    });
+
+    [Fact] public void CaptureToolbarSwitchesToRecordingAndExposesDirectTools() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(400, 300), new PixelRect(0, 0, 400, 300), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(400, 300)); content.Arrange(new Rect(0, 0, 400, 300)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(20, 20, 200, 150)); content.UpdateLayout();
+            var buttons = Descendants(content).OfType<Button>().ToArray();
+            var shape = buttons.Single(button => (AutomationProperties.GetName(button) ?? "").StartsWith("形状标注"));
+            Assert.IsType<Action>(shape.Tag);
+            Assert.Contains(buttons, button => AutomationProperties.GetName(button) == "序号标注");
+            var number = buttons.Single(button => AutomationProperties.GetName(button) == "序号标注");
+            number.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.True(window.InlineEditing); Assert.Equal(AnnotationKind.Number, window.InlineCanvas!.Kind);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void CaptureShapeGroupUsesItsPrimaryToolAndCameraSwitchesRecordingToolbar() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(400, 300), new PixelRect(0, 0, 400, 300), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(400, 300)); content.Arrange(new Rect(0, 0, 400, 300)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(20, 20, 200, 150)); content.UpdateLayout();
+            var shape = Descendants(content).OfType<Button>().Single(button => (AutomationProperties.GetName(button) ?? "").StartsWith("形状标注"));
+            ((Action)shape.Tag!)(); Assert.True(window.InlineEditing); Assert.Equal(AnnotationKind.Rectangle, window.InlineCanvas!.Kind);
+        }
+        finally { window.Close(); }
+        var second = new CaptureWindow(Image(400, 300), new PixelRect(0, 0, 400, 300), false);
+        try
+        {
+            var content = (Grid)second.Content; content.Measure(new Size(400, 300)); content.Arrange(new Rect(0, 0, 400, 300)); content.UpdateLayout();
+            second.SetSelection(new PixelRect(20, 20, 200, 150)); content.UpdateLayout();
+            var camera = Descendants(content).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "切换到录屏");
+            camera.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); content.UpdateLayout();
+            Assert.Equal("DeskSnip · 选择录制区域", second.Title);
+            Assert.Equal(Visibility.Collapsed, Descendants(content).OfType<FloatingToolbar>().Single(toolbar => toolbar.Name == "CaptureActions").Visibility);
+            Assert.Equal(Visibility.Visible, Descendants(content).OfType<FloatingToolbar>().Single(toolbar => toolbar.Name == "CaptureRecordActions").Visibility);
+            Assert.Contains(Descendants(content).OfType<Button>(), button => AutomationProperties.GetName(button) == "使用此区域");
+        }
+        finally { second.Close(); }
+    });
+
+    [Fact] public void InlineEditingFlattensAnnotationsOntoSelectedPixels() => ImagingTests.Sta(() =>
+    {
+        var pixels = new byte[200 * 120 * 4]; for (var i = 0; i < pixels.Length; i += 4) { pixels[i] = 40; pixels[i + 1] = 30; pixels[i + 2] = 20; pixels[i + 3] = 255; }
+        var desktop = BitmapSource.Create(200, 120, 96, 96, PixelFormats.Bgra32, null, pixels, 200 * 4); desktop.Freeze();
+        var window = new CaptureWindow(desktop, new PixelRect(0, 0, 200, 120), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(200, 120)); content.Arrange(new Rect(0, 0, 200, 120)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(20, 10, 100, 60)); content.UpdateLayout();
+            window.BeginInlineEdit(AnnotationKind.Rectangle);
+            Assert.True(window.InlineEditing); Assert.NotNull(window.InlineCanvas);
+            window.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(5, 5), new PixelPoint(45, 35) }, 0xff0000ff, 3, appearance: new AnnotationAppearance(fill: true)));
+            window.InlineCanvas.Refresh();
+            var output = window.BuildInlineOutput()!;
+            Assert.Equal(100, output.PixelWidth); Assert.Equal(60, output.PixelHeight);
+            var pixel = new byte[4]; output.CopyPixels(new Int32Rect(20, 20, 1, 1), pixel, 4, 0);
+            Assert.True(pixel[0] > 200); Assert.True(pixel[2] < 80);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void ToolbarGroupUsesAndRemembersItsDefaultTool() => ImagingTests.Sta(() =>
+    {
+        AnnotationToolDefaults.Load("");
+        try
+        {
+            var canvas = new AnnotationCanvas(Image(120, 80));
+            var bar = new InlineAnnotationBar(canvas, new AppSettings(), withFinish: false, showShortcuts: false);
+            bar.Measure(new Size(1200, 200)); bar.Arrange(new Rect(0, 0, 1200, 200)); bar.UpdateLayout();
+            var group = bar.Items.Children.OfType<Button>().Single(button => (AutomationProperties.GetName(button) ?? "").StartsWith("形状工具"));
+            ((Action)group.Tag!)(); Assert.Equal(AnnotationKind.Rectangle, canvas.Kind);
+            var ellipse = group.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Tag is AnnotationKind kind && kind == AnnotationKind.Ellipse);
+            ellipse.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            Assert.Equal(AnnotationKind.Ellipse, canvas.Kind); Assert.Equal(AnnotationKind.Ellipse, AnnotationToolDefaults.Get("Rectangle", AnnotationKind.Rectangle));
+            canvas.SetTool(AnnotationKind.Rectangle); ((Action)group.Tag!)(); Assert.Equal(AnnotationKind.Ellipse, canvas.Kind);
+            Assert.Contains("Rectangle=Ellipse", AnnotationToolDefaults.Serialize());
+        }
+        finally { AnnotationToolDefaults.Load(""); }
     });
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)

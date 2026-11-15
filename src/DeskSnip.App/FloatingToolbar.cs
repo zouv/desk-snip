@@ -16,8 +16,11 @@ internal enum ToolGlyph
 {
     Rectangle, Ellipse, Polygon, Brush, Highlight, Line, Arrow, Text, Number, Mosaic, Cover, Eraser,
     Spotlight, Zoom, Select, Window, History, Restart, Copy, Save, Pin, Ocr, Cloud, Scroll,
-    Close, Check, More, Undo, Redo, Styles, Chevron, Grip, Stop, Pause, Play, Sound, Muted, Microphone, Cursor, Qr,
-    Palette, Keyboard, Transfer, Info, Mouse, GlobalMouse
+    Close, Check, More, Undo, Redo, Styles, Chevron, Grip, Stop, Pause, Play, Sound, Muted, Microphone, Camera, Cursor, Qr,
+    Palette, Keyboard, Transfer, Info, Mouse, GlobalMouse,
+    LineSolid, LineDash, LineDot, Width, CornerRadius, Opacity,
+    RotateClockwise, FlipHorizontal, FlipVertical, Grayscale, Invert, BrightnessUp, BrightnessDown,
+    ZoomOut, OriginalSize, FitScreen, OpacityUp, OpacityDown, OpacityFull, Lock
 }
 
 /// <summary>截图和录屏共用的自绘工具；图标不依赖外部字体或图片资源。</summary>
@@ -63,6 +66,15 @@ internal static class FloatingTools
         else { var icon = new ToolIcon(glyph); icon.SetBinding(ToolIcon.ColorProperty, new System.Windows.Data.Binding("Foreground") { Source = button }); button.Content = icon; }
         SetName(button, name, shortcut);
     }
+    internal static void SetMenuIcon(Button button, ToolGlyph glyph)
+    {
+        if (button.Content is StackPanel panel)
+        {
+            var icon = panel.Children.OfType<ToolIcon>().FirstOrDefault(item => item.Glyph != ToolGlyph.Chevron);
+            if (icon != null) { icon.SetGlyph(glyph); return; }
+        }
+        SetIcon(button, glyph, AutomationProperties.GetName(button));
+    }
     internal static void SetName(Button button, string name, string shortcut = "")
     {
         button.SetValue(shortcutProperty, shortcut);
@@ -83,7 +95,23 @@ internal static class FloatingTools
     }
     internal static Button MenuButton(ToolGlyph glyph, string name, ContextMenu menu)
     {
-        Button button = null!; button = Button(glyph, name, () => Open(menu, button)); button.ContextMenu = menu;
+        Button button = null!; button = CreateMenuButton(glyph, name, () => Open(menu, button), menu); return button;
+    }
+    internal static Button SplitMenuButton(ToolGlyph glyph, string name, Action primary, ContextMenu menu)
+    {
+        Button button = null!;
+        button = CreateMenuButton(glyph, name, () =>
+        {
+            var point = Mouse.GetPosition(button);
+            if (point.X >= button.ActualWidth - 14) Open(menu, button); else primary();
+        }, menu);
+        button.Tag = primary;
+        button.MouseRightButtonUp += (_, e) => { Open(menu, button); e.Handled = true; };
+        return button;
+    }
+    private static Button CreateMenuButton(ToolGlyph glyph, string name, Action click, ContextMenu menu)
+    {
+        var button = Button(glyph, name, click); button.ContextMenu = menu;
         var icon = (UIElement)button.Content; button.Content = null;
         var content = new StackPanel { Orientation = Orientation.Horizontal }; content.Children.Add(icon);
         content.Children.Add(new ToolIcon(ToolGlyph.Chevron) { Width = 9, Height = 12, Margin = new Thickness(2, 0, 0, 0), Color = MutedInk });
@@ -110,7 +138,7 @@ internal static class FloatingTools
     }
 }
 
-internal sealed class FloatingToolbar : Border
+internal class FloatingToolbar : Border
 {
     internal WrapPanel Items { get; }
     internal FloatingToolbar(bool vertical = false)
@@ -177,6 +205,7 @@ internal sealed class ToolIcon : FrameworkElement
                 if (Glyph == ToolGlyph.Sound) Path("M 16,7 C 20,10 20,14 16,17 M 19,4 C 26,10 26,14 19,20");
                 else Path("M 16,9 L 22,15 M 22,9 L 16,15"); break;
             case ToolGlyph.Microphone: dc.DrawRoundedRectangle(null, pen, new Rect(9, 3, 6, 12), 3, 3); Path("M 5,11 C 5,22 19,22 19,11 M 12,19 L 12,23 M 8,23 L 16,23"); break;
+            case ToolGlyph.Camera: dc.DrawRoundedRectangle(null, pen, new Rect(3, 7, 18, 12), 2, 2); dc.DrawEllipse(null, pen, new Point(12, 13), 4, 4); Path("M 8,7 L 9,4 15,4 16,7"); break;
             case ToolGlyph.Cursor: Path("M 6,3 L 6,20 11,15 18,15 Z"); break;
             case ToolGlyph.Qr: Path("M 3,3 L 9,3 9,9 3,9 Z M 15,3 L 21,3 21,9 15,9 Z M 3,15 L 9,15 9,21 3,21 Z M 15,15 L 18,15 18,18 21,18 21,21 15,21 Z"); break;
             case ToolGlyph.Palette: Path("M 12,3 C 1,3 -1,16 8,21 C 12,23 14,20 12,17 C 10,14 15,13 18,14 C 25,16 23,3 12,3 Z"); Circle(7,9,1,true); Circle(12,6,1,true); Circle(17,8,1,true); Circle(6,14,1,true); break;
@@ -185,6 +214,28 @@ internal sealed class ToolIcon : FrameworkElement
             case ToolGlyph.Info: Circle(12,12,9); Circle(12,7,1,true); Path("M 12,11 L 12,17 M 10,17 L 14,17"); break;
             case ToolGlyph.Mouse: dc.DrawRoundedRectangle(null, pen, new Rect(6,2,12,20), 6, 6); Path("M 12,3 L 12,9"); break;
             case ToolGlyph.GlobalMouse: Path("M 3,9 L 3,3 9,3 M 15,3 L 21,3 21,9 M 3,15 L 3,21 9,21 M 11,10 L 11,21 15,17 21,17 Z"); break;
+            case ToolGlyph.LineSolid: Path("M 4,12 L 20,12"); break;
+            case ToolGlyph.LineDash: Path("M 4,12 L 8,12 M 11,12 L 15,12 M 18,12 L 20,12"); break;
+            case ToolGlyph.LineDot: Circle(6,12,1,true); Circle(12,12,1,true); Circle(18,12,1,true); break;
+            case ToolGlyph.Width:
+                dc.DrawRectangle(Color, null, new Rect(4,7,16,1.2)); dc.DrawRectangle(Color, null, new Rect(4,11,16,2.4)); dc.DrawRectangle(Color, null, new Rect(4,16,16,3.6)); break;
+            case ToolGlyph.CornerRadius:
+                dc.DrawRoundedRectangle(null, new Pen(Color, 1.4) { DashStyle = DashStyles.Dash }, new Rect(4,4,16,16), 6, 6); break;
+            case ToolGlyph.Opacity: Circle(12,12,8); Path("M 12,4 A 8,8 0 0 1 12,20 Z", true); break;
+            case ToolGlyph.RotateClockwise: Path("M 6,7 C 10,1 20,4 21,12 C 21,18 14,22 8,19 M 6,2 L 6,7 11,7"); break;
+            case ToolGlyph.FlipHorizontal: Path("M 12,3 L 12,21 M 8,6 L 3,10 8,14 Z M 16,6 L 21,10 16,14 Z"); break;
+            case ToolGlyph.FlipVertical: Path("M 3,12 L 21,12 M 6,8 L 10,3 14,8 Z M 6,16 L 10,21 14,16 Z"); break;
+            case ToolGlyph.Grayscale: dc.DrawEllipse(Color, null, new Point(9,12), 5, 5); dc.DrawEllipse(null, pen, new Point(15,12), 5, 5); break;
+            case ToolGlyph.Invert: Circle(12,12,8); Path("M 12,4 A 8,8 0 0 1 12,20 Z", true); break;
+            case ToolGlyph.BrightnessUp: Circle(12,12,8); Path("M 12,8 L 12,16 M 8,12 L 16,12"); break;
+            case ToolGlyph.BrightnessDown: Circle(12,12,8); Path("M 8,12 L 16,12"); break;
+            case ToolGlyph.ZoomOut: Circle(10,10,6); Path("M 15,15 L 21,21 M 7,10 L 13,10"); break;
+            case ToolGlyph.OriginalSize: Path("M 4,9 L 4,4 9,4 M 15,4 L 20,4 20,9 M 20,15 L 20,20 15,20 M 9,20 L 4,20 4,15 M 8,8 L 16,8 16,16 8,16 Z"); break;
+            case ToolGlyph.FitScreen: Path("M 4,9 L 4,4 9,4 M 15,4 L 20,4 20,9 M 20,15 L 20,20 15,20 M 9,20 L 4,20 4,15 M 9,9 L 15,9 15,15 9,15 Z"); break;
+            case ToolGlyph.OpacityUp: Circle(12,12,8); Path("M 12,7 L 12,17 M 7,12 L 17,12"); break;
+            case ToolGlyph.OpacityDown: Circle(12,12,8); Path("M 7,12 L 17,12"); break;
+            case ToolGlyph.OpacityFull: dc.DrawEllipse(Color, null, new Point(12,12), 8, 8); break;
+            case ToolGlyph.Lock: dc.DrawRoundedRectangle(null, pen, new Rect(5,10,14,11), 2, 2); Path("M 8,10 L 8,7 C 8,2 16,2 16,7 L 16,10"); break;
         }
         dc.Pop();
     }
@@ -203,6 +254,11 @@ internal static class FloatingLayout
     {
         var y = selection.Bottom + size.Height + 8 <= viewport.Bottom ? selection.Bottom + 8 : selection.Top - size.Height - 8 >= viewport.Top ? selection.Top - size.Height - 8 : viewport.Bottom - size.Height - 8;
         return Clamp(viewport, new Point(selection.Right - size.Width, y), size);
+    }
+    internal static Rect Secondary(Rect viewport, Rect selection, Size size, Rect primary)
+    {
+        var candidates = new[] { new Point(selection.Left, selection.Top - size.Height - 8), new Point(selection.Right - size.Width, selection.Bottom + 8), new Point(selection.Left, primary.Top - size.Height - 8), new Point(viewport.Left + 8, viewport.Top + 8) };
+        return Available(viewport, size, candidates, new[] { primary });
     }
     internal static Rect Info(Rect viewport, Rect selection, Size size, Rect actions)
         => Available(viewport, size, new[] { new Point(selection.Left, selection.Top - size.Height - 8), new Point(selection.Left + 8, selection.Top + 8), new Point(selection.Left, actions.Top - size.Height - 8), new Point(selection.Right - size.Width, actions.Bottom + 8), new Point(viewport.Left + 8, viewport.Top + 8) }, new[] { actions });

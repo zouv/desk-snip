@@ -24,6 +24,19 @@ public class SettingsInputUiTests
     private static void Restore(SettingsWindow window) => typeof(SettingsWindow).GetMethod("RestoreCurrentPage", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
 
     [Fact]
+    public void ShortcutCaptureUsesEscAndBackspaceToCancelAndDeleteToClear()
+    {
+        Assert.Equal(ShortcutEditAction.Cancel, ShortcutEditRules.Resolve(Key.Escape, ModifierKeys.Control, true, out _));
+        Assert.Equal(ShortcutEditAction.Cancel, ShortcutEditRules.Resolve(Key.Back, ModifierKeys.None, true, out _));
+        Assert.Equal(ShortcutEditAction.Clear, ShortcutEditRules.Resolve(Key.Delete, ModifierKeys.None, true, out _));
+        Assert.Equal(ShortcutEditAction.Ignore, ShortcutEditRules.Resolve(Key.LeftCtrl, ModifierKeys.Control, true, out _));
+        Assert.Equal(ShortcutEditAction.Set, ShortcutEditRules.Resolve(Key.F6, ModifierKeys.Control | ModifierKeys.Alt, true, out var value));
+        Assert.Equal("Ctrl+Alt+F6", value);
+        Assert.Equal(ShortcutEditAction.Set, ShortcutEditRules.Resolve(Key.D1, ModifierKeys.Control, false, out var numbered));
+        Assert.Equal("Ctrl+1", numbered);
+    }
+
+    [Fact]
     public void AnnotationDraftAndRestoreDoNotChangeOtherInputPages() => ImagingTests.Sta(() =>
     {
         var original = new AppSettings { ShortcutIgnoredProcesses = "example.exe", GlobalMouseBindings = new List<DeskSnip.Core.MouseBinding> { new DeskSnip.Core.MouseBinding { Action = "Copy", Modifiers = "Ctrl", Gesture = "LeftDrag" } } };

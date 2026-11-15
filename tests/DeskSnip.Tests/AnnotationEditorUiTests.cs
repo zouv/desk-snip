@@ -14,6 +14,7 @@ using Xunit;
 
 namespace DeskSnip.Tests;
 
+[Collection("AnnotationToolDefaults")]
 public class AnnotationEditorUiTests
 {
     private static BitmapSource Image()
@@ -120,6 +121,7 @@ public class AnnotationEditorUiTests
         Assert.Contains(menuItems, item => Equals(item.Header, "删除标注"));
         Assert.Contains(menuItems, item => Equals(item.Header, "复制标注"));
         Assert.Contains(menuItems, item => Equals(item.Header, "修改文字"));
+        Assert.DoesNotContain(buttons, button => AutomationProperties.GetName(button) == "选择 / 移动");
         var annotationCanvas = Descendants(root).OfType<AnnotationCanvas>().Single();
         Assert.Equal(Enum.GetValues(typeof(AnnotationKind)).Length, menuItems.Count(item => item.Tag is AnnotationKind) + buttons.Count(button => button.Tag is AnnotationKind));
         foreach (var item in menuItems.Where(item => item.Tag is AnnotationKind)) { item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Assert.Equal((AnnotationKind)item.Tag, annotationCanvas.Kind); }
@@ -150,6 +152,101 @@ public class AnnotationEditorUiTests
         foreach (var box in Descendants(styles).OfType<ComboBox>()) { var bounds = box.TransformToAncestor(root).TransformBounds(new Rect(new Point(), box.RenderSize)); Assert.True(new Rect(0, 0, 820, 460).Contains(bounds)); }
         editor.Close();
     });
+
+    [Fact] public void ActiveToolSelectsSameCategoryAndCornersCanSwitch() => ImagingTests.Sta(() =>
+    {
+        var canvas = new AnnotationCanvas(Image());
+        canvas.Document.Add(Shape(AnnotationKind.Ellipse)); canvas.Document.Add(Shape(AnnotationKind.Rectangle));
+        canvas.SetTool(AnnotationKind.Ellipse);
+        Assert.True(canvas.SelectAt(new PixelPoint(50, 50))); Assert.Equal(AnnotationKind.Rectangle, canvas.Selected!.Kind);
+        canvas.ChangeCorner(true); Assert.Equal(AnnotationKind.RoundedRectangle, canvas.Selected!.Kind);
+        canvas.ChangeCorner(false); Assert.Equal(AnnotationKind.Rectangle, canvas.Selected!.Kind);
+    });
+
+    [Fact] public void EndpointAndShapeCornerHandlesResizeSelectedObject() => ImagingTests.Sta(() =>
+    {
+        var canvas = new AnnotationCanvas(Image());
+        canvas.Document.Add(Shape(AnnotationKind.Arrow)); canvas.SetTool(null);
+        Assert.True(canvas.SelectAt(new PixelPoint(20, 20))); Assert.True(canvas.TryBeginHandleDrag(new PixelPoint(20, 20)));
+        canvas.UpdateHandleDrag(new PixelPoint(40, 30)); canvas.EndHandleDrag();
+        Assert.Equal(new PixelPoint(40, 30), canvas.Selected!.Points[0]);
+        canvas.Document.Add(Shape(AnnotationKind.Rectangle));
+        Assert.True(canvas.SelectAt(new PixelPoint(50, 50)));
+        var bounds = AnnotationRenderer.Bounds(canvas.Image, canvas.Selected!);
+        var before = canvas.Selected!.Points[1];
+        Assert.True(canvas.TryBeginHandleDrag(new PixelPoint((int)bounds.Right, (int)bounds.Bottom)));
+        canvas.UpdateHandleDrag(new PixelPoint((int)bounds.Right + 20, (int)bounds.Bottom + 20)); canvas.EndHandleDrag();
+        Assert.NotEqual(before, canvas.Selected!.Points[1]);
+    });
+
+    [Fact] public void SquareCornerActionClearsExplicitRadius() => ImagingTests.Sta(() =>
+    {
+        var canvas = new AnnotationCanvas(Image());
+        canvas.Document.Add(new Annotation(AnnotationKind.RoundedRectangle, new[] { new PixelPoint(20, 20), new PixelPoint(80, 80) }, 0xffff0000, 3, appearance: new AnnotationAppearance(cornerRadius: 18)));
+        canvas.SetTool(null); Assert.True(canvas.SelectAt(new PixelPoint(50, 50)));
+        canvas.ChangeCorner(false); Assert.Equal(AnnotationKind.Rectangle, canvas.Selected!.Kind); Assert.Equal(0, canvas.Selected.Appearance.CornerRadius);
+    });
+
+    [Fact] public void CornerRadiusRoundsRectangleFillInExport() => ImagingTests.Sta(() =>
+    {
+        var item = new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(10, 10), new PixelPoint(100, 100) }, 0xffff0000, 3, appearance: new AnnotationAppearance(fill: true, cornerRadius: 24));
+        var output = AnnotationRenderer.Flatten(Image(), new[] { item });
+        Assert.Equal(0, Pixel(output, 11, 11)[2]);
+        Assert.True(Pixel(output, 55, 55)[2] > 240);
+    });
+
+    [Fact] public void InlineToolbarHasNoSelectToolAndShowsContextOptions() => ImagingTests.Sta(() =>
+    {
+        AnnotationToolDefaults.Load("");
+        try
+        {
+            var canvas = new AnnotationCanvas(Image());
+            var bar = new InlineAnnotationBar(canvas, new AppSettings(), withFinish: true, showShortcuts: false);
+            bar.Measure(new Size(1200, 400)); bar.Arrange(new Rect(0, 0, 1200, 400)); bar.UpdateLayout();
+            Assert.DoesNotContain(bar.Items.Children.OfType<Button>(), button => AutomationProperties.GetName(button) == "选择 / 移动");
+            canvas.SetTool(AnnotationKind.Rectangle);
+            Assert.Equal(Visibility.Visible, bar.Options.Visibility);
+            var previewDirectory = Environment.GetEnvironmentVariable("DESK_SNIP_TEST_PREVIEW_DIR");
+            Preview(bar, previewDirectory, "inline-toolbar-shape.png");
+            var options = Descendants(bar.Options).ToArray();
+            var fillBox = options.OfType<CheckBox>().First(box => Equals(box.Content, "填充"));
+            fillBox.IsChecked = true; fillBox.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Assert.True(canvas.Appearance.Fill);
+            Assert.Contains(options.OfType<ComboBox>(), box => AutomationProperties.GetName(box) == "圆角半径");
+            var swatches = options.OfType<Border>().Where(border => border.ToolTip is string tip && tip.StartsWith("#", StringComparison.Ordinal)).ToArray();
+            Assert.NotEmpty(swatches);
+            var swatch = swatches.First(); var expected = 0xff000000u | uint.Parse(((string)swatch.ToolTip!).Substring(1), System.Globalization.NumberStyles.HexNumber);
+            swatch.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left) { RoutedEvent = UIElement.MouseLeftButtonUpEvent });
+            Assert.Equal(expected, canvas.Argb);
+            var ellipse = bar.Options.Items.Children.OfType<Button>().First(button => AutomationProperties.GetName(button) == "椭圆");
+            ellipse.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Assert.Equal(AnnotationKind.Ellipse, canvas.Kind);
+            Assert.DoesNotContain(Descendants(bar.Options).OfType<ComboBox>(), box => AutomationProperties.GetName(box) == "圆角半径");
+            canvas.SetTool(AnnotationKind.Text);
+            var textOptions = Descendants(bar.Options).ToArray();
+            Preview(bar, previewDirectory, "inline-toolbar-text.png");
+            Assert.Contains(textOptions.OfType<ComboBox>(), box => AutomationProperties.GetName(box) == "字体");
+            Assert.Contains(textOptions.OfType<ComboBox>(), box => AutomationProperties.GetName(box) == "字号");
+            Assert.DoesNotContain(textOptions.OfType<CheckBox>(), box => Equals(box.Content, "填充"));
+            canvas.SetTool(AnnotationKind.Blur);
+            Assert.DoesNotContain(Descendants(bar.Options).OfType<Border>(), border => border.ToolTip is string tip && tip.StartsWith("#", StringComparison.Ordinal));
+        }
+        finally { AnnotationToolDefaults.Load(""); }
+    });
+
+    private static void Preview(FrameworkElement element, string? directory, string name)
+    {
+        if (string.IsNullOrEmpty(directory)) return;
+        Directory.CreateDirectory(directory);
+        element.Measure(new Size(1200, double.PositiveInfinity));
+        var size = element.DesiredSize;
+        element.Arrange(new Rect(new Point(), size)); element.UpdateLayout();
+        if (element is Panel panel && panel.Background == null) panel.Background = new SolidColorBrush(Color.FromRgb(232, 236, 242));
+        var width = Math.Max(1, (int)Math.Ceiling(size.Width)); var height = Math.Max(1, (int)Math.Ceiling(size.Height));
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(element);
+        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var output = File.Create(Path.Combine(directory, name)); encoder.Save(output);
+    }
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {

@@ -22,6 +22,18 @@ public sealed class ReferencePreferenceTests : IDisposable
         var exported = PreferenceTransfer.Export(settings); Assert.Equal("35", exported.Values[nameof(AppSettings.PinZoomStep)]); Assert.False(exported.Values.ContainsKey(nameof(AppSettings.NetworkProxyHost))); Assert.False(exported.Values.ContainsKey(nameof(AppSettings.NetworkProxyMode))); Assert.False(exported.Values.ContainsKey(nameof(AppSettings.QuickRecordingDirectory)));
         var imported = PreferenceTransfer.Import(new AppSettings { NetworkProxyMode = "None", QuickRecordingDirectory = root }, exported); Assert.Equal("None", imported.NetworkProxyMode); Assert.Equal(root, imported.QuickRecordingDirectory); Assert.Equal(settings.ColorFormatOrder, imported.ColorFormatOrder); Assert.Equal(settings.ManualSaveFormat, imported.ManualSaveFormat); Assert.Equal(settings.PinClickThroughToolbar, imported.PinClickThroughToolbar);
     }
+    [Fact] public void ToolbarGroupDefaultsRoundTripAndRejectInvalidPairs()
+    {
+        var defaults = AnnotationPreferenceRules.ParseToolDefaults("Rectangle=Ellipse,Arrow=Line");
+        Assert.Equal(AnnotationKind.Ellipse, defaults["Rectangle"]); Assert.Equal(AnnotationKind.Line, defaults["Arrow"]);
+        Assert.Empty(AnnotationPreferenceRules.ParseToolDefaults(""));
+        Assert.Contains(AnnotationKind.RoundedRectangle, AnnotationPreferenceRules.GroupTools("Rectangle"));
+        Assert.Throws<ArgumentException>(() => AnnotationPreferenceRules.ParseToolDefaults("Rectangle=Arrow"));
+        Assert.Throws<ArgumentException>(() => AnnotationPreferenceRules.ParseToolDefaults("Unknown=Arrow"));
+        Assert.Throws<ArgumentException>(() => AnnotationPreferenceRules.ParseToolDefaults("Rectangle=Ellipse,Rectangle=Rectangle"));
+        var settings = new AppSettings { MarkToolDefaults = "Rectangle=Ellipse" }; settings.Validate();
+        settings.MarkToolDefaults = "Rectangle=Arrow"; Assert.Throws<ArgumentException>(() => settings.Validate());
+    }
     [Theory]
     [InlineData("SelectionBorderWidth", "NaN")]
     [InlineData("MagnifierZoom", "0")]

@@ -14,11 +14,14 @@ internal sealed partial class CaptureWindow
     private bool configuredGuides;
     private void HandleConfiguredKeys(KeyEventArgs e)
     {
+        if (inlineEditing && inlineCanvas != null && inlineCanvas.HandleEditKey(e)) { e.Handled = true; return; }
         var key = e.Key == Key.System ? e.SystemKey : e.Key; var modifiers = Keyboard.Modifiers;
         var action = ShortcutKeys.Match(settings, "Screenshot", e) ?? ShortcutKeys.Match(settings, "Common", e);
         if (action == "Cancel") { if (info.IsExpanded) { info.SetExpanded(false); Focus(); } else CancelFromKey(); e.Handled = true; return; }
         if (Keyboard.FocusedElement is TextBox) return;
+        if (key == Key.Escape && !inlineEditing) { if (info.IsExpanded) { info.SetExpanded(false); Focus(); } else CancelFromKey(); e.Handled = true; return; }
         if ((key == Key.Enter || key == Key.Space) && Keyboard.FocusedElement is ButtonBase) return;
+        if (action == "Record") { SwitchToRecording(); e.Handled = true; return; }
         var output = action switch
         {
             "Copy" => CaptureAction.Copy, "Save" => CaptureAction.Save, "QuickSave" => CaptureAction.QuickSave, "Pin" => CaptureAction.Pin, "Ocr" => CaptureAction.Ocr,
@@ -28,14 +31,27 @@ internal sealed partial class CaptureWindow
             "ToolWatermark" => CaptureAction.EditWatermark, "ToolSpotlight" => CaptureAction.EditSpotlight, "ToolMagnifier" => CaptureAction.EditMagnifier, "AutoMosaic" => CaptureAction.EditAutoMosaic,
             _ => (CaptureAction?)null
         };
-        if (output.HasValue) { if (!recording) Complete(output.Value); e.Handled = true; return; }
+        if (output.HasValue)
+        {
+            if (!recordingMode)
+            {
+                if (AnnotationTool(output.Value) is AnnotationKind kind)
+                {
+                    if (inlineEditing) { inlineCanvas?.SetTool(kind); inlineCanvas?.Focus(); }
+                    else BeginInlineEdit(kind);
+                    if (output.Value == CaptureAction.EditAutoMosaic) DetectInlinePrivacy();
+                }
+                else Complete(output.Value);
+            }
+            e.Handled = true; return;
+        }
         switch (action)
         {
-            case "Confirm": Complete(recording ? CaptureAction.Edit : CaptureAction.Copy); break;
+            case "Confirm": Complete(recordingMode ? CaptureAction.Record : CaptureAction.Copy); break;
             case "Close": CancelFromKey(); break;
             case "Detection": if (settings.ScreenshotUiDetection != "None") { elements = !elements; targetIndex = 0; UpdateHover(); Redraw(); } break;
             case "Cursor": cursorVisible = !cursorVisible; desktopImage.Source = SelectedDesktop; break;
-            case "Shortcuts": showShortcuts = !showShortcuts; FloatingTools.Configure(actions.Items, settings.ToolbarIconSize, showShortcuts); FloatingTools.Configure(modes.Items, settings.ToolbarIconSize, showShortcuts); Redraw(); break;
+            case "Shortcuts": showShortcuts = !showShortcuts; FloatingTools.Configure(actions.Items, settings.ToolbarIconSize, showShortcuts); FloatingTools.Configure(recordActions.Items, settings.ToolbarIconSize, showShortcuts); FloatingTools.Configure(modes.Items, settings.ToolbarIconSize, showShortcuts); Redraw(); break;
             case "PreviousArea": case "NextArea": if (recent.Count > 0) { var index = Math.Max(0, Array.FindIndex(recent.ToArray(), r => r.Equals(Selection))); index = (index + (action == "PreviousArea" ? 1 : recent.Count - 1)) % recent.Count; SetSelection(recent[index]); } break;
             case "SelectAll": var monitor = ScreenCapture.MonitorBounds(cursor).Intersect(bounds); SetSelection(Selection.Equals(monitor) ? bounds : monitor); break;
             case "CopyColor": CopySample(false); break; case "CopyCoordinates": CopySample(true); break;

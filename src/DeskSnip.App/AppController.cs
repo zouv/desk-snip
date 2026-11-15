@@ -25,6 +25,7 @@ internal sealed partial class AppController : IDisposable
     private Icon icon;
     private readonly Hotkeys hotkeys;
     private bool hotkeysDisabled;
+    private bool hotkeysSuspended;
     private DateTime lastTrayDoubleClick;
     private readonly System.Windows.Threading.DispatcherTimer trayClickTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Forms.SystemInformation.DoubleClickTime) };
     private bool selecting;
@@ -46,6 +47,7 @@ internal sealed partial class AppController : IDisposable
     internal AppController(string dataRoot)
     {
         Store = new LocalStore(dataRoot);
+        AnnotationToolDefaults.Load(Store.Settings.MarkToolDefaults); AnnotationToolDefaults.Changed += SaveToolDefaults;
         L.Apply(Store.Settings.InterfaceLanguage);
         Ui.ApplyTheme(Store.Settings);
         Workspace = new PinWorkspace(dataRoot);
@@ -53,11 +55,11 @@ internal sealed partial class AppController : IDisposable
         if (preferences.AdoptLegacyPinPreferences(Workspace.RestoreOnStart, Workspace.Snapshot.ClosedLimit)) Store.SaveSettings(preferences);
         Workspace.Configure(Store.Settings.PinRestoreOnStart, Store.Settings.PinHistoryLimit);
         Profiles = new CaptureProfiles(dataRoot);
-        Window = new MainWindow(this); System.Windows.Application.Current.MainWindow = Window; Window.Show();
-        hotkeys = new Hotkeys(new WindowInteropHelper(Window).Handle);
+        Window = new MainWindow(this); System.Windows.Application.Current.MainWindow = Window;
+        hotkeys = new Hotkeys(new WindowInteropHelper(Window).EnsureHandle());
         icon = TrayIcon(); tray = new Forms.NotifyIcon { Icon = icon, Text = L.Get("DeskSnip · 截图 / 钉图 / 录屏"), Visible = true };
         var menu = new Forms.ContextMenuStrip();
-        Add(menu, L.Get("打开 DeskSnip"), Show); Add(menu, L.Get("截取屏幕"), Capture); Add(menu, L.Get("钉住剪贴板"), PinClipboard); Add(menu, L.Get("录制 / 暂停"), Record);
+        Add(menu, L.Get("打开主界面"), Show); Add(menu, L.Get("截取屏幕"), Capture); Add(menu, L.Get("钉住剪贴板"), PinClipboard); Add(menu, L.Get("录制 / 暂停"), Record);
         Add(menu, L.Get("显示录制工具栏"), () => recordingBar?.Show()); Add(menu, L.Get("停止并保存录制"), () => { _ = FinishRecording(); });
         menu.Items.Add(new Forms.ToolStripSeparator());
         Add(menu, L.Get("显示 / 隐藏全部钉图"), TogglePins); Add(menu, L.Get("解除全部穿透 / 锁定"), RecoverPins); Add(menu, L.Get("恢复最近关闭的钉图"), RestorePin); Add(menu, L.Get("设置"), Settings);
@@ -76,6 +78,7 @@ internal sealed partial class AppController : IDisposable
         if (!string.IsNullOrEmpty(Store.LoadIssue)) Window.ShowNotice(Store.LoadIssue);
         if (!string.IsNullOrEmpty(Workspace.LoadIssue)) Window.ShowNotice(Workspace.LoadIssue);
         if (RecordingJournal.List(Store.Root).Count > 0) Window.ShowNotice(L.Get("发现可恢复的录制片段，可从“录制恢复”继续保存。"));
+        if (!tray.Visible) Show();
     }
     private void Add(Forms.ContextMenuStrip menu, string label, Action action) => menu.Items.Add(label, null, (_, _) => System.Windows.Application.Current.Dispatcher.BeginInvoke(action));
     private static Icon TrayIcon(string? color = null)
@@ -120,6 +123,7 @@ internal sealed partial class AppController : IDisposable
             if (selected.Image != null)
             {
                 if (selected.Action == CaptureAction.LongScreenshot) LongScreenshot(selected.Region);
+                else if (selected.Action == CaptureAction.Record) RecordRegion(selected.Region, null);
                 else CompleteCapture(selected.Image, selected.Action, selected.Region);
             }
         }
@@ -128,11 +132,9 @@ internal sealed partial class AppController : IDisposable
     private void CompleteCapture(BitmapSource image, CaptureAction action, PixelRect region = default)
     {
         SaveAutomatically(image, "Capture");
-        if (CaptureWindow.AnnotationTool(action) is AnnotationKind tool) { var editor = EditWithTool(image, tool); if (action == CaptureAction.EditAutoMosaic) editor.StartPrivacyDetection(); return; }
         if (action != CaptureAction.Edit && Store.Settings.MarkAutomaticWatermark) image = AnnotationRenderer.Flatten(image, new[] { new Annotation(AnnotationKind.Watermark, new[] { new PixelPoint(8, 8) }, 0x55909090, 3, Store.Settings.MarkWatermarkText.Replace("{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")), appearance: new AnnotationAppearance(opacity: .6)) });
         switch (action)
         {
-            case CaptureAction.Edit: Edit(image); break;
             case CaptureAction.Copy: CopyImage(image, region.IsEmpty ? 1 : ScreenCapture.MonitorScale(new PixelPoint(region.X + region.Width / 2, region.Y + region.Height / 2))); SaveAutomatically(image, "Copy"); Remember(image); PlaySound(Store.Settings.SoundCaptureCopy); Window.ShowNotice(L.Get("截图已复制；历史已保存。")); break;
             case CaptureAction.Pin: Remember(image); Pin(image, region); PlaySound(Store.Settings.SoundCapturePin); break;
             case CaptureAction.Ocr: Recognize(image); break;
@@ -164,8 +166,13 @@ internal sealed partial class AppController : IDisposable
             if (selectionWindow.ShowDialog() != true) return (null, default, CaptureAction.Edit);
             var region = selectionWindow.Selection;
             Profiles.Remember(region, preferences.ScreenshotAreaHistoryLimit);
-            var image = ScreenCapture.Crop(selectionWindow.SelectedDesktop, bounds, region);
+            var image = selectionWindow.InlineOutput ?? ScreenCapture.Crop(selectionWindow.SelectedDesktop, bounds, region);
             if (!recording) image = CaptureMasks.Apply(image, selectionWindow.ShapeResult, selectionWindow.ShapePoints);
+            if (selectionWindow.InlineOutput != null && selectionWindow.LastInlineTool is AnnotationKind editedTool && Store.Settings.MarkRememberScreenshotTool)
+            {
+                try { var next = Store.Settings.Clone(); next.MarkLastScreenshotTool = editedTool.ToString(); Store.SaveSettings(next); }
+                catch (Exception) { Window.ShowNotice(L.Get("标注工具记忆未保存，已编辑图片仍保留。")); }
+            }
             return (image, region, selectionWindow.ActionResult);
         }
         finally
@@ -180,15 +187,13 @@ internal sealed partial class AppController : IDisposable
     }
     private void Edit(BitmapSource image)
         => EditWithTool(image, Store.Settings.MarkRememberScreenshotTool ? (AnnotationKind)Enum.Parse(typeof(AnnotationKind), Store.Settings.MarkLastScreenshotTool) : AnnotationKind.Arrow);
-    private void EditPin(BitmapSource image)
-        => EditWithTool(image, Store.Settings.MarkRememberPinTool ? (AnnotationKind)Enum.Parse(typeof(AnnotationKind), Store.Settings.MarkLastPinTool) : AnnotationKind.Arrow, true);
-    private EditorWindow EditWithTool(BitmapSource image, AnnotationKind tool, bool fromPin = false)
+    private EditorWindow EditWithTool(BitmapSource image, AnnotationKind tool)
     {
         var editor = new EditorWindow(image, Pin, Remember, Recognize, QuickSaveImage, OnImageOutput, Store.Settings, RecognizeService, tool, SaveImageManual) { ServiceOperationRequested = RecognizeService }; editors.Add(editor);
         editor.Closed += (_, _) =>
         {
-            editors.Remove(editor); if (Exiting || !(fromPin ? Store.Settings.MarkRememberPinTool : Store.Settings.MarkRememberScreenshotTool)) return;
-            try { var next = Store.Settings.Clone(); if (fromPin) next.MarkLastPinTool = editor.LastTool.ToString(); else next.MarkLastScreenshotTool = editor.LastTool.ToString(); Store.SaveSettings(next); }
+            editors.Remove(editor); if (Exiting || !Store.Settings.MarkRememberScreenshotTool) return;
+            try { var next = Store.Settings.Clone(); next.MarkLastScreenshotTool = editor.LastTool.ToString(); Store.SaveSettings(next); }
             catch (Exception) { Window.ShowNotice(L.Get("标注工具记忆未保存，已编辑图片仍保留。")); }
         }; editor.Show(); return editor;
     }
@@ -223,13 +228,13 @@ internal sealed partial class AppController : IDisposable
         try { Edit(ImageFiles.Load(dialog.FileName)); } catch (Exception e) { Ui.Error(Window, e, L.Get("打开图片")); }
     }
     internal void RecoverRecording() => new RecordingRecoveryWindow(Store.Root, Store.Settings.FfmpegPath, AfterRecordingSaved, Store.Settings.RecordingCloseAfterExport).Show();
-    internal void OpenHistory(HistoryEntry? entry)
+    internal void OpenHistory(HistoryEntry? entry, PixelRect inlineRegion = default)
     {
         if (entry == null) return;
         try
         {
             if (entry.Kind == "Image") Edit(ImageFiles.Load(Store.HistoryPath(entry)));
-            else new PlaybackWindow(Store.HistoryPath(entry), entry.Kind, Store.Settings.FfmpegPath, FindRecordingJournal(entry), Store.Settings.RecordingCloseAfterExport, AfterRecordingSaved) { Owner = Window.IsVisible ? Window : null }.Show();
+            else new PlaybackWindow(Store.HistoryPath(entry), entry.Kind, Store.Settings.FfmpegPath, FindRecordingJournal(entry), Store.Settings.RecordingCloseAfterExport, AfterRecordingSaved, inlineRegion) { Owner = Window.IsVisible ? Window : null }.Show();
         }
         catch (Exception e) { Ui.Error(Window, e, L.Get("打开历史")); }
     }
@@ -283,18 +288,36 @@ internal sealed partial class AppController : IDisposable
     }
     internal void Settings()
     {
-        Show();
-        new SettingsWindow(Store.Settings, value =>
+        if (hotkeysSuspended) return;
+        var dialog = new SettingsWindow(Store.Settings, value =>
         {
             var parsed = new[] { value.CaptureHotkey, value.PinHotkey, value.RecordHotkey }.Concat(value.ActionBindings.Select(b => b.Hotkey)).Where(k => !string.IsNullOrWhiteSpace(k)).Select(Hotkeys.Parse).ToArray();
             if (parsed.Distinct().Count() != parsed.Length) throw new ArgumentException(L.Get("全局快捷键不能相同。"));
+            value.MarkToolDefaults = AnnotationToolDefaults.Serialize();
             using (var integration = new SystemIntegrationChange(Store.Settings, value)) { Store.SaveSettings(value); integration.Commit(); }
             Workspace.Configure(value.PinRestoreOnStart, value.PinHistoryLimit);
             L.Apply(value.InterfaceLanguage); Ui.ApplyTheme(value); ApplyTrayAppearance(); ApplyTrayActions(); foreach (var pin in pins.ToArray()) pin.RefreshAppearance(); ApplyHotkeys(); ApplyGlobalMouse(); Refresh();
-        }, Store.Root) { Owner = Window }.ShowDialog();
+        }, Store.Root);
+        if (Window.IsVisible) dialog.Owner = Window;
+        else dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        hotkeysSuspended = true; hotkeys.Clear();
+        try { dialog.ShowDialog(); }
+        finally { hotkeysSuspended = false; ApplyHotkeys(); }
+        if (!tray.Visible && !Window.IsVisible && session == null) Show();
+    }
+    private void SaveToolDefaults()
+    {
+        if (Exiting) return;
+        try
+        {
+            var next = Store.Settings.Clone(); next.MarkToolDefaults = AnnotationToolDefaults.Serialize();
+            if (next.MarkToolDefaults != Store.Settings.MarkToolDefaults) Store.SaveSettings(next);
+        }
+        catch (Exception) { Window.ShowNotice(L.Get("工具栏默认工具未保存。")); }
     }
     private void ApplyHotkeys()
     {
+        if (hotkeysSuspended) return;
         var preferences = Store.Settings.Clone(); if (hotkeysDisabled) { preferences.CaptureHotkey = preferences.PinHotkey = preferences.RecordHotkey = ""; preferences.ActionBindings = preferences.ActionBindings.Where(b => b.Action == "ToggleHotkeys").ToList(); }
         try { Window.ShowNotice(hotkeys.Apply(preferences, Capture, PinClipboard, Record, ActionHandlers())); }
         catch (ArgumentException e) { Window.ShowNotice(L.Join(e.Message,L.Get(" 请在设置中修改。"))); }
@@ -361,7 +384,7 @@ internal sealed partial class AppController : IDisposable
             recordingBar?.ShowFinishing(); await recording.StopAsync();
             var entry = Store.ImportRecording(recording.Path, recording.Format, recording.Region.Width, recording.Region.Height, recording.Journal?.Snapshot.Id ?? "");
             AfterRecordingSaved(recording.Path);
-            if (!Exiting) { Show(); Window.ShowNotice(L.Get("录制已保存，历史中可播放和另存为。")); if (!Store.Settings.RecordingCloseAfterExport) OpenHistory(entry); }
+            if (!Exiting) { Show(); Window.ShowNotice(L.Get("录制已保存，历史中可播放和另存为。")); if (!Store.Settings.RecordingCloseAfterExport) OpenHistory(entry, recording.Region); }
         }
         catch (Exception e)
         {
@@ -408,5 +431,5 @@ internal sealed partial class AppController : IDisposable
         tray.Visible = false; Window.Close(); System.Windows.Application.Current.Shutdown();
     }
     private void Refresh() { if (!Exiting) Window.Refresh(); }
-    public void Dispose() { globalMouse?.Dispose(); gestureOverlay?.Close(); trayClickTimer.Stop(); hotkeys.Dispose(); tray.Dispose(); icon.Dispose(); }
+    public void Dispose() { AnnotationToolDefaults.Changed -= SaveToolDefaults; globalMouse?.Dispose(); gestureOverlay?.Close(); trayClickTimer.Stop(); hotkeys.Dispose(); tray.Dispose(); icon.Dispose(); }
 }

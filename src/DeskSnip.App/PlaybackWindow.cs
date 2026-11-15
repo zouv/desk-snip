@@ -7,9 +7,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DeskSnip.App.Recording;
+using DeskSnip.App.Windows;
 using DeskSnip.Core;
 using Microsoft.Win32;
 
@@ -51,16 +55,23 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
     private double gifPosition;
     private readonly bool closeAfterExport;
     private readonly Action<string>? outputSaved;
-    internal PlaybackWindow(string path, string kind, string configured = "", RecordingJournal? journal = null, bool closeAfterExport = false, Action<string>? outputSaved = null)
+    private readonly PixelRect inlineRegion;
+    internal PlaybackWindow(string path, string kind, string configured = "", RecordingJournal? journal = null, bool closeAfterExport = false, Action<string>? outputSaved = null, PixelRect inlineRegion = default)
     {
-        this.closeAfterExport = closeAfterExport; this.outputSaved = outputSaved;
+        this.closeAfterExport = closeAfterExport; this.outputSaved = outputSaved; this.inlineRegion = inlineRegion;
         this.path = path; this.configured = configured; this.journal = journal;
         Title = L.Get("DeskSnip · 回放与剪辑"); Width = 1020; Height = 780; MinWidth = 820; MinHeight = 560; WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        var root = new DockPanel { Margin = new Thickness(16) }; Content = root;
+        if (!inlineRegion.IsEmpty)
+        {
+            WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; Topmost = true; ShowInTaskbar = false; WindowStartupLocation = WindowStartupLocation.Manual;
+        }
+        var root = new DockPanel { Margin = new Thickness(16) }; Content = inlineRegion.IsEmpty ? (UIElement)root : new Border { BorderBrush = Ui.Accent, BorderThickness = new Thickness(2), Child = root };
         var top = new WrapPanel(); DockPanel.SetDock(top, Dock.Top); root.Children.Add(top);
+        if (!inlineRegion.IsEmpty) top.Children.Add(Ui.Text(L.Get("DeskSnip · 回放与剪辑"), 14));
         top.Children.Add(Ui.Button(L.Get("播放 / 暂停"), Toggle)); top.Children.Add(Ui.Button(L.Get("从头播放"), () => { Position(0); Play(); })); top.Children.Add(speed);
         top.Children.Add(Ui.Button(L.Get("导出 MP4"), () => { _ = Export("MP4"); }, true)); top.Children.Add(Ui.Button(L.Get("导出 GIF"), () => { _ = Export("GIF"); })); top.Children.Add(Ui.Button(L.Get("导出 WebP"), () => { _ = Export("WebP"); }));
         top.Children.Add(Ui.Button(L.Get("复制录制文件"), CopyFile)); top.Children.Add(Ui.Button(L.Get("取消导出"), () => cancellation?.Cancel()));
+        if (!inlineRegion.IsEmpty) top.Children.Add(Ui.Button(L.Get("关闭"), () => { _ = CloseSafelyAsync(); }));
         var bottom = new StackPanel(); DockPanel.SetDock(bottom, Dock.Bottom); root.Children.Add(bottom); bottom.Children.Add(seek);
         var trims = new WrapPanel(); bottom.Children.Add(trims); trims.Children.Add(Ui.Text(L.Get("开始 / 结束秒"))); trims.Children.Add(start); trims.Children.Add(end);
         trims.Children.Add(Ui.Button(L.Get("以当前位置为开始"), () => start.Text = CurrentPosition().ToString("0.###", CultureInfo.InvariantCulture)));
@@ -89,6 +100,12 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         systemVolume.ValueChanged += (_, _) => { systemPlayer.Volume = Math.Min(1, systemVolume.Value); if (systemPlayer.Source == null) player.Volume = Math.Min(1, systemVolume.Value); };
         microphoneVolume.ValueChanged += (_, _) => microphonePlayer.Volume = Math.Min(1, microphoneVolume.Value);
         Loaded += (_, _) => { if (!closeRequested) loading = Load(kind); };
+        if (!inlineRegion.IsEmpty)
+        {
+            SourceInitialized += (_, _) => PositionOverlay();
+            Loaded += (_, _) => PositionOverlay();
+            PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { _ = CloseSafelyAsync(); e.Handled = true; } };
+        }
         timer.Tick += (_, _) =>
         {
             if (gif != null && playing) { gifPosition += .1 * (double)speed.SelectedItem; if (gifPosition >= gifTimes.Last()) gifPosition = 0; SetGifFrame(); }
@@ -100,6 +117,19 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             timer.Stop(); player.Close(); systemPlayer.Close(); microphonePlayer.Close(); lifetime.Dispose();
             if (previewFile != null && File.Exists(previewFile)) { try { File.Delete(previewFile); } catch (IOException) { } }
         };
+    }
+    private void PositionOverlay()
+    {
+        if (inlineRegion.IsEmpty) return;
+        var handle = new WindowInteropHelper(this).Handle; if (handle == IntPtr.Zero) return;
+        var dpi = VisualTreeHelper.GetDpi(this);
+        var screen = System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point(inlineRegion.X + inlineRegion.Width / 2, inlineRegion.Y + inlineRegion.Height / 2));
+        var work = screen.WorkingArea;
+        var width = Math.Min(work.Width, Math.Max(inlineRegion.Width, (int)Math.Ceiling(820 * dpi.DpiScaleX)));
+        var height = Math.Min(work.Height, Math.Max(inlineRegion.Height, (int)Math.Ceiling(560 * dpi.DpiScaleY)));
+        var x = Math.Max(work.Left, Math.Min(inlineRegion.X + (inlineRegion.Width - width) / 2, work.Right - width));
+        var y = Math.Max(work.Top, Math.Min(inlineRegion.Y + (inlineRegion.Height - height) / 2, work.Bottom - height));
+        Native.SetWindowPos(handle, Native.Topmost, x, y, width, height, 0x0040);
     }
     private static TextBox Input(string value) => new TextBox { Text = value, Width = 70, Margin = new Thickness(4), Padding = new Thickness(4), VerticalContentAlignment = VerticalAlignment.Center };
     private async Task Load(string kind)

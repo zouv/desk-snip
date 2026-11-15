@@ -27,6 +27,46 @@ public class ReferenceBehaviorUiTests
     { foreach (var item in LogicalTreeHelper.GetChildren(root)) if (item is DependencyObject child) { yield return child; foreach (var nested in Descendants(child)) yield return nested; } }
     private static BitmapSource Image(int width = 180, int height = 120)
     { var data = new byte[width * height * 4]; for (var i = 0; i < data.Length; i += 4) { data[i] = 31; data[i + 1] = 63; data[i + 2] = 127; data[i + 3] = 255; } var image = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, data, width * 4); image.Freeze(); return image; }
+    [Fact] public void LongCaptureAndPlaybackReviewUseInPlaceBorderlessWindows() => ImagingTests.Sta(() =>
+    {
+        var bar = new LongScreenshotBar(new PixelRect(100, 100, 200, 200), new AppSettings(), (_, _) => { }, () => { });
+        Assert.Equal(WindowStyle.None, bar.WindowStyle); Assert.True(bar.Topmost); Assert.False(bar.ShowInTaskbar); Assert.Equal(300, bar.Width); Assert.True(bar.Height > 400);
+        bar.Close();
+        var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 200, 200));
+        Assert.Equal(WindowStyle.None, overlay.WindowStyle); Assert.True(overlay.Topmost); Assert.False(overlay.ShowInTaskbar); Assert.Equal(WindowStartupLocation.Manual, overlay.WindowStartupLocation);
+        var normal = new PlaybackWindow("missing.mp4", "MP4");
+        Assert.NotEqual(WindowStyle.None, normal.WindowStyle); Assert.False(normal.Topmost);
+    });
+
+    [Fact] public void PinCopyCloseAndEscapeBypassCloseConfirmation() => ImagingTests.Sta(() =>
+    {
+        var pin = new PinWindow(Image(), settings: new AppSettings { PinShowShadow = false, PinConfirmKeyClose = true, PinConfirmMouseClose = true });
+        var copied = false; pin.CopyRequested = _ => copied = true;
+        typeof(PinWindow).GetMethod("CopyAndClose", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(pin, null);
+        Assert.True(copied);
+        var escapePin = new PinWindow(Image(), settings: new AppSettings { PinShowShadow = false, PinConfirmKeyClose = true });
+        try { typeof(PinWindow).GetMethod("CloseFromEscape", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(escapePin, null); }
+        finally { escapePin.Close(); }
+    });
+
+    [Fact] public void PinInlineEditingCommitsAnnotationsAndRemembersTool() => ImagingTests.Sta(() =>
+    {
+        BitmapSource? persisted = null; AnnotationKind? remembered = null;
+        var pin = new PinWindow(Image(), persist: value => persisted = value, settings: new AppSettings { PinShowShadow = false });
+        try
+        {
+            pin.RememberToolRequested = kind => remembered = kind;
+            pin.BeginInlineEdit(AnnotationKind.Rectangle);
+            Assert.True(pin.InlineEditing); Assert.NotNull(pin.InlineCanvas);
+            pin.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(20, 20), new PixelPoint(80, 60) }, 0xff0000ff, 3, appearance: new AnnotationAppearance(fill: true)));
+            pin.CommitInlineEdit();
+            Assert.False(pin.InlineEditing); Assert.Same(persisted, pin.Bitmap); Assert.Equal(AnnotationKind.Rectangle, remembered);
+            var pixel = new byte[4]; pin.Bitmap.CopyPixels(new Int32Rect(50, 40, 1, 1), pixel, 4, 0);
+            Assert.True(pixel[0] > 200); Assert.True(pixel[2] < 80);
+        }
+        finally { pin.Close(); }
+    });
+
     [Fact] public void CapturePreferencesChangeControlsAndFrozenCursorSource() => ImagingTests.Sta(() =>
     {
         var clean = Image(800, 600); var cursor = Image(800, 600); var settings = new AppSettings { ScreenshotUiDetection = "None", ScreenshotShowInfoBar = false, ScreenshotShowMagnifier = false, GuideMagnifier = false, ScreenshotGuideVisibility = "Never", ScreenshotShowShortcuts = false, SelectionBorderFollowsTheme = false, SelectionBorderColor = "#F08020", SelectionBorderWidth = 4, SelectionAnchorDisplay = "Four", ScreenshotSecondaryButtons = false, ToolbarIconSize = "Large", ScreenshotCursorVisible = true };
@@ -41,13 +81,13 @@ public class ReferenceBehaviorUiTests
     [Fact] public void PinMouseActionsConsumeStepsLocksAndOriginalOutput() => ImagingTests.Sta(() =>
     {
         var original = Image(); var settings = new AppSettings { PinZoomStep = 35, PinOpacityStep = 17, PinLockMovement = false, PinDefaultOpacity = 85, PinOutputImage = "Original", PinShowShadow = false };
-        var pin = new PinWindow(original, _ => { }, settings: settings); pin.MouseAction("Zoom", 1); Assert.Equal(1.35, pin.Presentation.Scale, 8); pin.MouseAction("Opacity", -1); Assert.Equal(.68, pin.Presentation.Opacity, 8);
+        var pin = new PinWindow(original, settings: settings); pin.MouseAction("Zoom", 1); Assert.Equal(1.35, pin.Presentation.Scale, 8); pin.MouseAction("Opacity", -1); Assert.Equal(.68, pin.Presentation.Opacity, 8);
         pin.Presentation.Locked = true; Assert.True(pin.CanMove); pin.MouseAction("Zoom", 1); Assert.Equal(1.7, pin.Presentation.Scale, 8); Assert.True(pin.Presentation.Locked);
         pin.Replace(Image(100, 60)); Assert.Same(original, pin.OutputBitmap); var copied = (BitmapSource?)null; pin.CopyRequested = image => copied = image; pin.MouseAction("Copy", 1); Assert.Same(original, copied); pin.CloseForExit();
     });
     [Fact] public void ClickThroughToolbarFollowsVisibilityAndCannotBeRecreatedAfterPinCloses() => ImagingTests.Sta(() =>
     {
-        var pin = new PinWindow(Image(), _ => { }, settings: new AppSettings { PinShowShadow = false, PinClickThroughToolbar = true });
+        var pin = new PinWindow(Image(), settings: new AppSettings { PinShowShadow = false, PinClickThroughToolbar = true });
         var field = typeof(PinWindow).GetField("rescueToolbar", BindingFlags.Instance | BindingFlags.NonPublic)!;
         try
         {
@@ -66,7 +106,7 @@ public class ReferenceBehaviorUiTests
     public void PinClosingHonorsSeparateMouseAndKeyLockRestrictions(bool keyboard) => ImagingTests.Sta(() =>
     {
         var settings = new AppSettings { PinConfirmKeyClose = false, PinConfirmMouseClose = false, PinLockMouseClose = keyboard, PinLockKeyClose = !keyboard, PinShowShadow = false };
-        var pin = new PinWindow(Image(), _ => { }, settings: settings); var closed = false; pin.Closed += (_, _) => closed = true;
+        var pin = new PinWindow(Image(), settings: settings); var closed = false; pin.Closed += (_, _) => closed = true;
         try
         {
             pin.Show(); pin.Presentation.Locked = true;

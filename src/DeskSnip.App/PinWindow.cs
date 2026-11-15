@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -19,8 +20,8 @@ internal sealed partial class PinWindow : ProductWindow
 {
     private readonly Image image;
     private readonly Border frame;
-    private readonly StackPanel controls;
-    private readonly Action<BitmapSource> edit;
+    private readonly PinSelectionGlow selectionGlow;
+    private readonly Grid grid;
     private readonly Action<BitmapSource>? persist;
     private readonly bool restored;
     private readonly AppSettings initialSettings;
@@ -53,13 +54,23 @@ internal sealed partial class PinWindow : ProductWindow
     internal Func<BitmapSource, Window, string?>? SaveRequested { get; set; }
     internal Action<BitmapSource>? QuickSaveRequested { get; set; }
     private bool selected;
+    private bool selectionBorderVisible = true;
+    private static readonly Brush SelectionGold = CreateSelectionGold();
+    private static Brush CreateSelectionGold() { var brush = new SolidColorBrush(Color.FromRgb(245, 206, 91)); brush.Freeze(); return brush; }
+    private bool inlineEditing;
+    private AnnotationCanvas? inlineCanvas;
+    private InlineAnnotationBar? inlineBar;
+    private Popup? inlinePopup;
+    internal Action<AnnotationKind>? RememberToolRequested { get; set; }
     internal bool Selected { get => selected; set { selected = value; UpdateFrame(); } }
+    internal bool SelectionBorderVisible => selectionBorderVisible;
+    internal PinSelectionGlow SelectionGlow => selectionGlow;
     internal string Id { get; }
     internal string GroupId { get; set; }
     internal bool WantedVisible { get; set; } = true;
-    internal PinWindow(BitmapSource source, Action<BitmapSource> edit, PinRecord? record = null, Action<BitmapSource>? persist = null, bool restored = false, BitmapSource? originalSource = null, AppSettings? settings = null, PixelRect captureRegion = default)
+    internal PinWindow(BitmapSource source, PinRecord? record = null, Action<BitmapSource>? persist = null, bool restored = false, BitmapSource? originalSource = null, AppSettings? settings = null, PixelRect captureRegion = default)
     {
-        Bitmap = source; original = originalSource ?? source; this.edit = edit; this.persist = persist; this.restored = restored;
+        Bitmap = source; original = originalSource ?? source; this.persist = persist; this.restored = restored;
         initialSettings = settings?.Clone() ?? new AppSettings(); this.captureRegion = captureRegion;
         Id = record?.Id ?? Guid.NewGuid().ToString("N"); GroupId = record?.GroupId ?? "default";
         Title = L.Get("DeskSnip · 钉图"); WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; AllowsTransparency = true; Background = Brushes.Transparent;
@@ -74,10 +85,10 @@ internal sealed partial class PinWindow : ProductWindow
         }
         image = new Image { Source = source, Stretch = Stretch.Fill };
         RenderOptions.SetBitmapScalingMode(image, initialSettings.PinSmoothScaling ? BitmapScalingMode.HighQuality : BitmapScalingMode.NearestNeighbor);
-        var grid = new Grid(); grid.Children.Add(image);
-        controls = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed };
-        controls.Children.Add(Ui.Button("···", Menu)); controls.Children.Add(Ui.Button("×", () => RequestCloseFromInput(false))); grid.Children.Add(controls);
-        frame = new Border { Child = grid, BorderThickness = new Thickness(1), BorderBrush = Ui.Accent, Background = Brushes.White }; Content = frame;
+        var grid = new Grid(); grid.Children.Add(image); this.grid = grid;
+        frame = new Border { Child = grid, BorderThickness = new Thickness(1), BorderBrush = Ui.Accent, Background = Brushes.White };
+        selectionGlow = new PinSelectionGlow { IsHitTestVisible = false, Visibility = Visibility.Collapsed };
+        var root = new Grid { Children = { frame, selectionGlow } }; Content = root;
         Width = Math.Min(source.PixelWidth + 2, 900); Height = Width / source.PixelWidth * source.PixelHeight;
         SourceInitialized += (_, _) =>
         {
@@ -93,16 +104,16 @@ internal sealed partial class PinWindow : ProductWindow
             if (Settings.PinRescueOnShow) Rescue();
             RefreshAppearance();
         };
-        Closed += (_, _) => { closed = true; CloseRescueToolbar(); };
+        Closed += (_, _) => { closed = true; EndInlineEdit(false); CloseRescueToolbar(); };
         LocationChanged += (_, _) => { PositionRescueToolbar(); PresentationChanged?.Invoke(); };
-        IsVisibleChanged += (_, _) => UpdateRescueToolbar();
-        MouseEnter += (_, _) => { if (!Presentation.ClickThrough) controls.Visibility = Visibility.Visible; };
-        MouseLeave += (_, _) => controls.Visibility = Visibility.Collapsed;
+        IsVisibleChanged += (_, _) => { if (!IsVisible && inlineEditing) CancelInlineEdit(); UpdateRescueToolbar(); };
+        SizeChanged += (_, _) => UpdateInlineLayout();
         InitializeConfiguredMouse();
         PreviewKeyDown += Keys;
         AllowDrop = true;
         Drop += (_, e) =>
         {
+            if (inlineEditing) return;
             if (Presentation.Locked && Settings.PinLockDrop) return;
             try
             {
@@ -118,7 +129,6 @@ internal sealed partial class PinWindow : ProductWindow
         base.OnClosing(e);
         if (!e.Cancel) { closing = true; CloseRescueToolbar(); }
     }
-    private bool OverControls(Point point) => controls.Visibility == Visibility.Visible && point.X >= 0 && point.Y >= 0 && point.X < controls.ActualWidth && point.Y < controls.ActualHeight;
     internal void MouseAction(string action, int direction, string anchor = "TopLeft")
     {
         try
@@ -161,16 +171,26 @@ internal sealed partial class PinWindow : ProductWindow
         AllowDrop = !Presentation.Locked || !Settings.PinLockDrop;
         Native.SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0, 0x0037);
         UpdateFrame();
-        if (Presentation.ClickThrough) controls.Visibility = Visibility.Collapsed;
         UpdateRescueToolbar(); ResizeImage();
         PresentationChanged?.Invoke();
     }
     private void UpdateFrame()
     {
         var current = Settings;
-        frame.BorderBrush = Selected ? Brushes.Goldenrod : Presentation.ClickThrough ? Brush(current.ClickThroughColor) : Presentation.Locked && current.PinShowLockHint ? Brush(current.LockedPinColor) : Brush(current.AccentColor);
+        var normal = Presentation.ClickThrough ? Brush(current.ClickThroughColor) : Presentation.Locked && current.PinShowLockHint ? Brush(current.LockedPinColor) : Brush(current.AccentColor);
+        var glow = Selected && selectionBorderVisible;
+        frame.BorderBrush = glow ? SelectionGold : normal;
+        selectionGlow.Halo = frame.Margin.Left;
+        selectionGlow.Visibility = glow ? Visibility.Visible : Visibility.Collapsed;
+        selectionGlow.InvalidateVisual();
         frame.ToolTip = Presentation.Locked && current.PinShowLockHint ? L.Get("钉图已锁定；L 解锁") : null;
-        frame.Effect = current.PinShowShadow ? new DropShadowEffect { Color = Presentation.ClickThrough ? ((SolidColorBrush)Brush(current.ClickThroughColor)).Color : Colors.Black, BlurRadius = 6, ShadowDepth = 1, Opacity = .3 } : null;
+        frame.Effect = current.PinShowShadow && !glow ? new DropShadowEffect { Color = Presentation.ClickThrough ? ((SolidColorBrush)Brush(current.ClickThroughColor)).Color : Colors.Black, BlurRadius = 6, ShadowDepth = 1, Opacity = .3 } : null;
+    }
+    internal void ToggleSelectionBorder()
+    {
+        if (!Selected) return;
+        selectionBorderVisible = !selectionBorderVisible;
+        UpdateFrame();
     }
     private static Brush Brush(string color) => (Brush)new BrushConverter().ConvertFromString(color)!;
     private double ChromeSize => Settings.PinShowShadow ? 14 : 2;
@@ -298,6 +318,16 @@ internal sealed partial class PinWindow : ProductWindow
         if ((keyboard ? Settings.PinConfirmKeyClose : Settings.PinConfirmMouseClose) && MessageBox.Show(this, L.Get("关闭当前钉图？关闭后可从历史恢复。"), L.Get("关闭钉图"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         forceClose = true; Close();
     }
+    private void CloseFromEscape()
+    {
+        if (!PinPreferenceRules.CloseAllowed(Settings, Presentation.Locked, true)) return;
+        forceClose = true; Close();
+    }
+    private void CopyAndClose()
+    {
+        if (!PinPreferenceRules.CloseAllowed(Settings, Presentation.Locked, false)) return;
+        Copy(); forceClose = true; Close();
+    }
     internal void Rename(string title) { if (string.IsNullOrWhiteSpace(title) || title.Length > 128) throw new ArgumentException(L.Get("标题需要 1–128 字符。")); Title = title; PresentationChanged?.Invoke(); }
     internal PinRecord CaptureRecord(PinRecord record)
     {
@@ -314,10 +344,13 @@ internal sealed partial class PinWindow : ProductWindow
     private void Keys(object sender, KeyEventArgs e)
     {
         if (Keyboard.FocusedElement is TextBox || Keyboard.FocusedElement is ComboBox) return;
-        if (HandleConfiguredKey(e) || Settings.BuiltinShortcuts != null) return;
+        if (inlineEditing) { if (HandleInlineEditKey(e)) e.Handled = true; return; }
+        if (e.Key == Key.Escape) { CloseFromEscape(); e.Handled = true; return; }
+        if (HandleConfiguredKey(e)) return;
+        if (e.Key == Key.Space && Keyboard.Modifiers == ModifierKeys.None) { BeginInlineEdit(); e.Handled = true; return; }
+        if (Settings.BuiltinShortcuts != null) return;
         var control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
         if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Shift) != 0) { RecognizeRequested?.Invoke(Bitmap); e.Handled = true; }
-        else if (e.Key == Key.Escape) { RequestCloseFromInput(true); e.Handled = true; }
         else if (e.Key == Key.L) { Presentation.Locked = !Presentation.Locked; SetInteraction(); e.Handled = true; }
         else if (e.Key == Key.T && !control) { Presentation.Topmost = !Presentation.Topmost; SetInteraction(); e.Handled = true; }
         else if (e.Key == Key.B) { WantedVisible = false; Hide(); PresentationChanged?.Invoke(); e.Handled = true; }
@@ -336,37 +369,6 @@ internal sealed partial class PinWindow : ProductWindow
         if (!IsVisible) Show();
     }
     internal string Description => L.Format("{0} × {1} · {2:P0}{3}{4}",Bitmap.PixelWidth,Bitmap.PixelHeight,Presentation.Opacity,(Presentation.Locked ? L.Get(" · 锁定") : ""),(Presentation.ClickThrough ? L.Get(" · 穿透") : ""));
-    private void Menu()
-    {
-        var menu = new ContextMenu();
-        menu.Items.Add(Ui.Menu(L.Get("复制图片"), Copy));
-        menu.Items.Add(Ui.Menu(L.Get("复制原始图片"), () => Copy(original)));
-        menu.Items.Add(Ui.Menu(L.Get("保存图片…"), Save));
-        menu.Items.Add(Ui.Menu(L.Get("快速保存"), () => QuickSaveRequested?.Invoke(OutputBitmap)));
-        menu.Items.Add(Ui.Menu(L.Get("继续标注"), () => edit(Bitmap)));
-        menu.Items.Add(Ui.Menu(L.Get("本地文字识别"), () => RecognizeRequested?.Invoke(Bitmap)));
-        menu.Items.Add(Ui.Menu(L.Get("联网识别 / 翻译"), () => ServiceRecognitionRequested?.Invoke(Bitmap)));
-        menu.Items.Add(Ui.Menu(L.Get("顺时针旋转 90°"), () => Transform(ImageTransform.RotateClockwise)));
-        menu.Items.Add(Ui.Menu(L.Get("水平翻转"), () => Transform(ImageTransform.FlipHorizontal)));
-        menu.Items.Add(Ui.Menu(L.Get("垂直翻转"), () => Transform(ImageTransform.FlipVertical)));
-        menu.Items.Add(Ui.Menu(L.Get("灰度"), () => Transform(ImageTransform.Grayscale))); menu.Items.Add(Ui.Menu(L.Get("反色"), () => Transform(ImageTransform.Invert)));
-        menu.Items.Add(Ui.Menu(L.Get("增加亮度"), () => Transform(ImageTransform.Brighter))); menu.Items.Add(Ui.Menu(L.Get("降低亮度"), () => Transform(ImageTransform.Darker)));
-        menu.Items.Add(new Separator());
-        menu.Items.Add(Ui.Menu(L.Get("放大"), () => MouseAction("Zoom", 1, Settings.PinWheelAnchor)));
-        menu.Items.Add(Ui.Menu(L.Get("缩小"), () => MouseAction("Zoom", -1, Settings.PinWheelAnchor)));
-        menu.Items.Add(Ui.Menu(L.Get("原始大小 / 切回"), () => MouseAction("Original", 1, Settings.PinMiddleAnchor)));
-        menu.Items.Add(Ui.Menu(L.Get("适合屏幕"), () => { FitToScreen(); ResizeImage(); Rescue(); }));
-        menu.Items.Add(Ui.Menu(L.Get("增加透明度"), () => MouseAction("Opacity", -1)));
-        menu.Items.Add(Ui.Menu(L.Get("恢复不透明"), () => { while (Presentation.Opacity < 1) Presentation.Fade(1); ResizeImage(); }));
-        menu.Items.Add(new Separator());
-        var topmost = Ui.Menu(L.Get("窗口置顶"), () => { Presentation.Topmost = !Presentation.Topmost; SetInteraction(); }, Presentation.Topmost); topmost.InputGestureText = Settings.PinShowMenuShortcuts ? "T" : ""; menu.Items.Add(topmost);
-        menu.Items.Add(Ui.Menu(L.Get("锁定位置和尺寸"), () => { Presentation.Locked = !Presentation.Locked; SetInteraction(); }, Presentation.Locked));
-        menu.Items.Add(Ui.Menu(L.Get("鼠标穿透（控制台 / 托盘可解除）"), () => { Presentation.ClickThrough = !Presentation.ClickThrough; SetInteraction(); }, Presentation.ClickThrough));
-        menu.Items.Add(Ui.Menu(L.Get("移回可见屏幕"), Rescue));
-        menu.Items.Add(Ui.Menu(L.Get("修改标题"), () => { var prompt = new TextPrompt(Title) { Title = L.Get("钉图标题"), Owner = this }; if (prompt.ShowDialog() == true) Rename(prompt.Value); }));
-        var close = Ui.Menu(L.Get("关闭（可在控制台恢复）"), () => RequestCloseFromInput(false)); close.InputGestureText = Settings.PinShowMenuShortcuts ? "Esc" : ""; menu.Items.Add(close);
-        menu.PlacementTarget = this; menu.IsOpen = true;
-    }
     private void Save()
     {
         if (SaveRequested != null) { SaveRequested(OutputBitmap, this); return; }
@@ -385,5 +387,32 @@ internal sealed partial class PinWindow : ProductWindow
     {
         try { Replace(ImageTransforms.Apply(Bitmap, transform)); }
         catch (Exception e) { Ui.Error(this, e, L.Get("变换钉图")); }
+    }
+}
+
+/// <summary>选中钉图的淡黄色渐变边框：越靠近窗口外侧透明度越高。</summary>
+internal sealed class PinSelectionGlow : FrameworkElement
+{
+    private static readonly Pen[] Rings = CreateRings();
+    internal double Halo { get; set; }
+    private static Pen[] CreateRings()
+    {
+        var pens = new Pen[6];
+        for (var i = 0; i < pens.Length; i++)
+        {
+            var brush = new SolidColorBrush(Color.FromArgb((byte)(28 + i * 26), 245, 206, 91));
+            var pen = new Pen(brush, 1); brush.Freeze(); pen.Freeze(); pens[i] = pen;
+        }
+        return pens;
+    }
+    protected override void OnRender(DrawingContext dc)
+    {
+        if (ActualWidth < 4 || ActualHeight < 4 || Halo < 1) return;
+        var rings = Math.Min(Rings.Length, (int)Math.Floor(Halo));
+        for (var i = 0; i < rings; i++)
+        {
+            var inset = i + .5;
+            dc.DrawRectangle(null, Rings[i], new Rect(inset, inset, Math.Max(0, ActualWidth - inset * 2), Math.Max(0, ActualHeight - inset * 2)));
+        }
     }
 }

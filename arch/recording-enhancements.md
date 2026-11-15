@@ -8,6 +8,7 @@
 - 停止后 `Ffmpeg.Join` 合并片段，`Export` 裁剪/倍速/独立音量/混音/编码。参数通过 `ProcessArguments.Quote` 和 CreateProcess 传递，不经过 shell；目标只在完整输出后原子替换。取消向自有 FFmpeg 发送 q 并等待正常退出，不强杀。
 - `TestEncoder` 实际编码一帧探测 NVIDIA/Intel/AMD，失败回退 libx264；导出时硬件失败也回退。捕获片段仍用 Windows MF，硬件选择作用于最终导出。
 - `PlaybackWindow` 时间轴定位、首尾秒数、裁剪、0.2–2x、两路音量、质量及 MP4/GIF/WebP 输出。独立音轨存在时预览不重复播放成片的混音；导出可调至 200%，系统预览音量上限 100%。
+- 刚停止的录制由 `AppController.OpenHistory(entry, recording.Region)` 传入录制区域，`PlaybackWindow` 以 `inlineRegion` 模式显示为无标题栏、置顶、覆盖录制区域的浮层，保留时间轴、裁剪、音量和导出并增加关闭按钮/Esc；历史录像没有区域时仍打开普通窗口。
 - 回放 WebP 预览/探测有生命周期取消；回放和恢复实现 `IBackgroundWindow`，关闭及总退出取消并等待加载/导出/恢复，完成前不关进程，也不打开新的回放窗。
 - `RecordingRecoveryWindow` 重导已登记片段，`WaveRecovery.Repair` 修复 WAV 长度后恢复音轨；删除素材仅在产品确认后经管理路径删除已知文件。历史 `RecordingId` 关联素材，素材删掉后仍可播放成片。
 - FFmpeg 是可配置外部程序，默认查 tools/ 或 PATH，发行包不自动捆绑其本机安装。NAudio.Wasapi 用于设备和 PCM 采集，Windows SDK Contracts 用于 OCR。

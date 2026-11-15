@@ -25,9 +25,26 @@ internal sealed partial class AppController
     {
         var visible = Window.IsVisible; var openEditors = editors.FindAll(e => e.IsVisible);
         Window.Hide(); foreach (var editor in openEditors) editor.Hide();
-        var window = new LongScreenshotWindow(region, Edit, Pin, Recognize, RecognizeService, Store.Settings, OnImageOutput, SaveImageManual, image => SaveAutomatically(image, "LongScreenshot"));
-        window.Closed += (_, _) => { if (Exiting) return; if (visible) Window.Show(); foreach (var editor in openEditors) if (editors.Contains(editor)) editor.Show(); };
-        window.Show();
+        var bar = new LongScreenshotBar(region, Store.Settings.Clone(), CompleteLongScreenshot, () => { });
+        bar.Closed += (_, _) => { if (Exiting) return; if (visible) Window.Show(); foreach (var editor in openEditors) if (editors.Contains(editor)) editor.Show(); };
+        bar.Show();
+    }
+    private void CompleteLongScreenshot(System.Windows.Media.Imaging.BitmapSource image, CaptureAction action)
+    {
+        SaveAutomatically(image, "LongScreenshot");
+        try
+        {
+            switch (action)
+            {
+                case CaptureAction.Copy: OnImageOutput(image, "Copy"); break;
+                case CaptureAction.Save: SaveImageManual(image, Window); break;
+                case CaptureAction.Pin: Pin(image); break;
+                case CaptureAction.Edit: Edit(image); break;
+                case CaptureAction.Ocr: Recognize(image); break;
+                case CaptureAction.ServiceRecognition: RecognizeService(image); break;
+            }
+        }
+        catch (Exception error) { Ui.Error(Window, error, L.Get("长截图输出")); }
     }
     internal async void StartLongScreenshot()
     {

@@ -79,6 +79,7 @@ public static class AnnotationRenderer
         }
         return drawing is ImageDrawing image && image.Rect.Contains(point);
     }
+    private static double CornerRadius(Annotation item, Rect rect) => Math.Max(0, Math.Min(item.Appearance.CornerRadius, Math.Min(rect.Width, rect.Height) / 2));
     private static void DrawItem(DrawingContext dc, BitmapSource image, Annotation item)
     {
         var first = item.Points[0]; var last = item.Points[item.Points.Count - 1];
@@ -94,8 +95,13 @@ public static class AnnotationRenderer
         pen.DashStyle = item.Appearance.Dash == AnnotationDash.Dash ? DashStyles.Dash : item.Appearance.Dash == AnnotationDash.Dot ? DashStyles.Dot : DashStyles.Solid;
         switch (item.Kind)
         {
-            case AnnotationKind.Rectangle: dc.DrawRectangle(item.Appearance.Fill ? brush : null, pen, rect); break;
-            case AnnotationKind.RoundedRectangle: dc.DrawRoundedRectangle(item.Appearance.Fill ? brush : null, pen, rect, Math.Min(rect.Width, rect.Height) / 6, Math.Min(rect.Width, rect.Height) / 6); break;
+            case AnnotationKind.Rectangle:
+                if (item.Appearance.CornerRadius > 0) { var rounded = CornerRadius(item, rect); dc.DrawRoundedRectangle(item.Appearance.Fill ? brush : null, pen, rect, rounded, rounded); }
+                else dc.DrawRectangle(item.Appearance.Fill ? brush : null, pen, rect);
+                break;
+            case AnnotationKind.RoundedRectangle:
+                var corner = item.Appearance.CornerRadius > 0 ? CornerRadius(item, rect) : Math.Min(rect.Width, rect.Height) / 6;
+                dc.DrawRoundedRectangle(item.Appearance.Fill ? brush : null, pen, rect, corner, corner); break;
             case AnnotationKind.Spotlight: dc.DrawRectangle(null, pen, rect); break;
             case AnnotationKind.Cover: dc.DrawRectangle(brush, null, rect); break;
             case AnnotationKind.Ellipse: dc.DrawEllipse(item.Appearance.Fill ? brush : null, pen, new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2), rect.Width / 2, rect.Height / 2); break;
@@ -118,7 +124,7 @@ public static class AnnotationRenderer
                 if (item.Kind == AnnotationKind.Highlight)
                 {
                     brush = new SolidColorBrush(Color.FromArgb(85, brush.Color.R, brush.Color.G, brush.Color.B));
-                    pen = new Pen(brush, Math.Max(12, item.Thickness * 5)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+                    pen = new Pen(brush, Math.Max(12, item.Thickness * 5)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, DashStyle = item.Appearance.Dash == AnnotationDash.Dash ? DashStyles.Dash : item.Appearance.Dash == AnnotationDash.Dot ? DashStyles.Dot : DashStyles.Solid };
                 }
                 var path = new StreamGeometry();
                 using (var g = path.Open())
@@ -136,7 +142,8 @@ public static class AnnotationRenderer
                 dc.DrawGeometry(item.Kind == AnnotationKind.Polyline && item.Appearance.Fill ? brush : null, pen, path); break;
             case AnnotationKind.Text:
                 var content = item.Appearance.TextWrap == AnnotationTextWrap.Character ? string.Join("\u200B", item.Text.Select(c => c.ToString())) : item.Text;
-                var text = new FormattedText(content, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, new Typeface(item.FontFamily), item.FontSize, brush, 1.0);
+                var typeface = new Typeface(new FontFamily(item.FontFamily), item.Italic ? FontStyles.Italic : FontStyles.Normal, item.Bold ? FontWeights.Bold : FontWeights.Normal, FontStretches.Normal);
+                var text = new FormattedText(content, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface, item.FontSize, brush, 1.0);
                 if (item.Appearance.TextWrap != AnnotationTextWrap.None) text.MaxTextWidth = Math.Max(1, image.PixelWidth - start.X);
                 if (item.Appearance.TextBackground) dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromArgb(190, 255, 255, 255)), null, new Rect(start.X - 3, start.Y - 3, text.Width + 6, text.Height + 6), 3, 3);
                 dc.DrawText(text, start); break;

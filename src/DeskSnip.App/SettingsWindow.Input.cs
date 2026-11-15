@@ -37,7 +37,8 @@ internal sealed partial class SettingsWindow
         Choice(general, nameof(AppSettings.MarkPencilCursor), L.Get("画笔光标类型"), new[] { "CrossAndOutline", "Cross", "Outline", "Arrow" }, new[] { L.Get("十字和轮廓"), L.Get("十字"), L.Get("轮廓"), L.Get("箭头") });
         Bind(general, nameof(AppSettings.MarkPencilOutlineMinWidth), L.Get("显示画笔轮廓的最小宽度"), L.Get("0–400 像素"));
         Bind(general, nameof(AppSettings.MarkRememberPinTool), L.Get("记住钉图上最后使用的标注工具")); Bind(general, nameof(AppSettings.MarkRememberScreenshotTool), L.Get("记住截图中最后使用的标注工具"));
-        Bind(general, nameof(AppSettings.MarkLimitToSelection), L.Get("将标注内容限制在选区内")); Bind(general, nameof(AppSettings.MarkRememberToolVariants), L.Get("记住工具栏子工具选择"));
+        Bind(general, nameof(AppSettings.MarkLimitToSelection), L.Get("将标注内容限制在选区内"));
+        SettingsLayout.FullRow(general, SettingsLayout.Text(L.Get("点击工具栏分组图标直接使用当前默认工具；右侧箭头或右键切换，选择会记住。"), 11, "SubtleBrush"));
         SettingsLayout.Row(general, L.Get("调整标注按钮"), SettingsLayout.Button(L.Get("编辑按钮…"), EditMarkToolbar));
         Bind(general, nameof(AppSettings.MarkDisableWheel), L.Get("禁用鼠标滚轮调整标注工具")); Bind(general, nameof(AppSettings.MarkQuickSettingsPadding), L.Get("快捷标注面板边距"), L.Get("0–100 像素"));
         var geometry = SettingsLayout.Section(page.Panel, L.Get("几何形状")); Choice(geometry, nameof(AppSettings.MarkRoundedControls), L.Get("圆角控制点显示"), new[] { "Hover", "Always", "Never" }, new[] { L.Get("鼠标悬停时显示"), L.Get("始终显示"), L.Get("不显示") });
@@ -92,7 +93,7 @@ internal sealed partial class SettingsWindow
         buttons.Children.Add(SpacedButton(L.Get("清空所有快捷键"), () => { foreach (var item in actionBindings) item.Hotkey = ""; foreach (var name in new[] { nameof(AppSettings.CaptureHotkey), nameof(AppSettings.PinHotkey), nameof(AppSettings.RecordHotkey) }) textPreferences[name].Text = ""; RenderActions(); }));
         var ignored = ProcessListButton(nameof(AppSettings.ShortcutIgnoredProcesses), L.Get("快捷键忽略进程")); ignored.Margin = new Thickness(8, 0, 0, 6); buttons.Children.Add(ignored); SettingsLayout.FullRow(group, buttons);
         Bind(group, nameof(AppSettings.ShortcutDisableInFullscreen), L.Get("全屏应用中禁用快捷键"));
-        SettingsLayout.FullRow(group, SettingsLayout.Text(L.Get("点击输入框后按组合键；Backspace / Delete 清空。绿色表示格式有效，实际系统占用在保存后提示。"), 11, "SubtleBrush"));
+        SettingsLayout.FullRow(group, SettingsLayout.Text(L.Get("点击输入框后按组合键完成设置；Esc / Backspace 取消，Delete 或 × 清空。绿色表示格式有效，实际系统占用在保存后提示。"), 11, "SubtleBrush"));
     }
     private static Button SpacedButton(string label, Action action) { var button = SettingsLayout.Button(label, action); button.Margin = new Thickness(8, 0, 0, 6); return button; }
     private void RenderActions()
@@ -175,7 +176,7 @@ internal sealed partial class SettingsWindow
     {
         shortcutLanguageInputs[id] = input;
         SetShortcutText(input, ShortcutKeys.Display(input.Text));
-        SettingsLayout.Input(input, id, label, double.PositiveInfinity); input.IsReadOnly = true; input.FontSize = 12; input.Padding = new Thickness(3, 5, 3, 5); input.TextWrapping = TextWrapping.Wrap; input.HorizontalContentAlignment = HorizontalAlignment.Center; input.VerticalAlignment = VerticalAlignment.Center; input.Margin = new Thickness(0); input.MinHeight = 30; input.BorderThickness = new Thickness(0); input.ToolTip = L.Get("点击后按快捷键；Backspace / Delete 清空");
+        SettingsLayout.Input(input, id, label, double.PositiveInfinity); input.IsReadOnly = true; input.FontSize = 12; input.Padding = new Thickness(3, 5, 3, 5); input.TextWrapping = TextWrapping.Wrap; input.HorizontalContentAlignment = HorizontalAlignment.Center; input.VerticalAlignment = VerticalAlignment.Center; input.Margin = new Thickness(0); input.MinHeight = 30; input.BorderThickness = new Thickness(0); input.ToolTip = L.Get("点击后按快捷键完成设置；Esc / Backspace 取消，Delete 或 × 清空");
         if (input.Parent is Panel oldParent) oldParent.Children.Remove(input);
         var shell = new Grid(); shell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); shell.ColumnDefinitions.Add(new ColumnDefinition()); shell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); Grid.SetColumn(input, 1); shell.Children.Add(input);
         var placeholder = SettingsLayout.Text(L.Get("按下快捷键"), 12, "SubtleBrush"); placeholder.IsHitTestVisible = false; placeholder.VerticalAlignment = VerticalAlignment.Center; placeholder.HorizontalAlignment = HorizontalAlignment.Center; Grid.SetColumn(placeholder, 1); shell.Children.Add(placeholder);
@@ -183,9 +184,25 @@ internal sealed partial class SettingsWindow
         var clear = SettingsLayout.Button("×", () => SetShortcutText(input, "")); clear.Padding = new Thickness(4, 0, 4, 0); clear.MinHeight = 22; clear.BorderThickness = new Thickness(0); clear.Margin = new Thickness(2, 0, 4, 0); clear.Foreground = Brushes.IndianRed;
         Grid.SetColumn(clear, 2); shell.Children.Add(clear); clear.IsEnabled = input.IsEnabled; AutomationProperties.SetName(clear, L.Join(L.Get("清空快捷键："),label));
         void Update() { placeholder.Visibility = input.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed; var valid = input.Text.Length > 0; try { if (valid) { var stored = ShortcutKeys.FromDisplay(input.Text); if (global) Hotkeys.Parse(stored); else ShortcutKeys.Validate(stored); } state.Text = valid ? "✓" : "−"; state.Foreground = valid ? Brushes.SeaGreen : Brushes.Gray; state.ToolTip = valid ? global ? L.Get("格式有效，保存后检查系统占用") : L.Get("格式有效") : L.Get("未绑定"); } catch (ArgumentException error) { state.Text = "!"; state.Foreground = Brushes.IndianRed; state.ToolTip = error.Message; } }
-        input.PreviewKeyDown += (_, e) => { if (e.Key == Key.Tab && global) return; var key = e.Key == Key.System ? e.SystemKey : e.Key; if (key == Key.Back || key == Key.Delete) SetShortcutText(input, ""); else if (!global || !ShortcutKeys.IsModifier(key)) SetShortcutText(input, ShortcutKeys.Display(ShortcutKeys.Format(key, Keyboard.Modifiers))); e.Handled = true; };
+        var previous = input.Text;
+        input.PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Tab && global) return;
+            var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            switch (ShortcutEditRules.Resolve(key, Keyboard.Modifiers, global, out var value))
+            {
+                case ShortcutEditAction.Cancel: SetShortcutText(input, previous); input.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); break;
+                case ShortcutEditAction.Clear: SetShortcutText(input, ""); break;
+                case ShortcutEditAction.Set: SetShortcutText(input, value); input.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)); break;
+            }
+            e.Handled = true;
+        };
         input.TextChanged += (_, _) => { Update(); changed(); }; Update();
-        var frame = new Border { Child = shell, CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), MinHeight = 32, VerticalAlignment = VerticalAlignment.Center, IsEnabled = input.IsEnabled }; frame.SetResourceReference(Border.BackgroundProperty, "PanelBrush"); frame.SetResourceReference(Border.BorderBrushProperty, "BorderBrush"); if (!input.IsEnabled) frame.Opacity = .45; return frame;
+        var frame = new Border { Child = shell, CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), MinHeight = 32, VerticalAlignment = VerticalAlignment.Center, IsEnabled = input.IsEnabled }; frame.SetResourceReference(Border.BackgroundProperty, "PanelBrush"); frame.SetResourceReference(Border.BorderBrushProperty, "BorderBrush"); if (!input.IsEnabled) frame.Opacity = .45;
+        shell.MouseLeftButtonDown += (_, _) => input.Focus();
+        input.GotKeyboardFocus += (_, _) => { previous = input.Text; frame.BorderBrush = Ui.Accent; input.SelectAll(); };
+        input.LostKeyboardFocus += (_, _) => frame.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+        return frame;
     }
     private static void SetShortcutText(TextBox input, string value) { input.SetCurrentValue(TextBox.TextProperty, value); input.GetBindingExpression(TextBox.TextProperty)?.UpdateSource(); }
 

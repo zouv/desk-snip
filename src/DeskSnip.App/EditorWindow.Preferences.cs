@@ -12,10 +12,7 @@ namespace DeskSnip.App;
 
 internal sealed partial class EditorWindow
 {
-    private static readonly Dictionary<AnnotationKind, AnnotationKind> rememberedVariants = new Dictionary<AnnotationKind, AnnotationKind>();
-    internal AnnotationKind LastTool => canvas.LastTool;
-    internal Action<System.Windows.Media.Imaging.BitmapSource, string>? ServiceOperationRequested { get; set; }
-    internal void StartPrivacyDetection() { _ = DetectPrivacy(); }
+    internal AnnotationKind LastTool => canvas.LastTool;    internal Action<System.Windows.Media.Imaging.BitmapSource, string>? ServiceOperationRequested { get; set; }
     private void ConfigureQuickSettings(FloatingToolbar toolbar)
     {
         if (!settings.MarkQuickSettings) return;
@@ -29,15 +26,15 @@ internal sealed partial class EditorWindow
     {
         switch (group)
         {
-            case "Rectangle": AddToolGroup(toolbar, ToolGlyph.Rectangle, L.Get("形状工具"), AnnotationKind.Rectangle, AnnotationKind.Ellipse, AnnotationKind.RoundedRectangle); break;
-            case "Arrow": AddToolGroup(toolbar, ToolGlyph.Arrow, L.Get("箭头与线条"), AnnotationKind.Arrow, AnnotationKind.Line, AnnotationKind.Polyline); break;
-            case "Pen": AddToolGroup(toolbar, ToolGlyph.Brush, L.Get("画笔与高亮"), AnnotationKind.Pen, AnnotationKind.Highlight); break;
-            case "Text": AddToolGroup(toolbar, ToolGlyph.Text, L.Get("文字与水印"), AnnotationKind.Text, AnnotationKind.Watermark); break;
+            case "Rectangle": AddToolGroup(toolbar, "Rectangle", ToolGlyph.Rectangle, L.Get("形状工具")); break;
+            case "Arrow": AddToolGroup(toolbar, "Arrow", ToolGlyph.Arrow, L.Get("箭头与线条")); break;
+            case "Pen": AddToolGroup(toolbar, "Pen", ToolGlyph.Brush, L.Get("画笔与高亮")); break;
+            case "Text": AddToolGroup(toolbar, "Text", ToolGlyph.Text, L.Get("文字与水印")); break;
             case "Number": var number = FloatingTools.Button(ToolGlyph.Number, L.Get("序号"), () => canvas.SetTool(AnnotationKind.Number)); number.Tag = AnnotationKind.Number; toolbar.Items.Children.Add(number); toolButtons.Add((number, new AnnotationKind?[] { AnnotationKind.Number })); break;
-            case "Mosaic": AddToolGroup(toolbar, ToolGlyph.Mosaic, L.Get("马赛克与模糊"), AnnotationKind.Mosaic, AnnotationKind.Blur, AnnotationKind.MosaicPen); break;
-            case "Cover": AddToolGroup(toolbar, ToolGlyph.Cover, L.Get("遮挡工具"), AnnotationKind.Cover, AnnotationKind.CoverPen); break;
-            case "Eraser": AddToolGroup(toolbar, ToolGlyph.Eraser, L.Get("橡皮擦"), AnnotationKind.Eraser, AnnotationKind.EraserPen); break;
-            case "Spotlight": AddToolGroup(toolbar, ToolGlyph.Spotlight, L.Get("聚光与放大"), AnnotationKind.Spotlight, AnnotationKind.Magnifier); break;
+            case "Mosaic": AddToolGroup(toolbar, "Mosaic", ToolGlyph.Mosaic, L.Get("马赛克与模糊")); break;
+            case "Cover": AddToolGroup(toolbar, "Cover", ToolGlyph.Cover, L.Get("遮挡工具")); break;
+            case "Eraser": AddToolGroup(toolbar, "Eraser", ToolGlyph.Eraser, L.Get("橡皮擦")); break;
+            case "Spotlight": AddToolGroup(toolbar, "Spotlight", ToolGlyph.Spotlight, L.Get("聚光与放大")); break;
         }
     }
     private bool HandleConfiguredShortcut(KeyEventArgs e)
@@ -68,6 +65,22 @@ internal sealed partial class AnnotationCanvas
     internal AnnotationKind LastTool { get; private set; } = AnnotationKind.Arrow;
     internal event Action? ToolChanged;
     internal void ToggleSecondaryEditing() { secondaryEditing = !secondaryEditing; ClearSelection(); }
+    internal bool HandleEditKey(KeyEventArgs e)
+    {
+        if (Keyboard.FocusedElement is TextBox || Keyboard.FocusedElement is ComboBox) return false;
+        if ((pathBuilding || stroke.Count > 0 || draggingObject) && e.Key == Key.Escape) { CancelInteraction(); return true; }
+        if (e.Key == Key.Delete) { DeleteSelected(); return true; }
+        if (e.Key == Key.Escape) { if (Selected != null) { ClearSelection(); return true; } return false; }
+        if (e.Key == Key.Enter && (Selected?.Kind == AnnotationKind.Text || Selected?.Kind == AnnotationKind.Watermark)) { EditSelectedText(); return true; }
+        var control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+        if (control && e.Key == Key.Z) { if ((Keyboard.Modifiers & ModifierKeys.Shift) != 0) Document.Clear(); else Document.Undo(); Refresh(); return true; }
+        if (control && e.Key == Key.Y) { Document.Redo(); Refresh(); return true; }
+        if (control && e.Key == Key.D) { DuplicateSelected(); return true; }
+        var dx = e.Key == Key.Left ? -1 : e.Key == Key.Right ? 1 : 0;
+        var dy = e.Key == Key.Up ? -1 : e.Key == Key.Down ? 1 : 0;
+        if ((dx != 0 || dy != 0) && Selected != null) { NudgeSelected(dx, dy); return true; }
+        return false;
+    }
     internal void AddAutomaticWatermark()
     {
         Document.Add(new Annotation(AnnotationKind.Watermark, new[] { new PixelPoint(8, 8) }, 0x55909090, 3, preferences.MarkWatermarkText.Replace("{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")), appearance: new AnnotationAppearance(opacity: .6))); Refresh();

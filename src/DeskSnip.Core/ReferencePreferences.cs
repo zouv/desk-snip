@@ -50,6 +50,7 @@ public sealed partial class AppSettings
     [DataMember] public bool MagnifierSmooth { get; set; }
     [DataMember] public string MagnifierGridColor { get; set; } = "#8CAAAAAA";
     [DataMember] public string ColorFormatOrder { get; set; } = "HashHex,Rgb";
+    // 保留旧字段以兼容既有配置与偏好导出；取消截图已不再二次确认，也不再暴露到界面。
     [DataMember] public bool ScreenshotCloseConfirmation { get; set; } = true;
     [DataMember] public bool ScreenshotShowShortcuts { get; set; } = true;
     [DataMember] public int ScreenshotAreaHistoryLimit { get; set; } = 100;

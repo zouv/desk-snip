@@ -32,6 +32,15 @@ public class InputPreferenceTests
     }
 
     [Fact]
+    public void PinSelectionBorderShortcutDefaultsToF()
+    {
+        var settings = new AppSettings();
+        Assert.Equal("F", InputBindingRules.Shortcut(settings, "Pin", "Border"));
+        Assert.Contains(InputBindingCatalog.Actions("Pin"), action => action.Name == "Border" && action.Supported);
+        settings.Validate();
+    }
+
+    [Fact]
     public void InputPreferencesCloneAndPortableImportKeepIndependentLists()
     {
         var settings = new AppSettings

@@ -9,7 +9,7 @@ public enum AnnotationKind { Rectangle, Ellipse, Line, Arrow, Pen, Highlight, Te
 
 public sealed class Annotation
 {
-    public Annotation(AnnotationKind kind, IEnumerable<PixelPoint> points, uint argb, double thickness, string text = "", string fontFamily = "Microsoft YaHei UI", double? fontSize = null, AnnotationAppearance? appearance = null)
+    public Annotation(AnnotationKind kind, IEnumerable<PixelPoint> points, uint argb, double thickness, string text = "", string fontFamily = "Microsoft YaHei UI", double? fontSize = null, AnnotationAppearance? appearance = null, bool bold = false, bool italic = false)
     {
         if (!Enum.IsDefined(typeof(AnnotationKind), kind)) throw new ArgumentOutOfRangeException(nameof(kind));
         if (thickness < 1 || thickness > 80 || double.IsNaN(thickness)) throw new ArgumentOutOfRangeException(nameof(thickness));
@@ -19,7 +19,7 @@ public sealed class Annotation
         if (copy.Length == 0) throw new ArgumentException(TextCatalog.Get("标注至少需要一个点。"), nameof(points));
         Kind = kind; Points = Array.AsReadOnly(copy); Argb = argb; Thickness = thickness; Text = text ?? "";
         FontFamily = fontFamily; FontSize = fontSize ?? Math.Max(14, thickness * 6);
-        Appearance = appearance ?? new AnnotationAppearance();
+        Appearance = appearance ?? new AnnotationAppearance(); Bold = bold; Italic = italic;
     }
     public AnnotationKind Kind { get; }
     public ReadOnlyCollection<PixelPoint> Points { get; }
@@ -29,10 +29,12 @@ public sealed class Annotation
     public string FontFamily { get; }
     public double FontSize { get; }
     public AnnotationAppearance Appearance { get; }
-    public Annotation WithPoints(IEnumerable<PixelPoint> points) => new Annotation(Kind, points, Argb, Thickness, Text, FontFamily, FontSize, Appearance);
-    public Annotation WithText(string text) => new Annotation(Kind, Points, Argb, Thickness, text, FontFamily, FontSize, Appearance);
-    public Annotation WithStyle(uint argb, double thickness, string? fontFamily = null, double? fontSize = null, AnnotationAppearance? appearance = null)
-        => new Annotation(Kind, Points, argb, thickness, Text, fontFamily ?? FontFamily, fontSize ?? FontSize, appearance ?? Appearance);
+    public bool Bold { get; }
+    public bool Italic { get; }
+    public Annotation WithPoints(IEnumerable<PixelPoint> points) => new Annotation(Kind, points, Argb, Thickness, Text, FontFamily, FontSize, Appearance, Bold, Italic);
+    public Annotation WithText(string text) => new Annotation(Kind, Points, Argb, Thickness, text, FontFamily, FontSize, Appearance, Bold, Italic);
+    public Annotation WithStyle(uint argb, double thickness, string? fontFamily = null, double? fontSize = null, AnnotationAppearance? appearance = null, bool? bold = null, bool? italic = null)
+        => new Annotation(Kind, Points, argb, thickness, Text, fontFamily ?? FontFamily, fontSize ?? FontSize, appearance ?? Appearance, bold ?? Bold, italic ?? Italic);
 }
 
 /// <summary>保存不可变快照；新编辑切断 redo，清空也可以撤销。</summary>

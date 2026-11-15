@@ -28,7 +28,7 @@ internal sealed partial class AppController
             if (visible) Add(menu, string.IsNullOrEmpty(configured?.Title) ? DesktopActions.Label(name) : configured!.Title, handlers[name]);
         }
         foreach (var binding in settings.ActionBindings.Where(b => b.TrayMenu && !DesktopActions.DefaultNames.Contains(b.Action))) Add(menu, binding.Title.Length == 0 ? DesktopActions.Label(binding.Action) : binding.Title, handlers[binding.Action]);
-        menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, L.Get("打开 DeskSnip"), Show); Add(menu, L.Get("设置"), Settings); Add(menu, L.Get("解除全部穿透 / 锁定"), RecoverPins);
+        menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, L.Get("打开主界面"), Show); Add(menu, L.Get("设置"), Settings); Add(menu, L.Get("解除全部穿透 / 锁定"), RecoverPins);
         Add(menu, L.Get("显示录制工具栏"), () => recordingBar?.Show()); Add(menu, L.Get("停止并保存录制"), () => { _ = FinishRecording(); }); menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, L.Get("退出"), RequestExit);
         var old = tray.ContextMenuStrip; tray.ContextMenuStrip = menu; old?.Dispose();
     }

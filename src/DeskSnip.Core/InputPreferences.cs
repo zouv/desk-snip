@@ -19,7 +19,9 @@ public sealed partial class AppSettings
     [DataMember] public string MarkLastPinTool { get; set; } = "Arrow";
     [DataMember] public string MarkLastScreenshotTool { get; set; } = "Arrow";
     [DataMember] public bool MarkLimitToSelection { get; set; } = true;
+    // 旧设置：工具栏默认工具现在始终按组记忆并持久化到 MarkToolDefaults。
     [DataMember] public bool MarkRememberToolVariants { get; set; }
+    [DataMember] public string MarkToolDefaults { get; set; } = "";
     [DataMember] public bool MarkDisableWheel { get; set; }
     [DataMember] public int MarkQuickSettingsPadding { get; set; }
     [DataMember] public string MarkRoundedControls { get; set; } = "Hover";
@@ -71,6 +73,7 @@ public sealed partial class AppSettings
         var toolbar = (MarkToolbarTools ?? "").Split(','); if (toolbar.Length < 1 || toolbar.Length > 9 || toolbar.Distinct().Count() != toolbar.Length || toolbar.Any(t => !AnnotationPreferenceRules.ToolbarGroups.Contains(t))) throw new ArgumentException(TextCatalog.Get("标注工具栏配置无效。"));
         InputBindingRules.ValidateShortcuts(BuiltinShortcuts, BuiltinMergeNumberKeys);
         InputBindingRules.ValidateMouse(PinMouseBindings, false); InputBindingRules.ValidateMouse(GlobalMouseBindings, true);
+        AnnotationPreferenceRules.ParseToolDefaults(MarkToolDefaults);
         InputBindingRules.ProcessNames(ShortcutIgnoredProcesses); InputBindingRules.ProcessNames(GlobalMouseIgnoredProcesses);
         if (HiddenDefaultActions != null && (HiddenDefaultActions.Count > 16 || HiddenDefaultActions.Distinct().Count() != HiddenDefaultActions.Count || HiddenDefaultActions.Any(a => !DesktopActions.DefaultNames.Contains(a)))) throw new ArgumentException(TextCatalog.Get("默认动作配置无效。"));
     }
@@ -79,6 +82,33 @@ public sealed partial class AppSettings
 public static class AnnotationPreferenceRules
 {
     public static readonly string[] ToolbarGroups = { "Rectangle", "Arrow", "Pen", "Text", "Number", "Mosaic", "Cover", "Eraser", "Spotlight" };
+    public static AnnotationKind[] GroupTools(string group) => group switch
+    {
+        "Rectangle" => new[] { AnnotationKind.Rectangle, AnnotationKind.Ellipse, AnnotationKind.RoundedRectangle },
+        "Arrow" => new[] { AnnotationKind.Arrow, AnnotationKind.Line, AnnotationKind.Polyline },
+        "Pen" => new[] { AnnotationKind.Pen, AnnotationKind.Highlight },
+        "Text" => new[] { AnnotationKind.Text, AnnotationKind.Watermark },
+        "Number" => new[] { AnnotationKind.Number },
+        "Mosaic" => new[] { AnnotationKind.Mosaic, AnnotationKind.Blur, AnnotationKind.MosaicPen },
+        "Cover" => new[] { AnnotationKind.Cover, AnnotationKind.CoverPen },
+        "Eraser" => new[] { AnnotationKind.Eraser, AnnotationKind.EraserPen },
+        "Spotlight" => new[] { AnnotationKind.Spotlight, AnnotationKind.Magnifier },
+        _ => throw new ArgumentException(TextCatalog.Get("工具栏分组无效。"))
+    };
+    public static IReadOnlyDictionary<string, AnnotationKind> ParseToolDefaults(string value)
+    {
+        var result = new Dictionary<string, AnnotationKind>(StringComparer.Ordinal);
+        if (string.IsNullOrWhiteSpace(value)) return result;
+        if (value.Length > 512) throw new ArgumentException(TextCatalog.Get("工具栏默认工具配置无效。"));
+        foreach (var pair in value.Split(','))
+        {
+            var parts = pair.Split('=');
+            if (parts.Length != 2 || !ToolbarGroups.Contains(parts[0]) || !Enum.TryParse(parts[1], out AnnotationKind kind) ||
+                !GroupTools(parts[0]).Contains(kind) || result.ContainsKey(parts[0])) throw new ArgumentException(TextCatalog.Get("工具栏默认工具配置无效。"));
+            result[parts[0]] = kind;
+        }
+        return result;
+    }
     public static bool ValidPalette(string value) => value != null && value.Split(',').Length <= 24 && value.Split(',').All(c => Regex.IsMatch(c, "^#[0-9a-fA-F]{6}$"));
     public static PixelPoint ConstrainStroke(PixelPoint start, PixelPoint end, string mode)
     {

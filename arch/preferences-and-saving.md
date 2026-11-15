@@ -13,13 +13,13 @@
 - `InterfaceLanguage` 的系统/中文/English 选项保留草稿，AppController 仅保存成功后 L.Apply。ProductWindow 只刷新产品显示文字；SettingsWindow 同步所有独立页与专用快捷键显示，ChoiceItem 的标签弱订阅语言变化，Value/用户标题不变。服务源/目标语言与 OCR 语言各自独立。
 - `SettingsControlStyles.xaml` 仅在设置窗口合并，统一下拉、勾选、单选与页签的深浅背景；`FitLeft` 按可用宽度约束输入，Row 的 minimumEditorWidth 为鼠标组合保留 320 DIP，避免最小窗口截断修饰键；NumberInput 提供带边界的上下调整。内置页签使用 WrapPanel 保持原顺序，选中页签字重仅作用于页签文字。UI 验证等待布局完成后截取页首/页底。
 - 联网服务页在 partial 文件接线；语言位于系统页，凭据保留到保存事务。读取、切页、恢复本页和导出不写密钥；恢复服务默认只丢弃待保存的新密钥输入，清除已存密钥仍需勾选明确选项后保存。
-- `Hotkeys.Apply` 注册基础三动作和额外全局动作；托盘单击/双击/中键按偏好执行，双击取消延迟单击。ApplyTrayAppearance 支持图标模式/颜色；若录制中隐藏托盘，显示停止工具栏。热键暂停仅解除注册，不丢动作配置。
+- `Hotkeys.Apply` 注册基础三动作和额外全局动作；托盘单击/双击/中键按偏好执行，双击取消延迟单击。ApplyTrayAppearance 支持图标模式/颜色；若录制中隐藏托盘，显示停止工具栏。设置保存后若托盘已隐藏且主窗口不可见，非录制状态显示主窗口，避免无入口。设置窗口打开期间 AppController 暂停全局热键（hotkeysSuspended），关闭后按最新配置恢复，避免录入组合被 WM_HOTKEY 抢占。热键暂停仅解除注册，不丢动作配置。
 - `CapturePreferenceRules` 为检测边距/外部点击扩展/颜色顺序/复制缩放提供 Core 规则；CaptureWindow / PixelMagnifier 消费检测、辅助线、边框/锚点、指针、放大镜和鼠标偏好。PinPreferenceRules 独立控制锁定限制与缩放基准点，PinWindow 应用步长、位置、背景/阴影、原图输出和穿透工具栏生命周期。
-- `SystemIntegrationChange` 只在保存变化的 StartWithWindows / ExplorerContextMenu 时修改 HKCU 专属入口，失败回滚；App 的 --background 支持后台自启，--pin-file 可走 PinFileChannel 通知已有实例。测试不得修改真实启动/右键配置。
+- `SystemIntegrationChange` 只在保存变化的 StartWithWindows / ExplorerContextMenu 时修改 HKCU 专属入口，失败回滚；App 默认只在托盘运行，--background 保留后台自启兼容，--pin-file 可走 PinFileChannel 通知已有实例。测试不得修改真实启动/右键配置。`ScreenshotCloseConfirmation` 仅作为旧配置字段保留，取消截图不再二次确认，也不在设置页暴露。
 - 本地 OCR 窗口和直接复制共用默认排版/空格/标点；无结果/失败回到校对窗口。ServiceClient.CreateHandler 消费系统/无/HTTP 代理，VerifyProxy 只验证 TCP 连通。
-- `InputPreferences` 定义标注、内置键与鼠标偏好，旧配置通过 ReferencePreferenceNames 初始化。动作/内置/鼠标列表深复制，可移植导出排除本机进程名单。未改鼠标页时保留 null 与旧版四类绑定；DefaultPin 映射旧隐藏/锁定，默认全局鼠标关闭。
-- `SettingsWindow.Input` 逐行编辑动作/托盘/名称、清空与名单；ShortcutEditor 把真实按键转为易读文本，窄窗口允许长组合换行，SetCurrentValue 保留基础热键的双向绑定；FromDisplay 读取为原键名。只读不可用项经 L.BindReadOnlyLabel 单向绑定语言，侧栏长名称自动换行。草稿切页和重绘不丢失，RestoreInputPage 只恢复当前输入页。
-- `InputBindingCatalog` 分八个场景，三种未实现钉图类型禁用；ShortcutKeys.Match 子场景优先。Core 校验真实键名、别名、小键盘合并后冲突与重复鼠标组合；清空键位用空串覆盖默认值。翻译/文档/表格/公式快捷键打开相应确认窗口，未自动上传。
+- `InputPreferences` 定义标注、内置键与鼠标偏好，旧配置通过 ReferencePreferenceNames 初始化。动作/内置/鼠标列表深复制，可移植导出排除本机进程名单。未改鼠标页时保留 null 与旧版四类绑定；DefaultPin 映射旧隐藏/锁定，默认全局鼠标关闭。`MarkToolDefaults` 以 `Group=Kind` 保存按组默认标注工具，AnnotationToolDefaults 在选择时更新并经 AppController 保存；`MarkRememberToolVariants` 与 `PinDoubleClickAction` 仅为旧配置兼容字段；钉图左键双击固定复制并关闭，设置页不再暴露双击动作。
+- `SettingsWindow.Input` 逐行编辑动作/托盘/名称、清空与名单；ShortcutEditor 聚焦后按组合键立即完成并移出焦点，Esc / Backspace 恢复进入前的值，Delete 或 × 清空（`ShortcutEditRules.Resolve`）；真实按键转为易读文本，窄窗口允许长组合换行，SetCurrentValue 保留基础热键的双向绑定；FromDisplay 读取为原键名。只读不可用项经 L.BindReadOnlyLabel 单向绑定语言，侧栏长名称自动换行。草稿切页和重绘不丢失，RestoreInputPage 只恢复当前输入页。
+- `InputBindingCatalog` 分八个场景，三种未实现钉图类型禁用；截图场景含切换到录屏（默认 G）；ShortcutKeys.Match 子场景优先。Core 校验真实键名、别名、小键盘合并后冲突与重复鼠标组合；清空键位用空串覆盖默认值。翻译/文档/表格/公式快捷键打开相应确认窗口，未自动上传。
 - `PinPointerGesture` 区分单击与移动阈值后的拖动，PinWindow.Input 执行单击/双击/滚轮/侧键和任意绑定拖动；Ctrl 多选与图像拖出不互相触发。销毁仍确认，锁定关闭规则共用 PinPreferenceRules。
 - `Windows.GlobalMouse` 仅用户保存非空组合后注册低层钩子，忽略注入事件，按进程和忙碌状态判断；MouseGestureSession 产生物理像素区域，GlobalMouseOverlay 在成图前关闭。AppController.GlobalMouse 把区域分派给截图/识别/长截图/GIF 设置，翻译和公式先打开确认窗口。
 - JavaScript/通用 IPC、管理员启动、中英文以外的界面语言、自动更新、AVIF、更多贴图类型及云同步仍未实现，具体参考项见 docs/06-设置参考对照.md。

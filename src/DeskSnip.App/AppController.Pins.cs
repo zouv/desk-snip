@@ -18,8 +18,14 @@ internal sealed partial class AppController
     {
         if (!restored) { record.Topmost = Store.Settings.PinDefaultTopmost; record.Opacity = Store.Settings.PinDefaultOpacity / 100d; }
         var originalPath = Workspace.ImagePath(record.Id, true);
-        var window = new PinWindow(image, EditPin, record, changed => Workspace.SaveImage(record.Id, output => ImageFiles.WritePng(changed, output)), restored,
+        var window = new PinWindow(image, record, changed => Workspace.SaveImage(record.Id, output => ImageFiles.WritePng(changed, output)), restored,
             File.Exists(originalPath) ? ImageFiles.Load(originalPath) : image, Store.Settings, region);
+        window.RememberToolRequested = kind =>
+        {
+            if (Exiting || !Store.Settings.MarkRememberPinTool) return;
+            try { var next = Store.Settings.Clone(); next.MarkLastPinTool = kind.ToString(); Store.SaveSettings(next); }
+            catch (Exception) { Window.ShowNotice(L.Get("标注工具记忆未保存，已编辑图片仍保留。")); }
+        };
         pins.Add(window);
         window.RecognizeRequested = imageToRead => RecognizeWithDialog(imageToRead, !Store.Settings.OcrDirectCopy && Store.Settings.OcrDialogOnPin);
         window.CopyTextRequested = imageToRead => RecognizeWithDialog(imageToRead, !Store.Settings.OcrDirectCopy && Store.Settings.OcrDialogOnCopy);

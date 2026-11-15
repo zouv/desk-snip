@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using DeskSnip.App.Imaging;
 using DeskSnip.Core;
 using Microsoft.Win32;
@@ -33,13 +36,15 @@ internal sealed partial class EditorWindow : ProductWindow
     private readonly MenuItem duplicate;
     private readonly MenuItem editText;
     private readonly List<(Button Button, AnnotationKind?[] Tools)> toolButtons = new List<(Button, AnnotationKind?[])>();
-    private static readonly string[] toolNames = { L.Get("矩形"), L.Get("椭圆"), L.Get("直线"), L.Get("箭头"), L.Get("画笔"), L.Get("高亮"), L.Get("文字"), L.Get("序号"), L.Get("马赛克"), L.Get("遮挡"), L.Get("圆角矩形"), L.Get("折线"), L.Get("聚光灯"), L.Get("局部放大"), L.Get("模糊"), L.Get("画笔马赛克"), L.Get("画笔遮挡"), L.Get("矩形橡皮擦"), L.Get("画笔橡皮擦"), L.Get("水印") };
+    internal static readonly string[] ToolNames = { L.Get("矩形"), L.Get("椭圆"), L.Get("直线"), L.Get("箭头"), L.Get("画笔"), L.Get("高亮"), L.Get("文字"), L.Get("序号"), L.Get("马赛克"), L.Get("遮挡"), L.Get("圆角矩形"), L.Get("折线"), L.Get("聚光灯"), L.Get("局部放大"), L.Get("模糊"), L.Get("画笔马赛克"), L.Get("画笔遮挡"), L.Get("矩形橡皮擦"), L.Get("画笔橡皮擦"), L.Get("水印") };
     private ComboBox colors = null!;
     private ComboBox thickness = null!;
     private ComboBox fonts = null!;
     private ComboBox sizes = null!;
     private CheckBox fill = null!;
     private CheckBox textBackground = null!;
+    private CheckBox bold = null!;
+    private CheckBox italic = null!;
     private ComboBox dash = null!;
     private ComboBox arrow = null!;
     private ComboBox effect = null!;
@@ -66,7 +71,6 @@ internal sealed partial class EditorWindow : ProductWindow
         outputs.Items.Children.Add(FloatingTools.Divider()); outputs.Items.Children.Add(FloatingTools.Button(ToolGlyph.Copy, L.Get("复制图片"), Copy, "Ctrl+C", true));
         status.Margin = new Thickness(5, 8, 5, 0); DockPanel.SetDock(status, Dock.Bottom); root.Children.Add(status);
         var toolbar = new FloatingToolbar { Name = "AnnotationTools", HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 10, 0, 0) }; DockPanel.SetDock(toolbar, Dock.Bottom); root.Children.Add(toolbar);
-        var selectTool = FloatingTools.Button(ToolGlyph.Select, L.Get("选择 / 移动"), () => canvas.SetTool(null)); toolbar.Items.Children.Add(selectTool); toolButtons.Add((selectTool, new AnnotationKind?[] { null }));
         foreach (var group in this.settings.MarkToolbarTools.Split(',')) AddConfiguredToolGroup(toolbar, group);
         toolbar.Items.Children.Add(FloatingTools.Divider());
         var tools = new WrapPanel();
@@ -83,12 +87,14 @@ internal sealed partial class EditorWindow : ProductWindow
         sizes.LostKeyboardFocus += (_, _) => ApplyFont(); sizes.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { ApplyFont(); e.Handled = true; } }; tools.Children.Add(sizes);
         fill = new CheckBox { Content = L.Get("填充"), Margin = new Thickness(8), VerticalAlignment = VerticalAlignment.Center }; tools.Children.Add(fill);
         textBackground = new CheckBox { Content = L.Get("文字底色"), Margin = new Thickness(8), VerticalAlignment = VerticalAlignment.Center }; tools.Children.Add(textBackground);
+        bold = new CheckBox { Content = L.Get("粗体"), Margin = new Thickness(8), VerticalAlignment = VerticalAlignment.Center }; italic = new CheckBox { Content = L.Get("斜体"), Margin = new Thickness(8), VerticalAlignment = VerticalAlignment.Center }; tools.Children.Add(bold); tools.Children.Add(italic);
         dash = new ComboBox { Width = 75, ItemsSource = new[] { L.Get("实线"), L.Get("虚线"), L.Get("点线") }, SelectedIndex = 0, Margin = new Thickness(3) }; tools.Children.Add(dash);
         arrow = new ComboBox { Width = 95, ItemsSource = new[] { L.Get("实心箭头"), L.Get("轮廓箭头"), L.Get("双向箭头"), L.Get("尺寸线") }, SelectedIndex = 0, Margin = new Thickness(3) }; tools.Children.Add(arrow);
         effect = new ComboBox { Width = 65, ItemsSource = new[] { 1d, 2d, 3d, 4d, 8d, 16d }, SelectedItem = 2d, Margin = new Thickness(3), ToolTip = L.Get("放大倍率 / 效果强度") }; tools.Children.Add(effect);
         opacity = new ComboBox { Width = 70, ItemsSource = new[] { 1d, .75, .5, .25 }, SelectedItem = 1d, Margin = new Thickness(3), ToolTip = L.Get("标注不透明度") }; tools.Children.Add(opacity);
         void AppearanceChanged() { if (!synchronizingStyle) canvas.ChangeAppearance(canvas.Appearance.WithEditorStyle(fill.IsChecked == true, (AnnotationDash)dash.SelectedIndex, (double)opacity.SelectedItem, (AnnotationArrow)arrow.SelectedIndex, (double)effect.SelectedItem, textBackground.IsChecked == true)); }
         fill.Click += (_, _) => AppearanceChanged(); textBackground.Click += (_, _) => AppearanceChanged(); dash.SelectionChanged += (_, _) => AppearanceChanged(); arrow.SelectionChanged += (_, _) => AppearanceChanged(); effect.SelectionChanged += (_, _) => AppearanceChanged(); opacity.SelectionChanged += (_, _) => AppearanceChanged();
+        bold.Click += (_, _) => { if (!synchronizingStyle) canvas.ChangeStyle(bold: bold.IsChecked == true); }; italic.Click += (_, _) => { if (!synchronizingStyle) canvas.ChangeStyle(italic: italic.IsChecked == true); };
         undo = FloatingTools.Button(ToolGlyph.Undo, L.Get("撤销"), () => { canvas.Document.Undo(); canvas.Refresh(); }, "Ctrl+Z"); redo = FloatingTools.Button(ToolGlyph.Redo, L.Get("重做"), () => { canvas.Document.Redo(); canvas.Refresh(); }, "Ctrl+Y"); toolbar.Items.Children.Add(undo); toolbar.Items.Children.Add(redo);
         var styleButton = FloatingTools.Button(ToolGlyph.Styles, L.Get("标注样式"), () => { styles.Visibility = styles.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; }); toolbar.Items.Children.Add(styleButton);
         ConfigureQuickSettings(toolbar);
@@ -110,13 +116,16 @@ internal sealed partial class EditorWindow : ProductWindow
         canvas.SetTool(initialTool); canvas.Changed += UpdateStatus; PreviewKeyDown += Keys; UpdateStatus();
         if (this.settings.MarkAutomaticWatermark) canvas.AddAutomaticWatermark();
     }
-    private void AddToolGroup(FloatingToolbar toolbar, ToolGlyph glyph, string name, params AnnotationKind[] kinds)
+    private void AddToolGroup(FloatingToolbar toolbar, string group, ToolGlyph glyph, string name)
     {
-        var menu = FloatingTools.Menu(); foreach (var kind in kinds) { var tool = kind; var item = FloatingTools.Item(toolNames[(int)tool], () => canvas.SetTool(tool)); item.Tag = tool; menu.Items.Add(item); }
+        var kinds = AnnotationPreferenceRules.GroupTools(group);
+        var menu = FloatingTools.Menu();
+        Button button = null!;
+        foreach (var kind in kinds) { var tool = kind; var item = FloatingTools.Item(ToolNames[(int)tool], () => { AnnotationToolDefaults.Set(group, tool); canvas.SetTool(tool); UpdateGroupLabel(); }); item.Tag = tool; menu.Items.Add(item); }
         menu.Opened += (_, _) => { for (var i = 0; i < kinds.Length; i++) ((MenuItem)menu.Items[i]).IsChecked = canvas.Kind == kinds[i]; };
-        var button = FloatingTools.MenuButton(glyph, name, menu); toolbar.Items.Children.Add(button); toolButtons.Add((button, kinds.Select(kind => (AnnotationKind?)kind).ToArray()));
-        button.Click += (_, _) => { if (settings.MarkRememberToolVariants && rememberedVariants.TryGetValue(kinds[0], out var tool)) canvas.SetTool(tool); };
-        canvas.ToolChanged += () => { if (canvas.Kind.HasValue && kinds.Contains(canvas.Kind.Value)) rememberedVariants[kinds[0]] = canvas.Kind.Value; };
+        button = FloatingTools.SplitMenuButton(glyph, name, () => canvas.SetTool(AnnotationToolDefaults.Get(group, kinds[0])), menu); toolbar.Items.Children.Add(button); toolButtons.Add((button, kinds.Select(kind => (AnnotationKind?)kind).ToArray()));
+        void UpdateGroupLabel() { var label = AnnotationToolDefaults.Label(name, AnnotationToolDefaults.Get(group, kinds[0])); AutomationProperties.SetName(button, label); button.ToolTip = label; }
+        UpdateGroupLabel();
     }
     private BitmapSource Output()
     {
@@ -148,7 +157,7 @@ internal sealed partial class EditorWindow : ProductWindow
         undo.IsEnabled = canvas.Document.CanUndo; redo.IsEnabled = canvas.Document.CanRedo;
         foreach (var tool in toolButtons) FloatingTools.SetSelected(tool.Button, tool.Tools.Contains(canvas.Kind));
         var item = canvas.Selected;
-        remove.IsEnabled = duplicate.IsEnabled = item != null; editText.IsEnabled = item?.Kind == AnnotationKind.Text;
+        remove.IsEnabled = duplicate.IsEnabled = item != null; editText.IsEnabled = item?.Kind == AnnotationKind.Text || item?.Kind == AnnotationKind.Watermark;
         if (item != null && colors != null)
         {
             synchronizingStyle = true;
@@ -163,7 +172,8 @@ internal sealed partial class EditorWindow : ProductWindow
             }
             finally { synchronizingStyle = false; }
         }
-        status.Text = L.Join(L.Join(L.Format("{0} × {1} px · {2} 个标注 · ",canvas.Image.PixelWidth,canvas.Image.PixelHeight,canvas.Document.Items.Count),(item == null ? L.Get("点击同类标注重新编辑 · Alt 拖动复制 · 选择模式可选任意对象") : L.Get("已选中：拖动移动 · Alt 拖动复制 · Delete 删除 · Esc 取消选择"))),L.Get(" · 显示缩放不改变导出尺寸"));
+        bold.IsChecked = item?.Bold ?? canvas.Bold; italic.IsChecked = item?.Italic ?? canvas.Italic;
+        status.Text = L.Join(L.Join(L.Format("{0} × {1} px · {2} 个标注 · ",canvas.Image.PixelWidth,canvas.Image.PixelHeight,canvas.Document.Items.Count),(item == null ? L.Get("点击同类标注重新编辑 · Alt 拖动复制 · Delete 删除") : L.Get("已选中：拖动移动 · Alt 拖动复制 · Delete 删除 · Esc 取消选择"))),L.Get(" · 显示缩放不改变导出尺寸"));
     }
     private void ApplyFont()
     {
@@ -197,7 +207,7 @@ internal sealed partial class EditorWindow : ProductWindow
         if (e.Key == Key.Delete) { canvas.DeleteSelected(); e.Handled = true; return; }
         if (e.Key == Key.Escape) { canvas.ClearSelection(); e.Handled = true; return; }
         if (e.Key == Key.Enter && Keyboard.FocusedElement is Button) return;
-        if (e.Key == Key.Enter && canvas.Selected?.Kind == AnnotationKind.Text) { EditSelectedText(); e.Handled = true; return; }
+        if (e.Key == Key.Enter && (canvas.Selected?.Kind == AnnotationKind.Text || canvas.Selected?.Kind == AnnotationKind.Watermark)) { EditSelectedText(); e.Handled = true; return; }
         var dx = e.Key == Key.Left ? -1 : e.Key == Key.Right ? 1 : 0;
         var dy = e.Key == Key.Up ? -1 : e.Key == Key.Down ? 1 : 0;
         if ((dx != 0 || dy != 0) && canvas.Selected != null) { canvas.NudgeSelected(dx, dy); e.Handled = true; return; }
@@ -235,7 +245,21 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     internal string FontFamily { get; private set; } = "Microsoft YaHei UI";
     internal double FontSize { get; private set; } = 18;
     internal AnnotationAppearance Appearance { get; private set; } = new AnnotationAppearance();
+    internal bool Bold { get; private set; }
+    internal bool Italic { get; private set; }
     private bool pathBuilding;
+    private Popup? textPopup;
+    private TextBox? textEditor;
+    private Annotation? editingText;
+    private int editingTextIndex = -1;
+    private AnnotationKind textKind = AnnotationKind.Text;
+    private PixelPoint textPoint;
+    private bool closingText;
+    private bool textFocused;
+    private DateTime lastTextCommit;
+    private bool draggingHandle;
+    private int handleIndex = -1;
+    private Rect handleBounds;
     internal AnnotationCanvas(BitmapSource image, AppSettings? settings = null)
     {
         preferences = settings?.Clone() ?? new AppSettings(); secondaryEditing = preferences.MarkSecondaryEditing;
@@ -245,6 +269,7 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         MouseLeftButtonDown += Down; MouseMove += Move; MouseLeftButtonUp += Up;
         LostMouseCapture += (_, _) => CancelInteraction();
         MouseWheel += (_, e) => { if (preferences.MarkDisableWheel || !Kind.HasValue) return; ChangeStyle(thickness: Math.Max(1, Math.Min(80, Thickness + (e.Delta > 0 ? 1 : -1)))); e.Handled = true; };
+        Unloaded += (_, _) => CloseTextEditor();
         PreviewKeyDown += (_, e) => { if (!pathBuilding) return; if (e.Key == Key.Enter) { FinishPath(); e.Handled = true; } else if (e.Key == Key.Escape) { CancelInteraction(); e.Handled = true; } };
     }
     internal void Refresh()
@@ -264,14 +289,41 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     internal bool SelectAt(PixelPoint point)
     {
         if (!secondaryEditing && Kind.HasValue || (Kind == AnnotationKind.Eraser || Kind == AnnotationKind.EraserPen) && !preferences.MarkEraserSecondaryEditing) { Select(-1); return false; }
-        var itemIndex = AnnotationRenderer.HitTest(Image, Document.Items, point, Kind);
+        var itemIndex = -1;
+        if (!Kind.HasValue) itemIndex = AnnotationRenderer.HitTest(Image, Document.Items, point);
+        else foreach (var candidate in SelectableKinds(Kind.Value)) { var hit = AnnotationRenderer.HitTest(Image, Document.Items, point, candidate); if (hit > itemIndex) itemIndex = hit; }
         Select(itemIndex); return itemIndex >= 0;
+    }
+    private static AnnotationKind[] SelectableKinds(AnnotationKind kind)
+    {
+        switch (kind)
+        {
+            case AnnotationKind.Rectangle: case AnnotationKind.Ellipse: case AnnotationKind.RoundedRectangle: return new[] { AnnotationKind.Rectangle, AnnotationKind.Ellipse, AnnotationKind.RoundedRectangle };
+            case AnnotationKind.Arrow: case AnnotationKind.Line: case AnnotationKind.Polyline: return new[] { AnnotationKind.Arrow, AnnotationKind.Line, AnnotationKind.Polyline };
+            case AnnotationKind.Pen: case AnnotationKind.Highlight: return new[] { AnnotationKind.Pen, AnnotationKind.Highlight };
+            case AnnotationKind.Text: case AnnotationKind.Watermark: return new[] { AnnotationKind.Text, AnnotationKind.Watermark };
+            case AnnotationKind.Mosaic: case AnnotationKind.Blur: case AnnotationKind.MosaicPen: return new[] { AnnotationKind.Mosaic, AnnotationKind.Blur, AnnotationKind.MosaicPen };
+            case AnnotationKind.Cover: case AnnotationKind.CoverPen: return new[] { AnnotationKind.Cover, AnnotationKind.CoverPen };
+            case AnnotationKind.Eraser: case AnnotationKind.EraserPen: return new[] { AnnotationKind.Eraser, AnnotationKind.EraserPen };
+            case AnnotationKind.Spotlight: case AnnotationKind.Magnifier: return new[] { AnnotationKind.Spotlight, AnnotationKind.Magnifier };
+            default: return new[] { kind };
+        }
+    }
+    internal void ChangeCorner(bool rounded)
+    {
+        if (Selected == null || (Selected.Kind != AnnotationKind.Rectangle && Selected.Kind != AnnotationKind.RoundedRectangle)) return;
+        var kind = rounded ? AnnotationKind.RoundedRectangle : AnnotationKind.Rectangle;
+        var appearance = rounded ? Selected.Appearance : Selected.Appearance.WithEditorStyle(Selected.Appearance.Fill, Selected.Appearance.Dash, Selected.Appearance.Opacity, Selected.Appearance.Arrow, Selected.Appearance.Effect, Selected.Appearance.TextBackground, 0);
+        if (Selected.Kind == kind && ReferenceEquals(appearance, Selected.Appearance)) return;
+        var item = Selected; var current = selectedIndex;
+        Document.Replace(current, new Annotation(kind, item.Points, item.Argb, item.Thickness, item.Text, item.FontFamily, item.FontSize, appearance, item.Bold, item.Italic));
+        Select(current);
     }
     private void Select(int itemIndex)
     {
         selectedIndex = itemIndex; selectedReference = itemIndex >= 0 ? Document.Items[itemIndex] : null;
         if (selectedReference != null)
-        { Argb = selectedReference.Argb; Thickness = selectedReference.Thickness; FontFamily = selectedReference.FontFamily; FontSize = selectedReference.FontSize; Appearance = selectedReference.Appearance; }
+        { Argb = selectedReference.Argb; Thickness = selectedReference.Thickness; FontFamily = selectedReference.FontFamily; FontSize = selectedReference.FontSize; Appearance = selectedReference.Appearance; Bold = selectedReference.Bold; Italic = selectedReference.Italic; }
         InvalidateVisual(); Changed?.Invoke();
     }
     internal void ClearSelection()
@@ -297,16 +349,17 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         var delta = ClampObjectDelta(new PixelPoint(dx, dy), AnnotationRenderer.Bounds(Image, Selected));
         Document.Move(selectedIndex, delta); Select(selectedIndex);
     }
-    internal void ChangeStyle(uint? argb = null, double? thickness = null, string? fontFamily = null, double? fontSize = null)
+    internal void ChangeStyle(uint? argb = null, double? thickness = null, string? fontFamily = null, double? fontSize = null, bool? bold = null, bool? italic = null, AnnotationAppearance? appearance = null)
     {
         var item = Selected;
         var nextArgb = argb ?? Argb; var nextThickness = thickness ?? Thickness;
         var nextFamily = fontFamily ?? FontFamily; var nextSize = fontSize ?? FontSize;
+        var nextBold = bold ?? Bold; var nextItalic = italic ?? Italic; var nextAppearance = appearance ?? Appearance;
+        if (nextArgb == Argb && nextThickness == Thickness && nextFamily == FontFamily && nextSize == FontSize && nextBold == Bold && nextItalic == Italic && ReferenceEquals(nextAppearance, Appearance)) return;
         // 通过不可变模型先验证，失败时当前样式与文档都保持原值。
         var candidate = new Annotation(item?.Kind ?? Kind ?? AnnotationKind.Text, (IEnumerable<PixelPoint>?)item?.Points ?? new[] { new PixelPoint(0, 0) },
-            nextArgb, nextThickness, item?.Text ?? "", nextFamily, nextSize, Appearance);
-        if (nextArgb == Argb && nextThickness == Thickness && nextFamily == FontFamily && nextSize == FontSize) return;
-        Argb = nextArgb; Thickness = nextThickness; FontFamily = nextFamily; FontSize = nextSize;
+            nextArgb, nextThickness, item?.Text ?? "", nextFamily, nextSize, nextAppearance, nextBold, nextItalic);
+        Argb = nextArgb; Thickness = nextThickness; FontFamily = nextFamily; FontSize = nextSize; Bold = nextBold; Italic = nextItalic; Appearance = nextAppearance;
         if (item != null) { Document.Replace(selectedIndex, candidate); Select(selectedIndex); }
         else { InvalidateVisual(); Changed?.Invoke(); }
     }
@@ -325,10 +378,52 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     }
     internal void EditSelectedText()
     {
-        if (Selected?.Kind != AnnotationKind.Text) return;
-        var prompt = new TextPrompt(Selected.Text) { Owner = Window.GetWindow(this) };
-        if (prompt.ShowDialog() == true) ReplaceSelectedText(prompt.Value);
+        if (Selected == null || (Selected.Kind != AnnotationKind.Text && Selected.Kind != AnnotationKind.Watermark)) return;
+        editingText = Selected; editingTextIndex = selectedIndex; textKind = Selected.Kind; textPoint = Selected.Points[0]; OpenTextEditor(Selected.Text);
     }
+    private void OpenTextEditor(string value)
+    {
+        CloseTextPopup();
+        var existing = editingText;
+        var color = existing?.Argb ?? Argb; var family = existing?.FontFamily ?? FontFamily; var size = existing?.FontSize ?? FontSize;
+        var useBold = existing?.Bold ?? Bold; var useItalic = existing?.Italic ?? Italic;
+        var scale = LayoutTransform is ScaleTransform transform && transform.ScaleX > 0 ? transform.ScaleX : 1;
+        var brush = new SolidColorBrush(Color.FromArgb((byte)(color >> 24), (byte)(color >> 16), (byte)(color >> 8), (byte)color));
+        var input = new TextBox { Text = value, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Padding = new Thickness(2), Background = Brushes.Transparent, Foreground = brush, CaretBrush = brush, FontFamily = new FontFamily(family), FontSize = Math.Max(8, size * scale), FontWeight = useBold ? FontWeights.Bold : FontWeights.Normal, FontStyle = useItalic ? FontStyles.Italic : FontStyles.Normal, MinWidth = 120, MaxWidth = Math.Max(120, (Width - textPoint.X) * scale), VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        textEditor = input;
+        var border = new Border { Background = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)), BorderBrush = Ui.Accent, BorderThickness = new Thickness(1), Padding = new Thickness(2), Child = input };
+        var popup = new Popup { PlacementTarget = this, Placement = PlacementMode.Absolute, AllowsTransparency = true, StaysOpen = true, Child = border };
+        var screen = PointToScreen(new Point(textPoint.X, textPoint.Y)); popup.HorizontalOffset = screen.X; popup.VerticalOffset = screen.Y; textPopup = popup;
+        input.PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { CancelTextEditor(); e.Handled = true; } else if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { CommitTextEditor(); e.Handled = true; } };
+        input.GotKeyboardFocus += (_, _) => textFocused = true;
+        input.LostKeyboardFocus += (_, _) => { if (textFocused) { lastTextCommit = DateTime.UtcNow; CommitTextEditor(); } };
+        popup.IsOpen = true;
+        Dispatcher.BeginInvoke(new Action(() => { if (textEditor == input) { input.Focus(); input.CaretIndex = input.Text.Length; } }), DispatcherPriority.Input);
+    }
+    private void CommitTextEditor()
+    {
+        if (closingText || textEditor == null) return;
+        var value = textEditor.Text; var existing = editingText; var index = editingTextIndex; var kind = textKind; var point = textPoint;
+        if (existing == null && kind == AnnotationKind.Watermark) value = value.Replace("{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        CloseTextPopup();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            if (existing != null && index >= 0 && index < Document.Items.Count && ReferenceEquals(Document.Items[index], existing)) Document.Remove(index);
+            else { InvalidateVisual(); Changed?.Invoke(); }
+            editingText = null; editingTextIndex = -1; return;
+        }
+        if (existing != null && index >= 0 && index < Document.Items.Count && ReferenceEquals(Document.Items[index], existing)) { Document.Replace(index, existing.WithText(value)); Select(index); }
+        else { Document.Add(new Annotation(kind, new[] { point }, Argb, Thickness, value, FontFamily, FontSize, Appearance, Bold, Italic)); Select(Document.Items.Count - 1); }
+        editingText = null; editingTextIndex = -1; Refresh();
+    }
+    private void CancelTextEditor() { CloseTextPopup(); editingText = null; editingTextIndex = -1; }
+    private void CloseTextPopup()
+    {
+        closingText = true;
+        if (textPopup != null) { textPopup.IsOpen = false; textPopup = null; }
+        textEditor = null; closingText = false; textFocused = false;
+    }
+    private void CloseTextEditor() { CloseTextPopup(); editingText = null; editingTextIndex = -1; }
     internal void BeginObjectDrag(PixelPoint point, bool copy)
     {
         if (Selected == null) return;
@@ -360,15 +455,60 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     }
     private void CancelInteraction()
     {
-        stroke.Clear(); preview = null; draggingObject = false; copyingObject = false; pathBuilding = false;
+        stroke.Clear(); preview = null; draggingObject = false; copyingObject = false; pathBuilding = false; draggingHandle = false; handleIndex = -1;
         if (IsMouseCaptured) ReleaseMouseCapture();
         InvalidateVisual();
+    }
+    internal bool TryBeginHandleDrag(PixelPoint point)
+    {
+        if (Selected == null) return false;
+        var scale = LayoutTransform is ScaleTransform transform && transform.ScaleX > 0 ? transform.ScaleX : 1;
+        var tolerance = 9 / scale;
+        CancelInteraction();
+        if (Selected.Kind == AnnotationKind.Line || Selected.Kind == AnnotationKind.Arrow)
+        {
+            var first = Selected.Points[0]; var last = Selected.Points[Selected.Points.Count - 1];
+            if (Distance(point, first) <= tolerance) handleIndex = 0;
+            else if (Distance(point, last) <= tolerance) handleIndex = Selected.Points.Count - 1;
+            else return false;
+            draggingHandle = true; return true;
+        }
+        if (!IsResizable(Selected.Kind)) return false;
+        var bounds = AnnotationRenderer.Bounds(Image, Selected);
+        var corners = new[] { bounds.TopLeft, bounds.BottomRight, bounds.BottomLeft, bounds.TopRight };
+        for (var i = 0; i < corners.Length; i++) if (Distance(point, corners[i]) <= tolerance) { handleIndex = i; handleBounds = bounds; draggingHandle = true; return true; }
+        return false;
+    }
+    private static bool IsResizable(AnnotationKind kind)
+        => kind == AnnotationKind.Rectangle || kind == AnnotationKind.Ellipse || kind == AnnotationKind.RoundedRectangle || kind == AnnotationKind.Cover || kind == AnnotationKind.Mosaic || kind == AnnotationKind.Blur || kind == AnnotationKind.Spotlight || kind == AnnotationKind.Eraser || kind == AnnotationKind.Magnifier;
+    private static double Distance(PixelPoint point, PixelPoint target) => Math.Sqrt((point.X - target.X) * (point.X - target.X) + (point.Y - target.Y) * (point.Y - target.Y));
+    private static double Distance(PixelPoint point, Point target) => Math.Sqrt((point.X - target.X) * (point.X - target.X) + (point.Y - target.Y) * (point.Y - target.Y));
+    internal void UpdateHandleDrag(PixelPoint point)
+    {
+        if (Selected == null) return;
+        if (Selected.Kind == AnnotationKind.Line || Selected.Kind == AnnotationKind.Arrow)
+        {
+            if (handleIndex < 0 || handleIndex >= Selected.Points.Count) return;
+            var points = Selected.Points.ToArray(); points[handleIndex] = point; preview = Selected.WithPoints(points); return;
+        }
+        var anchor = handleIndex switch { 0 => handleBounds.BottomRight, 1 => handleBounds.TopLeft, 2 => handleBounds.TopRight, _ => handleBounds.BottomLeft };
+        var left = Math.Max(0, Math.Min(anchor.X, point.X)); var top = Math.Max(0, Math.Min(anchor.Y, point.Y));
+        var right = Math.Min(Width, Math.Max(anchor.X, point.X)); var bottom = Math.Min(Height, Math.Max(anchor.Y, point.Y));
+        if (right - left < 2 || bottom - top < 2) return;
+        var sx = (right - left) / Math.Max(1, handleBounds.Width); var sy = (bottom - top) / Math.Max(1, handleBounds.Height);
+        var scaled = Selected.Points.Select(p => new PixelPoint((int)Math.Round(left + (p.X - handleBounds.X) * sx), (int)Math.Round(top + (p.Y - handleBounds.Y) * sy))).ToArray();
+        preview = Selected.WithPoints(scaled);
+    }
+    internal void EndHandleDrag()
+    {
+        if (Selected != null && preview != null && !ReferenceEquals(preview, Selected)) Document.Replace(selectedIndex, preview);
+        Select(selectedIndex); CancelInteraction(); Refresh();
     }
     protected override void OnRender(DrawingContext dc)
     {
         IEnumerable<Annotation> items = Document.Items;
         if (preview != null)
-            items = draggingObject && !copyingObject ? Document.Items.Select((item, i) => i == selectedIndex ? preview! : item) : Document.Items.Concat(new[] { preview });
+            items = (draggingObject || draggingHandle) && !copyingObject ? Document.Items.Select((item, i) => i == selectedIndex ? preview! : item) : Document.Items.Concat(new[] { preview });
         AnnotationRenderer.Draw(dc, Image, items);
         DrawPencilOutline(dc);
         var selected = draggingObject && preview != null ? preview : Selected;
@@ -390,7 +530,10 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     }
     private void Down(object sender, MouseButtonEventArgs e)
     {
+        if (textEditor != null) { CommitTextEditor(); e.Handled = true; return; }
+        if ((DateTime.UtcNow - lastTextCommit).TotalMilliseconds < 150) { e.Handled = true; return; }
         Focus(); var point = Point(e);
+        if (Selected != null && TryBeginHandleDrag(point)) { CaptureMouse(); e.Handled = true; return; }
         if (Kind == AnnotationKind.Polyline && pathBuilding)
         {
             stroke.Add(point); preview = MakeAnnotation(stroke); if (e.ClickCount == 2) FinishPath(); InvalidateVisual(); e.Handled = true; return;
@@ -405,8 +548,8 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         if (!Kind.HasValue) { e.Handled = true; return; }
         if (Kind == AnnotationKind.Text || Kind == AnnotationKind.Watermark)
         {
-            var prompt = new TextPrompt(Kind == AnnotationKind.Watermark ? "DeskSnip {time}" : "") { Owner = Window.GetWindow(this) };
-            if (prompt.ShowDialog() == true && !string.IsNullOrWhiteSpace(prompt.Value)) { Document.Add(new Annotation(Kind.Value, new[] { point }, Argb, Thickness, prompt.Value.Replace("{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")), FontFamily, FontSize, Appearance)); Select(Document.Items.Count - 1); }
+            textKind = Kind.Value; textPoint = point; editingText = null; editingTextIndex = -1;
+            OpenTextEditor(Kind == AnnotationKind.Watermark ? "DeskSnip {time}" : "");
             return;
         }
         if (Kind == AnnotationKind.Number)
@@ -420,6 +563,7 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     private void Move(object sender, MouseEventArgs e)
     {
         pointer = Point(e); InvalidateVisual();
+        if (draggingHandle && IsMouseCaptured) { UpdateHandleDrag(Point(e)); return; }
         if (draggingObject && IsMouseCaptured) { UpdateObjectDrag(Point(e), (Keyboard.Modifiers & ModifierKeys.Shift) != 0); return; }
         if (pathBuilding) { preview = MakeAnnotation(stroke.Concat(new[] { Point(e) })); InvalidateVisual(); return; }
         if (!IsMouseCaptured || stroke.Count == 0) return;
@@ -440,6 +584,7 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     }
     private void Up(object sender, MouseButtonEventArgs e)
     {
+        if (draggingHandle) { EndHandleDrag(); e.Handled = true; return; }
         if (draggingObject) { UpdateObjectDrag(Point(e), (Keyboard.Modifiers & ModifierKeys.Shift) != 0); EndObjectDrag(); e.Handled = true; return; }
         if (pathBuilding) return;
         if (stroke.Count == 0) return;
@@ -449,7 +594,7 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         stroke.Clear(); preview = null; ReleaseMouseCapture(); Refresh(); e.Handled = true;
     }
     private static bool IsBrush(AnnotationKind? kind) => kind == AnnotationKind.Pen || kind == AnnotationKind.Highlight || kind == AnnotationKind.MosaicPen || kind == AnnotationKind.CoverPen || kind == AnnotationKind.EraserPen;
-    private Annotation MakeAnnotation(IEnumerable<PixelPoint> points) => new Annotation(Kind!.Value, points, Argb, Thickness, fontFamily: FontFamily, fontSize: FontSize, appearance: Appearance);
+    private Annotation MakeAnnotation(IEnumerable<PixelPoint> points) => new Annotation(Kind!.Value, points, Argb, Thickness, fontFamily: FontFamily, fontSize: FontSize, appearance: Appearance, bold: Bold, italic: Italic);
     private void FinishPath() { if (stroke.Count < 2) return; Document.Add(MakeAnnotation(stroke)); CancelInteraction(); Refresh(); }
 }
 

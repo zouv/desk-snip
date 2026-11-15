@@ -1303,6 +1303,10 @@ Select, annotate, then copy or pin it to your desktop.</translation>
     <translation>Cancel capture</translation>
   </text>
   <text>
+    <source>取消标注</source>
+    <translation>Cancel annotation</translation>
+  </text>
+  <text>
     <source>取消置顶时显示任务栏图标</source>
     <translation>Show a taskbar icon when the pin is not always on top</translation>
   </text>
@@ -1793,6 +1797,10 @@ Select, annotate, then copy or pin it to your desktop.</translation>
   <text>
     <source>完成截图</source>
     <translation>Finish capture</translation>
+  </text>
+  <text>
+    <source>完成标注</source>
+    <translation>Finish annotation</translation>
   </text>
   <text>
     <source>完成长截图</source>
@@ -2627,8 +2635,8 @@ Select, annotate, then copy or pin it to your desktop.</translation>
     <translation>Open / edit</translation>
   </text>
   <text>
-    <source>打开 DeskSnip</source>
-    <translation>Open DeskSnip</translation>
+    <source>打开主界面</source>
+    <translation>Open main window</translation>
   </text>
   <text>
     <source>打开历史</source>
@@ -3809,16 +3817,16 @@ Right-click to manage · Drag to move</translation>
     <translation>Click matching annotations to edit · Alt+drag duplicate · Selection mode selects any object</translation>
   </text>
   <text>
-    <source>点击后按快捷键；Backspace / Delete 清空</source>
-    <translation>Click and press a shortcut; Backspace / Delete clears it</translation>
+    <source>点击后按快捷键完成设置；Esc / Backspace 取消，Delete 或 × 清空</source>
+    <translation>Click and press a shortcut to set it; Esc / Backspace cancels, Delete or × clears it</translation>
   </text>
   <text>
     <source>点击调整 X / Y / 宽 / 高、锁定比例和九宫格</source>
     <translation>Click to adjust X / Y / width / height, aspect lock, and grid</translation>
   </text>
   <text>
-    <source>点击输入框后按组合键；Backspace / Delete 清空。绿色表示格式有效，实际系统占用在保存后提示。</source>
-    <translation>Click a field and press a shortcut; Backspace / Delete clears it. Green means valid syntax. System conflicts are reported on save.</translation>
+    <source>点击输入框后按组合键完成设置；Esc / Backspace 取消，Delete 或 × 清空。绿色表示格式有效，实际系统占用在保存后提示。</source>
+    <translation>Click a field and press a shortcut to set it; Esc / Backspace cancels, Delete or × clears it. Green means valid syntax. System conflicts are reported on save.</translation>
   </text>
   <text>
     <source>点击选区外时自动扩展选区</source>
@@ -5619,5 +5627,161 @@ Right-click to manage · Drag to move</translation>
   <text>
     <source>（每行一个 exe 名称）</source>
     <translation> (one executable name per line)</translation>
+  </text>
+  <text>
+    <source>工具栏分组无效。</source>
+    <translation>Invalid toolbar group.</translation>
+  </text>
+  <text>
+    <source>工具栏默认工具配置无效。</source>
+    <translation>The toolbar default tool configuration is invalid.</translation>
+  </text>
+  <text>
+    <source>工具栏默认工具未保存。</source>
+    <translation>The toolbar default tool was not saved.</translation>
+  </text>
+  <text>
+    <source>自动识别选区</source>
+    <translation>Auto-detect selection</translation>
+  </text>
+  <text>
+    <source>鼠标移动时自动框住光标下的窗口或 UI 元素，点击选中；Tab 切换元素 / 窗口。</source>
+    <translation>Frame the window or UI element under the pointer as it moves; click to select. Tab switches between elements and windows.</translation>
+  </text>
+  <text>
+    <source>点击工具栏分组图标直接使用当前默认工具；右侧箭头或右键切换，选择会记住。</source>
+    <translation>Click a toolbar group icon to use its current default tool; use the right arrow or right-click to switch. The choice is remembered.</translation>
+  </text>
+  <text>
+    <source>自动采集</source>
+    <translation>Auto capture</translation>
+  </text>
+  <text>
+    <source>完成并复制</source>
+    <translation>Finish and copy</translation>
+  </text>
+  <text>
+    <source>保存长截图</source>
+    <translation>Save long capture</translation>
+  </text>
+  <text>
+    <source>更多长截图操作</source>
+    <translation>More long-capture actions</translation>
+  </text>
+  <text>
+    <source>编辑长图</source>
+    <translation>Edit long image</translation>
+  </text>
+  <text>
+    <source>取消长截图</source>
+    <translation>Cancel long capture</translation>
+  </text>
+  <text>
+    <source>请滚动选区内容，自动拼接；完成后选择输出。</source>
+    <translation>Scroll the selected content to stitch automatically; choose an output when finished.</translation>
+  </text>
+  <text>
+    <source>首帧已采集，请滚动内容。</source>
+    <translation>First frame captured; scroll the content.</translation>
+  </text>
+  <text>
+    <source>已拼接 {0} 帧 · {1} × {2} px</source>
+    <translation>Stitched {0} frames · {1} × {2} px</translation>
+  </text>
+  <text>
+    <source>已尝试 {0} 次 · {1}</source>
+    <translation>Attempts: {0} · {1}</translation>
+  </text>
+  <text>
+    <source>已撤回 · {0} × {1} px</source>
+    <translation>Undone · {0} × {1} px</translation>
+  </text>
+  <text>
+    <source>已清空，等待采集首帧。</source>
+    <translation>Cleared; waiting for the first frame.</translation>
+  </text>
+  <text>
+    <source>长截图输出</source>
+    <translation>Long-capture output</translation>
+  </text>
+  <text>
+    <source>方向与拼接</source>
+    <translation>Direction and stitching</translation>
+  </text>
+  <text>
+    <source>已有拼接结果，重新开始后可切换方向。</source>
+    <translation>Stitching already started; restart to change direction.</translation>
+  </text>
+  <text>
+    <source>纵向拼接已选择。</source>
+    <translation>Vertical stitching selected.</translation>
+  </text>
+  <text>
+    <source>横向拼接已选择。</source>
+    <translation>Horizontal stitching selected.</translation>
+  </text>
+  <text>
+    <source>已恢复自动匹配重叠。</source>
+    <translation>Automatic overlap matching restored.</translation>
+  </text>
+  <text>
+    <source>下一次采集按 {0} px 重叠拼接。</source>
+    <translation>The next capture will use {0} px overlap.</translation>
+  </text>
+  <text>
+    <source>重叠像素请输入正整数。</source>
+    <translation>Overlap must be a positive integer.</translation>
+  </text>
+  <text>
+    <source>切换到录屏</source>
+    <translation>Switch to recording</translation>
+  </text>
+  <text>
+    <source>序号标注</source>
+    <translation>Number annotation</translation>
+  </text>
+  <text>
+    <source>请先框选录制区域。</source>
+    <translation>Select a recording region first.</translation>
+  </text>
+  <text>
+    <source>拖动框选 · Enter 使用此区域 · Esc 取消</source>
+    <translation>Drag to select · Enter uses this region · Esc cancels</translation>
+  </text>
+  <text>
+    <source>拖动框选 · Enter 复制 · Ctrl+T 钉图 · Ctrl+S 保存 · G 录屏 · Space 工具栏 · Esc 取消</source>
+    <translation>Drag to select · Enter copies · Ctrl+T pins · Ctrl+S saves · G records · Space toggles the toolbar · Esc cancels</translation>
+  </text>
+  <text>
+    <source>左键双击固定为复制当前图并关闭；上方动作仅用于滚轮与中键。</source>
+    <translation>Left double-click always copies the current image and closes the pin; the actions above apply to the wheel and middle button only.</translation>
+  </text>
+  <text>
+    <source>粗体</source>
+    <translation>Bold</translation>
+  </text>
+  <text>
+    <source>斜体</source>
+    <translation>Italic</translation>
+  </text>
+  <text>
+    <source>边角</source>
+    <translation>Corners</translation>
+  </text>
+  <text>
+    <source>方角</source>
+    <translation>Square corners</translation>
+  </text>
+  <text>
+    <source>显示 / 隐藏选中边框</source>
+    <translation>Show / hide selected border</translation>
+  </text>
+  <text>
+    <source>点击同类标注重新编辑 · Alt 拖动复制 · Delete 删除</source>
+    <translation>Click a matching annotation to edit · Alt-drag to copy · Delete to remove</translation>
+  </text>
+  <text>
+    <source>圆角半径</source>
+    <translation>Corner radius</translation>
   </text>
 </strings>
