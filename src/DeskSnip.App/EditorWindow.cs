@@ -7,10 +7,12 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DeskSnip.App.Imaging;
+using DeskSnip.App.Windows;
 using DeskSnip.Core;
 using Microsoft.Win32;
 
@@ -79,7 +81,7 @@ internal sealed partial class EditorWindow : ProductWindow
         colors = new ComboBox { Width = 85, Margin = new Thickness(10, 3, 3, 3), VerticalContentAlignment = VerticalAlignment.Center, SelectedIndex = 0 };
         foreach (var name in colorNames) colors.Items.Add(name); colors.SelectedIndex = 0;
         colors.SelectionChanged += (_, _) => { if (!synchronizingStyle && colors.SelectedIndex >= 0) canvas.ChangeStyle(argb: colorValues[colors.SelectedIndex]); }; tools.Children.Add(colors);
-        thickness = new ComboBox { Width = 60, Margin = new Thickness(3), ItemsSource = new[] { "2", "3", "5", "8" }, SelectedIndex = 1, VerticalContentAlignment = VerticalAlignment.Center };
+        thickness = new ComboBox { Width = 60, Margin = new Thickness(3), ItemsSource = new[] { "2", "3", "5", "8", "12", "20" }, SelectedIndex = 1, VerticalContentAlignment = VerticalAlignment.Center };
         thickness.SelectionChanged += (_, _) => { if (!synchronizingStyle && thickness.SelectedItem is string value) canvas.ChangeStyle(thickness: double.Parse(value, CultureInfo.InvariantCulture)); }; tools.Children.Add(thickness);
         fonts = new ComboBox { Width = 150, Margin = new Thickness(10, 3, 3, 3), IsEditable = true, ItemsSource = Fonts.SystemFontFamilies.Select(f => f.Source).OrderBy(f => f).ToArray(), Text = canvas.FontFamily };
         fonts.LostKeyboardFocus += (_, _) => ApplyFont(); fonts.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { ApplyFont(); e.Handled = true; } }; tools.Children.Add(fonts);
@@ -135,7 +137,8 @@ internal sealed partial class EditorWindow : ProductWindow
     }
     private void Copy()
     {
-        try { var image = Output(); if (outputPerformed != null) outputPerformed(image, "Copy"); else Clipboard.SetImage(image); status.Text = L.Get("已复制图片到剪贴板；历史已保存。"); }
+        try { var image = Output(); if (outputPerformed != null) outputPerformed(image, "Copy"); else ClipboardRetry.SetImage(image); status.Text = L.Get("已复制图片到剪贴板；历史已保存。"); }
+        catch (System.Runtime.InteropServices.ExternalException) { status.Text = L.Get("剪贴板暂时不可用，请稍后重试。"); }
         catch (Exception e) { Ui.Error(this, e, L.Get("复制图片")); }
     }
     private void Save()
@@ -158,17 +161,19 @@ internal sealed partial class EditorWindow : ProductWindow
         foreach (var tool in toolButtons) FloatingTools.SetSelected(tool.Button, tool.Tools.Contains(canvas.Kind));
         var item = canvas.Selected;
         remove.IsEnabled = duplicate.IsEnabled = item != null; editText.IsEnabled = item?.Kind == AnnotationKind.Text || item?.Kind == AnnotationKind.Watermark;
-        if (item != null && colors != null)
+        if (colors != null)
         {
             synchronizingStyle = true;
             try
             {
-                var colorIndex = colorValues.IndexOf(item.Argb);
-                if (colorIndex < 0) { colorValues.Add(item.Argb); colors.Items.Add("#" + item.Argb.ToString("X8", CultureInfo.InvariantCulture)); colorIndex = colorValues.Count - 1; }
+                var argb = item?.Argb ?? canvas.Argb;
+                var colorIndex = colorValues.IndexOf(argb);
+                if (colorIndex < 0) { colorValues.Add(argb); colors.Items.Add("#" + argb.ToString("X8", CultureInfo.InvariantCulture)); colorIndex = colorValues.Count - 1; }
                 colors.SelectedIndex = colorIndex;
-                thickness.SelectedItem = item.Thickness.ToString(CultureInfo.InvariantCulture);
-                fonts.Text = item.FontFamily; sizes.Text = item.FontSize.ToString(CultureInfo.InvariantCulture);
-                fill.IsChecked = item.Appearance.Fill; textBackground.IsChecked = item.Appearance.TextBackground; dash.SelectedIndex = (int)item.Appearance.Dash; arrow.SelectedIndex = (int)item.Appearance.Arrow; effect.SelectedItem = item.Appearance.Effect; opacity.SelectedItem = item.Appearance.Opacity;
+                thickness.SelectedItem = (item?.Thickness ?? canvas.Thickness).ToString(CultureInfo.InvariantCulture);
+                fonts.Text = item?.FontFamily ?? canvas.FontFamily; sizes.Text = (item?.FontSize ?? canvas.FontSize).ToString(CultureInfo.InvariantCulture);
+                var appearance = item?.Appearance ?? canvas.Appearance;
+                fill.IsChecked = appearance.Fill; textBackground.IsChecked = appearance.TextBackground; dash.SelectedIndex = (int)appearance.Dash; arrow.SelectedIndex = (int)appearance.Arrow; effect.SelectedItem = appearance.Effect; opacity.SelectedItem = appearance.Opacity;
             }
             finally { synchronizingStyle = false; }
         }
@@ -237,8 +242,10 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     internal event Action? Changed;
     internal BitmapSource Image { get; }
     internal int Revision => Document.Revision;
+    internal string PersistedStyles => preferences.MarkToolStyles;
     internal AnnotationDocument Document { get; }
     internal AnnotationKind? Kind { get; private set; } = AnnotationKind.Arrow;
+    internal int SelectedIndex => selectedIndex;
     internal Annotation? Selected => selectedIndex >= 0 && selectedIndex < Document.Items.Count && ReferenceEquals(Document.Items[selectedIndex], selectedReference) ? selectedReference : null;
     internal uint Argb { get; set; } = 0xffed4f57;
     internal double Thickness { get; set; } = 3;
@@ -247,6 +254,8 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     internal AnnotationAppearance Appearance { get; private set; } = new AnnotationAppearance();
     internal bool Bold { get; private set; }
     internal bool Italic { get; private set; }
+    internal bool HideEditorChrome { get; set; }
+    internal bool ExcludeTextPopupFromCapture { get; set; }
     private bool pathBuilding;
     private Popup? textPopup;
     private TextBox? textEditor;
@@ -260,11 +269,15 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     private bool draggingHandle;
     private int handleIndex = -1;
     private Rect handleBounds;
+    private readonly Dictionary<string, AnnotationStyle> savedStyles = new Dictionary<string, AnnotationStyle>(StringComparer.Ordinal);
+    private uint? sharedArgb;
     internal AnnotationCanvas(BitmapSource image, AppSettings? settings = null)
     {
         preferences = settings?.Clone() ?? new AppSettings(); secondaryEditing = preferences.MarkSecondaryEditing;
         Image = image; Document = new AnnotationDocument(image.PixelWidth, image.PixelHeight, preferences.MarkLimitToSelection);
-        Appearance = new AnnotationAppearance(lineJoin: (AnnotationLineJoin)Enum.Parse(typeof(AnnotationLineJoin), preferences.MarkPolylineJoin), lineCap: (AnnotationLineCap)Enum.Parse(typeof(AnnotationLineCap), preferences.MarkPolylineCap), smoothPencil: preferences.MarkSmoothPencil, textWrap: (AnnotationTextWrap)Enum.Parse(typeof(AnnotationTextWrap), preferences.MarkTextWrap), serialTextScale: AnnotationPreferenceRules.SerialTextScale(preferences.MarkSerialTextSize), serialBackground: preferences.MarkSerialDefaultColor ? (uint?)null : 0xff000000u | uint.Parse(preferences.MarkSerialBackground.Substring(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture));
+        LoadSavedStyles();
+        var initial = SavedStyle(AnnotationKind.Arrow);
+        if (initial != null) ApplyStyle(initial, false); else Appearance = BuildAppearance(null);
         Width = image.PixelWidth; Height = image.PixelHeight; Cursor = Cursors.Cross; Focusable = true;
         MouseLeftButtonDown += Down; MouseMove += Move; MouseLeftButtonUp += Up;
         LostMouseCapture += (_, _) => CancelInteraction();
@@ -279,12 +292,58 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     }
     internal void SetTool(AnnotationKind? kind)
     {
-        if (!preferences.MarkSharedColor && Kind.HasValue) toolColors[Kind.Value] = Argb;
-        Kind = kind; if (!preferences.MarkSharedColor && kind.HasValue && toolColors.TryGetValue(kind.Value, out var rememberedColor)) Argb = rememberedColor;
+        Kind = kind;
+        if (kind.HasValue)
+        {
+            var style = SavedStyle(kind.Value);
+            if (style != null) ApplyStyle(style, preferences.MarkSharedColor);
+            LastTool = kind.Value;
+        }
         Cursor = kind == null ? Cursors.Arrow : kind == AnnotationKind.Text ? Cursors.IBeam : preferences.MarkPencilCursor == "Arrow" && IsBrush(kind) ? Cursors.Arrow : Cursors.Cross;
-        if (kind.HasValue) LastTool = kind.Value;
         ClearSelection();
         ToolChanged?.Invoke();
+    }
+    private void LoadSavedStyles()
+    {
+        try
+        {
+            var set = AnnotationStyleRules.Parse(preferences.MarkToolStyles ?? "");
+            foreach (var pair in set.Styles) savedStyles[pair.Key] = pair.Value;
+            sharedArgb = set.SharedArgb;
+        }
+        catch (ArgumentException) { savedStyles.Clear(); sharedArgb = null; }
+    }
+    private AnnotationStyle? SavedStyle(AnnotationKind kind)
+        => savedStyles.TryGetValue(AnnotationStyleRules.GroupOf(kind), out var style) ? style : null;
+    private AnnotationAppearance BuildAppearance(AnnotationStyle? style)
+    {
+        var lineJoin = (AnnotationLineJoin)Enum.Parse(typeof(AnnotationLineJoin), preferences.MarkPolylineJoin);
+        var lineCap = (AnnotationLineCap)Enum.Parse(typeof(AnnotationLineCap), preferences.MarkPolylineCap);
+        var wrap = (AnnotationTextWrap)Enum.Parse(typeof(AnnotationTextWrap), preferences.MarkTextWrap);
+        var serialScale = AnnotationPreferenceRules.SerialTextScale(preferences.MarkSerialTextSize);
+        var serialBackground = preferences.MarkSerialDefaultColor ? (uint?)null : 0xff000000u | uint.Parse(preferences.MarkSerialBackground.Substring(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        if (style == null) return new AnnotationAppearance(lineJoin: lineJoin, lineCap: lineCap, smoothPencil: preferences.MarkSmoothPencil, textWrap: wrap, serialTextScale: serialScale, serialBackground: serialBackground);
+        return new AnnotationAppearance(style.Fill, style.Dash, style.Opacity, style.Arrow, style.Effect, style.TextBackground, lineJoin, lineCap, preferences.MarkSmoothPencil, wrap, serialScale, serialBackground, style.CornerRadius);
+    }
+    private void ApplyStyle(AnnotationStyle style, bool preserveColor)
+    {
+        if (preferences.MarkSharedColor && sharedArgb.HasValue) Argb = sharedArgb.Value;
+        else if (!preserveColor) Argb = style.Argb;
+        Thickness = style.Thickness; FontFamily = style.FontFamily; FontSize = style.FontSize; Bold = style.Bold; Italic = style.Italic;
+        Appearance = BuildAppearance(style);
+    }
+    private void SaveCurrentStyle()
+    {
+        var kind = Selected?.Kind ?? Kind ?? LastTool;
+        var style = new AnnotationStyle(Argb, Thickness, Appearance.Fill, Appearance.Dash, Appearance.Arrow, Appearance.Opacity, Appearance.Effect, Appearance.TextBackground,
+            Appearance.CornerRadius, FontFamily, FontSize, Bold, Italic);
+        var group = AnnotationStyleRules.GroupOf(kind);
+        var changed = !savedStyles.TryGetValue(group, out var current) || !current.SameAs(style);
+        if (sharedArgb != style.Argb) { sharedArgb = style.Argb; changed = true; }
+        if (!changed) return;
+        savedStyles[group] = style;
+        preferences.MarkToolStyles = AnnotationStyleRules.Serialize(savedStyles, sharedArgb);
+        AnnotationStylePersistence.Publish(preferences.MarkToolStyles);
     }
     internal bool SelectAt(PixelPoint point)
     {
@@ -318,6 +377,7 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         var item = Selected; var current = selectedIndex;
         Document.Replace(current, new Annotation(kind, item.Points, item.Argb, item.Thickness, item.Text, item.FontFamily, item.FontSize, appearance, item.Bold, item.Italic));
         Select(current);
+        SaveCurrentStyle();
     }
     private void Select(int itemIndex)
     {
@@ -329,6 +389,12 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     internal void ClearSelection()
     {
         CancelInteraction(); selectedIndex = -1; selectedReference = null; InvalidateVisual(); Changed?.Invoke();
+    }
+    /// <summary>右侧标记列表的点击入口：直接选中指定标记并取得焦点。</summary>
+    internal void SelectIndex(int index)
+    {
+        if (index < 0 || index >= Document.Items.Count) return;
+        Select(index); Focus();
     }
     internal void DeleteSelected()
     {
@@ -355,20 +421,27 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         var nextArgb = argb ?? Argb; var nextThickness = thickness ?? Thickness;
         var nextFamily = fontFamily ?? FontFamily; var nextSize = fontSize ?? FontSize;
         var nextBold = bold ?? Bold; var nextItalic = italic ?? Italic; var nextAppearance = appearance ?? Appearance;
-        if (nextArgb == Argb && nextThickness == Thickness && nextFamily == FontFamily && nextSize == FontSize && nextBold == Bold && nextItalic == Italic && ReferenceEquals(nextAppearance, Appearance)) return;
+        if (nextArgb == Argb && nextThickness == Thickness && nextFamily == FontFamily && nextSize == FontSize && nextBold == Bold && nextItalic == Italic && SameAppearance(nextAppearance, Appearance)) return;
         // 通过不可变模型先验证，失败时当前样式与文档都保持原值。
         var candidate = new Annotation(item?.Kind ?? Kind ?? AnnotationKind.Text, (IEnumerable<PixelPoint>?)item?.Points ?? new[] { new PixelPoint(0, 0) },
             nextArgb, nextThickness, item?.Text ?? "", nextFamily, nextSize, nextAppearance, nextBold, nextItalic);
         Argb = nextArgb; Thickness = nextThickness; FontFamily = nextFamily; FontSize = nextSize; Bold = nextBold; Italic = nextItalic; Appearance = nextAppearance;
         if (item != null) { Document.Replace(selectedIndex, candidate); Select(selectedIndex); }
         else { InvalidateVisual(); Changed?.Invoke(); }
+        SaveCurrentStyle();
     }
     internal void ChangeAppearance(AnnotationAppearance value)
     {
+        if (SameAppearance(Appearance, value)) return;
         Appearance = value;
         if (Selected != null) { Document.Replace(selectedIndex, Selected.WithStyle(Selected.Argb, Selected.Thickness, appearance: value)); Select(selectedIndex); }
         else { InvalidateVisual(); Changed?.Invoke(); }
+        SaveCurrentStyle();
     }
+    private static bool SameAppearance(AnnotationAppearance left, AnnotationAppearance right)
+        => left.Fill == right.Fill && left.Dash == right.Dash && left.Opacity == right.Opacity && left.Arrow == right.Arrow && left.Effect == right.Effect &&
+           left.TextBackground == right.TextBackground && left.LineJoin == right.LineJoin && left.LineCap == right.LineCap && left.SmoothPencil == right.SmoothPencil &&
+           left.TextWrap == right.TextWrap && left.SerialTextScale == right.SerialTextScale && left.SerialBackground == right.SerialBackground && left.CornerRadius == right.CornerRadius;
     internal void ReplaceSelectedText(string text)
     {
         if (Selected?.Kind != AnnotationKind.Text) return;
@@ -395,9 +468,11 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         var popup = new Popup { PlacementTarget = this, Placement = PlacementMode.Absolute, AllowsTransparency = true, StaysOpen = true, Child = border };
         var screen = PointToScreen(new Point(textPoint.X, textPoint.Y)); popup.HorizontalOffset = screen.X; popup.VerticalOffset = screen.Y; textPopup = popup;
         input.PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { CancelTextEditor(); e.Handled = true; } else if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0) { CommitTextEditor(); e.Handled = true; } };
+        input.PreviewMouseDown += (_, e) => { if (e.ChangedButton == MouseButton.Left) TextEditorPointerDown?.Invoke(); };
         input.GotKeyboardFocus += (_, _) => textFocused = true;
         input.LostKeyboardFocus += (_, _) => { if (textFocused) { lastTextCommit = DateTime.UtcNow; CommitTextEditor(); } };
         popup.IsOpen = true;
+        if (ExcludeTextPopupFromCapture && PresentationSource.FromVisual(input) is HwndSource source) Native.SetWindowDisplayAffinity(source.Handle, 0x11);
         Dispatcher.BeginInvoke(new Action(() => { if (textEditor == input) { input.Focus(); input.CaretIndex = input.Text.Length; } }), DispatcherPriority.Input);
     }
     private void CommitTextEditor()
@@ -416,6 +491,8 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         else { Document.Add(new Annotation(kind, new[] { point }, Argb, Thickness, value, FontFamily, FontSize, Appearance, Bold, Italic)); Select(Document.Items.Count - 1); }
         editingText = null; editingTextIndex = -1; Refresh();
     }
+    /// <summary>复制/关闭前提交尚未结束的文字输入，避免正在编辑的内容丢失。</summary>
+    internal void CommitPendingText() { if (textEditor != null) CommitTextEditor(); }
     private void CancelTextEditor() { CloseTextPopup(); editingText = null; editingTextIndex = -1; }
     private void CloseTextPopup()
     {
@@ -510,9 +587,9 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         if (preview != null)
             items = (draggingObject || draggingHandle) && !copyingObject ? Document.Items.Select((item, i) => i == selectedIndex ? preview! : item) : Document.Items.Concat(new[] { preview });
         AnnotationRenderer.Draw(dc, Image, items);
-        DrawPencilOutline(dc);
+        if (!HideEditorChrome) DrawPencilOutline(dc);
         var selected = draggingObject && preview != null ? preview : Selected;
-        if (selected != null)
+        if (!HideEditorChrome && selected != null)
         {
             var bounds = AnnotationRenderer.Bounds(Image, selected);
             if (!bounds.IsEmpty)

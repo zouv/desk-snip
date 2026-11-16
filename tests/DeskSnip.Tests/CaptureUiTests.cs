@@ -144,6 +144,163 @@ public class CaptureUiTests
         window.Close();
     });
 
+    [Fact] public void RecordingMarkingToolsWorkBeforeStartAndExposeLiveAnnotations() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), true);
+        try
+        {
+            Assert.True(window.AllowsTransparency); Assert.Same(Brushes.Transparent, window.Background);
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            var buttons = Descendants(content).OfType<Button>().ToArray();
+            var shape = buttons.Single(button => (AutomationProperties.GetName(button) ?? "").StartsWith("录制标注：形状"));
+            Assert.True(shape.IsEnabled);
+            ((Action)shape.Tag!)(); Assert.Equal(AnnotationKind.Rectangle, window.RecordingMarkingKind);
+            Assert.NotNull(window.RecordingCanvas); Assert.True(window.RecordingCanvas!.IsHitTestVisible);
+            window.RecordingCanvas.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(5, 5), new PixelPoint(50, 40) }, 0xffff0000, 3));
+            window.RecordingCanvas.Refresh();
+            Assert.Single(window.RecordingAnnotations);
+            content.UpdateLayout();
+            Assert.Equal(AnnotationKind.Rectangle, window.RecordingMarkingKind);
+            Assert.Same(FloatingTools.Selected, shape.Background);
+            Preview(content, 800, 500, "recording-markup.png");
+            var exit = buttons.Single(button => AutomationProperties.GetName(button) == "移动选区 / 结束标注");
+            exit.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.Null(window.RecordingMarkingKind); Assert.False(window.RecordingCanvas!.IsHitTestVisible);
+            var recordBar = Descendants(content).OfType<FloatingToolbar>().Single(toolbar => toolbar.Name == "CaptureRecordActions");
+            var start = recordBar.Items.Children.OfType<Button>().Single(button => AutomationProperties.GetName(button) == "开始录制");
+            Assert.InRange(recordBar.Items.Children.IndexOf(start), 0, 1);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void InlineAnnotationToolbarSitsAtSelectionBottomLeftWithCaptureToolbarRight() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(1200, 800), new PixelRect(0, 0, 1200, 800), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(1200, 800)); content.Arrange(new Rect(0, 0, 1200, 800)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 600, 350)); content.UpdateLayout();
+            window.BeginInlineEdit(AnnotationKind.Rectangle); content.UpdateLayout();
+            window.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(10, 10), new PixelPoint(80, 60) }, 0xffff0000, 3)); window.InlineCanvas.Refresh(); content.UpdateLayout();
+            Preview(content, 1200, 800, "inline-toolbar.png");
+            var actions = Descendants(content).OfType<FloatingToolbar>().Single(bar => bar.Name == "CaptureActions");
+            var inline = Descendants(content).OfType<InlineAnnotationBar>().Single();
+            var actionRect = actions.TransformToAncestor(content).TransformBounds(new Rect(new Point(), actions.RenderSize));
+            var inlineRect = inline.TransformToAncestor(content).TransformBounds(new Rect(new Point(), inline.RenderSize));
+            Assert.Equal(40, inlineRect.Left, 1);
+            Assert.True(actionsRectIsRightOf(inlineRect, actionRect), $"inline={inlineRect} actions={actionRect}");
+            Assert.True(Math.Abs(inlineRect.Top - actionRect.Top) < 1, $"inline={inlineRect} actions={actionRect}");
+            var list = Descendants(content).OfType<AnnotationListBar>().Single();
+            Assert.Equal(Visibility.Visible, list.Visibility);
+            var listRect = list.TransformToAncestor(content).TransformBounds(new Rect(new Point(), list.RenderSize));
+            Assert.Equal(40, listRect.Top, 1);
+            var item = Descendants(list).OfType<Button>().Single();
+            Assert.Equal("1 · 矩形", AutomationProperties.GetName(item));
+            item.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+            Assert.Equal(0, window.InlineCanvas.SelectedIndex);
+            window.InlineCanvas.Document.Add(new Annotation(AnnotationKind.Ellipse, new[] { new PixelPoint(20, 20), new PixelPoint(90, 70) }, 0xff00ff00, 3));
+            window.InlineCanvas.Refresh(); content.UpdateLayout();
+            var items = Descendants(list).OfType<Button>().ToArray();
+            Assert.Equal(2, items.Length);
+            Assert.Equal("2 · 椭圆", AutomationProperties.GetName(items[1]));
+            items[1].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+            Assert.Equal(1, window.InlineCanvas.SelectedIndex);
+        }
+        finally { window.Close(); }
+    });
+    private static bool actionsRectIsRightOf(Rect inline, Rect actions) => actions.Left >= inline.Right - 1 && actions.Left <= inline.Right + 8;
+
+    [Fact] public void CaptureToolbarWithoutMarkupToolAlignsToSelectionLeft() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(1200, 800), new PixelRect(0, 0, 1200, 800), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(1200, 800)); content.Arrange(new Rect(0, 0, 1200, 800)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(300, 80, 400, 220)); content.UpdateLayout();
+            var actions = Descendants(content).OfType<FloatingToolbar>().Single(bar => bar.Name == "CaptureActions");
+            var rect = actions.TransformToAncestor(content).TransformBounds(new Rect(new Point(), actions.RenderSize));
+            Assert.Equal(300, rect.Left, 1);
+            Assert.True(rect.Top >= 300);
+            var buttons = Descendants(actions).OfType<Button>().ToArray();
+            var dragIndex = Array.FindIndex(buttons, button => AutomationProperties.GetName(button) == "拖动截图面板");
+            var cancelIndex = Array.FindIndex(buttons, button => AutomationProperties.GetName(button) == "取消");
+            Assert.True(dragIndex >= 0 && cancelIndex > dragIndex);
+            var recordBar = Descendants(content).OfType<FloatingToolbar>().Single(bar => bar.Name == "CaptureRecordActions");
+            Assert.Contains(Descendants(recordBar).OfType<Button>(), button => AutomationProperties.GetName(button) == "拖动录制面板");
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void RecordingStartHandsOffToTransitionWithoutClosingSelectionFirst() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), true);
+        CaptureWindow? handedOff = null;
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            window.RecordTransitionRequested = value => handedOff = value;
+            var start = Descendants(content).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "开始录制");
+            start.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Same(window, handedOff);
+            Assert.Equal(CaptureAction.Record, window.ActionResult);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void AnnotationListMovesLeftAndMarksOverflowWithoutScrollbar() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(1200, 800), new PixelRect(0, 0, 1200, 800), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(1200, 800)); content.Arrange(new Rect(0, 0, 1200, 800)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(300, 80, 400, 220)); content.UpdateLayout();
+            window.BeginInlineEdit(AnnotationKind.Rectangle); content.UpdateLayout();
+            for (var index = 0; index < 40; index++) window.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(10, 10), new PixelPoint(40, 40) }, 0xff0000ff, 3));
+            window.InlineCanvas!.Refresh(); content.UpdateLayout();
+            window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Loaded);
+            var list = Descendants(content).OfType<AnnotationListBar>().Single();
+            var listRect = list.TransformToAncestor(content).TransformBounds(new Rect(new Point(), list.RenderSize));
+            Assert.True(listRect.Right <= 300, $"list={listRect}");
+            Assert.Equal(80, listRect.Top, 1);
+            Assert.True(listRect.Bottom <= 792, $"list={listRect}");
+            var scroll = Descendants(list).OfType<ScrollViewer>().Single();
+            Assert.Equal(ScrollBarVisibility.Hidden, scroll.VerticalScrollBarVisibility);
+            Assert.Contains(Descendants(list).OfType<TextBlock>(), text => text.Text == "…" && text.Visibility == Visibility.Visible);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void InlineCanvasRebuildKeepsAnnotationsAtScreenPositionsWhenSelectionResized() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(1200, 800), new PixelRect(0, 0, 1200, 800), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(1200, 800)); content.Arrange(new Rect(0, 0, 1200, 800)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 200, 150)); content.UpdateLayout();
+            window.BeginInlineEdit(AnnotationKind.Rectangle); content.UpdateLayout();
+            window.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(10, 10), new PixelPoint(40, 30) }, 0xffff0000, 3));
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+            typeof(CaptureWindow).GetProperty("Selection", flags)!.SetValue(window, new PixelRect(60, 50, 200, 150));
+            typeof(CaptureWindow).GetMethod("RebuildInlineForSelection", flags)!.Invoke(window, new object[] { new PixelRect(40, 40, 200, 150) });
+            content.UpdateLayout();
+            var item = window.InlineCanvas!.Document.Items.Single();
+            Assert.Equal(new PixelPoint(-10, 0), item.Points[0]);
+            Assert.Equal(new PixelPoint(20, 20), item.Points[1]);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void InlineResizeOnlyStartsForSelectionEdges()
+    {
+        Assert.False(CaptureWindow.IsEdgeHandle(SelectionHandle.None));
+        Assert.False(CaptureWindow.IsEdgeHandle(SelectionHandle.Move));
+        Assert.True(CaptureWindow.IsEdgeHandle(SelectionHandle.Left));
+        Assert.True(CaptureWindow.IsEdgeHandle(SelectionHandle.Right | SelectionHandle.Bottom));
+    }
+
     [Fact] public void CaptureSceneShowsCompactToolsAndTheSelectedToolOpensInEditor() => ImagingTests.Sta(() =>
     {
         var pixels = new byte[1220 * 720 * 4]; for (var i = 0; i < pixels.Length; i += 4) { pixels[i] = 54; pixels[i + 1] = 40; pixels[i + 2] = 36; pixels[i + 3] = 255; }
@@ -199,7 +356,24 @@ public class CaptureUiTests
             Assert.Equal("DeskSnip · 选择录制区域", second.Title);
             Assert.Equal(Visibility.Collapsed, Descendants(content).OfType<FloatingToolbar>().Single(toolbar => toolbar.Name == "CaptureActions").Visibility);
             Assert.Equal(Visibility.Visible, Descendants(content).OfType<FloatingToolbar>().Single(toolbar => toolbar.Name == "CaptureRecordActions").Visibility);
-            Assert.Contains(Descendants(content).OfType<Button>(), button => AutomationProperties.GetName(button) == "使用此区域");
+            Assert.Contains(Descendants(content).OfType<Button>(), button => AutomationProperties.GetName(button) == "开始录制");
+            var recordBar = Descendants(content).OfType<FloatingToolbar>().Single(toolbar => toolbar.Name == "CaptureRecordActions");
+            var recordStart = recordBar.Items.Children.OfType<Button>().Single(button => AutomationProperties.GetName(button) == "开始录制");
+            Assert.InRange(recordBar.Items.Children.IndexOf(recordStart), 0, 1);
+            Preview(content, 400, 300, "record-toolbar.png");
+            var mode = Descendants(content).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "录制模式");
+            var format = Descendants(content).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "录制格式");
+            var gif = format.ContextMenu!.Items.OfType<MenuItem>().Single(item => Equals(item.Header, "GIF"));
+            gif.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Assert.Equal("GIF", second.Plan.Format);
+            var quick = mode.ContextMenu!.Items.OfType<MenuItem>().Single(item => Equals(item.Header, "快速录制"));
+            quick.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            Assert.True(second.Plan.Quick); Assert.Equal("MP4", second.Plan.Format); Assert.False(format.IsEnabled);
+            var normal = mode.ContextMenu.Items.OfType<MenuItem>().Single(item => Equals(item.Header, "普通录制"));
+            normal.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Assert.Equal("GIF", second.Plan.Format); Assert.True(format.IsEnabled);
+            Assert.Contains(Descendants(content).OfType<Button>(), button => AutomationProperties.GetName(button) == "录制帧率");
+            var mic = Descendants(content).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "麦克风：未开启");
+            mic.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.True(second.Plan.Microphone);
+            Assert.Contains(Descendants(content).OfType<Button>(), button => AutomationProperties.GetName(button) == "麦克风：已开启");
         }
         finally { second.Close(); }
     });
@@ -243,6 +417,16 @@ public class CaptureUiTests
         }
         finally { AnnotationToolDefaults.Load(""); }
     });
+
+    private static void Preview(Grid content, int width, int height, string name)
+    {
+        var directory = Environment.GetEnvironmentVariable("DESK_SNIP_TEST_PREVIEW_DIR");
+        if (string.IsNullOrEmpty(directory)) return;
+        Directory.CreateDirectory(directory);
+        var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); image.Render(content);
+        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
+        using var output = File.Create(Path.Combine(directory, name)); encoder.Save(output);
+    }
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {

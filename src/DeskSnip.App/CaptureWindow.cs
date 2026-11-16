@@ -51,11 +51,28 @@ internal sealed partial class CaptureWindow : ProductWindow
     private readonly List<UIElement> captureToolItems = new List<UIElement>();
     private InlineAnnotationBar? inlineBar;
     private AnnotationCanvas? inlineCanvas;
+    private AnnotationListBar? annotationList;
+    private int inlineClickRevision = -1;
+    private DateTime inlineClickUtc;
+    private Native.Point inlineClickScreen;
+    private bool panelDragging;
+    private Native.Point panelDragStart;
+    private PixelRect panelDragSelection;
+    private bool inlineResizing;
+    private PixelRect inlineResizeSelection;
+    private AnnotationCanvas? recordingCanvas;
+    private AnnotationKind? recordingMarkingKind;
+    private readonly List<(Button Button, AnnotationKind?[] Kinds)> recordToolButtons = new List<(Button, AnnotationKind?[])>();
     private bool inlineEditing;
+    private bool recordingTransition;
     internal BitmapSource? InlineOutput { get; private set; }
+    internal Action<CaptureWindow>? RecordTransitionRequested { get; set; }
     internal AnnotationKind? LastInlineTool { get; private set; }
     internal AnnotationCanvas? InlineCanvas => inlineCanvas;
     internal bool InlineEditing => inlineEditing;
+    internal IReadOnlyList<Annotation> RecordingAnnotations => recordingCanvas?.Document.Items ?? Array.Empty<Annotation>();
+    internal AnnotationCanvas? RecordingCanvas => recordingCanvas;
+    internal AnnotationKind? RecordingMarkingKind => recordingMarkingKind;
     private readonly Button? shapeButton;
     private readonly Button targetButton;
     private CaptureShape shape;
@@ -96,6 +113,8 @@ internal sealed partial class CaptureWindow : ProductWindow
     private PixelRect uiAutomationHover;
     internal PixelRect Selection { get; private set; }
     internal CaptureAction ActionResult { get; private set; } = CaptureAction.Edit;
+    internal RecordingPlan Plan { get; }
+    internal bool RecordingMode => recordingMode;
     internal CaptureShape ShapeResult => recordingMode ? CaptureShape.Rectangle : shape;
     internal BitmapSource SelectedDesktop => cursorVisible && desktopWithCursor != null ? desktopWithCursor : desktop;
     internal IReadOnlyList<PixelPoint> ShapePoints => contour.Select(p => new PixelPoint(p.X - Selection.X, p.Y - Selection.Y)).ToArray();
@@ -104,6 +123,7 @@ internal sealed partial class CaptureWindow : ProductWindow
     {
         this.bounds = bounds; recordingMode = recording;
         this.settings = settings?.Clone() ?? new AppSettings(); this.desktop = desktop; this.desktopWithCursor = desktopWithCursor;
+        Plan = RecordingPlan.FromSettings(this.settings);
         cursorVisible = this.settings.ScreenshotCursorVisible; showShortcuts = this.settings.ScreenshotShowShortcuts;
         elements = this.settings.ScreenshotUiDetection == "Elements";
         colorFormats = CapturePreferenceRules.ColorFormats(this.settings.ColorFormatOrder); colorFormat = colorFormats[0];
@@ -116,7 +136,8 @@ internal sealed partial class CaptureWindow : ProductWindow
         WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false; Topmost = true;
         Left = bounds.X; Top = bounds.Y; Width = bounds.Width; Height = bounds.Height;
         Background = Brushes.Black; Cursor = Cursors.Cross;
-        desktopImage = new Image { Source = cursorVisible && desktopWithCursor != null ? desktopWithCursor : desktop, Stretch = Stretch.Fill, IsHitTestVisible = false };
+        if (recordingMode) { AllowsTransparency = true; Background = Brushes.Transparent; }
+        desktopImage = new Image { Source = cursorVisible && desktopWithCursor != null ? desktopWithCursor : desktop, Stretch = Stretch.Fill, IsHitTestVisible = false, Visibility = recordingMode ? Visibility.Collapsed : Visibility.Visible };
         var grid = new Grid(); grid.Children.Add(desktopImage); grid.Children.Add(surface); Content = grid;
         surface.Background = Brushes.Transparent; surface.Children.Add(mask); surface.Children.Add(guides); surface.Children.Add(outline); surface.Children.Add(contourOutline);
         for (var i = 0; i < handles.Length; i++)
@@ -144,7 +165,6 @@ internal sealed partial class CaptureWindow : ProductWindow
         foreach (var area in this.recent) { var region = area; history.Items.Add(FloatingTools.Item(region.ToString(), () => SetSelection(region))); }
         var historyButton = FloatingTools.MenuButton(ToolGlyph.History, L.Get("历史选区"), history); historyButton.Width = 32; historyButton.IsEnabled = this.recent.Count > 0; modes.Items.Children.Add(historyButton);
         modes.Items.Children.Add(FloatingTools.Button(ToolGlyph.Restart, L.Get("重新框选"), () => SetSelection(default))); surface.Children.Add(modes);
-        var grip = new ToolIcon(ToolGlyph.Grip) { Width = 12, Height = 20, Color = FloatingTools.MutedInk, Margin = new Thickness(2, 7, 2, 7) }; actions.Items.Children.Add(grip); captureToolItems.Add(grip);
         AddEditGroup(ToolGlyph.Rectangle, L.Get("形状标注"), (L.Get("矩形"), CaptureAction.EditRectangle), (L.Get("椭圆"), CaptureAction.EditEllipse), (L.Get("直线"), CaptureAction.EditLine));
         AddEditGroup(ToolGlyph.Brush, L.Get("画笔与高亮"), (L.Get("画笔"), CaptureAction.EditBrush), (L.Get("高亮"), CaptureAction.EditHighlight));
         var arrow = FloatingTools.Button(ToolGlyph.Arrow, L.Get("箭头标注"), () => BeginInlineEdit(AnnotationKind.Arrow)); actions.Items.Children.Add(arrow); captureToolItems.Add(arrow);
@@ -163,13 +183,66 @@ internal sealed partial class CaptureWindow : ProductWindow
         var save = FloatingTools.Menu(); save.Items.Add(FloatingTools.Item(L.Get("保存图片"), () => Complete(CaptureAction.Save), "Ctrl+S")); save.Items.Add(FloatingTools.Item(L.Get("快速保存"), () => Complete(CaptureAction.QuickSave), "Ctrl+Shift+S")); actions.Items.Children.Add(FloatingTools.MenuButton(ToolGlyph.Save, L.Get("保存"), save));
         var more = FloatingTools.Menu(); more.Items.Add(FloatingTools.Item(L.Get("编辑截图（全部工具）"), () => BeginInlineEdit(null))); more.Items.Add(FloatingTools.Item(L.Get("精确位置与尺寸"), () => info.SetExpanded(!info.IsExpanded))); more.Items.Add(FloatingTools.Item(L.Get("重新框选"), () => SetSelection(default))); actions.Items.Children.Add(FloatingTools.MenuButton(ToolGlyph.More, L.Get("更多截图操作"), more));
         actions.Items.Children.Add(FloatingTools.Divider());
+        var panelDrag = FloatingTools.Button(ToolGlyph.Grip, L.Get("拖动截图面板"), () => { }); AttachPanelDrag(panelDrag); actions.Items.Children.Add(panelDrag);
         actions.Items.Children.Add(FloatingTools.Button(ToolGlyph.Close, L.Get("取消"), () => DialogResult = false, "Esc"));
         actions.Items.Children.Add(FloatingTools.Button(ToolGlyph.Copy, L.Get("复制截图"), () => Complete(CaptureAction.Copy), "Enter / Ctrl+C", true));
-        var recordCaption = Ui.Text(L.Get("录制区域"), 11, FloatingTools.MutedInk); recordCaption.Margin = new Thickness(8, 0, 8, 0); recordCaption.VerticalAlignment = VerticalAlignment.Center; recordActions.Items.Children.Add(recordCaption);
-        recordActions.Items.Children.Add(FloatingTools.Button(ToolGlyph.Styles, L.Get("精确位置与尺寸"), () => info.SetExpanded(!info.IsExpanded)));
+        var recordingPlan = Plan;
+        var defaultRecordingFormat = this.settings.RecordingFormat;
+        var recordStart = FloatingTools.Button(ToolGlyph.Record, L.Get("开始录制"), () => Complete(CaptureAction.Record), "Enter", true); recordStart.Foreground = FloatingTools.Red; recordActions.Items.Children.Add(recordStart);
+        var recordTime = Ui.Text("00:00", 12, FloatingTools.Ink); recordTime.FontFamily = new FontFamily("Consolas"); recordTime.Width = 58; recordTime.TextWrapping = TextWrapping.NoWrap; recordTime.VerticalAlignment = VerticalAlignment.Center; recordTime.ToolTip = L.Get("录制时长"); recordActions.Items.Children.Add(recordTime);
+        var fpsMenu = FloatingTools.Menu();
+        var recordFps = FloatingTools.TextMenuButton(recordingPlan.Fps + " FPS", L.Get("录制帧率"), fpsMenu, out var recordFpsText, 70);
+        void SetFps(int value) { recordingPlan.Fps = value; recordFpsText.Text = value + " FPS"; }
+        foreach (var value in new[] { recordingPlan.Fps, 5, 16, 24, 30, 60 }.Distinct().OrderBy(value => value))
+        {
+            var fps = value; var item = FloatingTools.Item(fps + " FPS", () => SetFps(fps)); item.IsCheckable = true; item.Tag = fps; fpsMenu.Items.Add(item);
+        }
+        fpsMenu.Opened += (_, _) => { foreach (var item in fpsMenu.Items.OfType<MenuItem>()) item.IsChecked = item.Tag is int value && value == recordingPlan.Fps; };
+        recordActions.Items.Children.Add(recordFps);
+        Button? recordMic = null, recordSpeaker = null;
+        void UpdateRecordAudio()
+        {
+            FloatingTools.SetSelected(recordMic!, recordingPlan.Microphone);
+            FloatingTools.SetName(recordMic!, recordingPlan.Microphone ? L.Get("麦克风：已开启") : L.Get("麦克风：未开启"));
+            FloatingTools.SetIcon(recordSpeaker!, recordingPlan.SystemAudio ? ToolGlyph.Sound : ToolGlyph.Muted, recordingPlan.SystemAudio ? L.Get("系统声音：已开启") : L.Get("系统声音：未开启"));
+            FloatingTools.SetSelected(recordSpeaker!, recordingPlan.SystemAudio);
+        }
+        recordMic = FloatingTools.Button(ToolGlyph.Microphone, L.Get("麦克风：未开启"), () => { recordingPlan.Microphone = !recordingPlan.Microphone; UpdateRecordAudio(); });
+        recordSpeaker = FloatingTools.Button(recordingPlan.SystemAudio ? ToolGlyph.Sound : ToolGlyph.Muted, L.Get("系统声音：未开启"), () => { recordingPlan.SystemAudio = !recordingPlan.SystemAudio; UpdateRecordAudio(); });
+        UpdateRecordAudio(); recordActions.Items.Children.Add(recordMic); recordActions.Items.Children.Add(recordSpeaker);
+        var formatMenu = FloatingTools.Menu(); TextBlock recordFormatText;
+        var recordFormat = FloatingTools.TextMenuButton(recordingPlan.Format, L.Get("录制格式"), formatMenu, out recordFormatText, 68);
+        var normalFormat = recordingPlan.Quick ? defaultRecordingFormat : recordingPlan.Format;
+        void SetFormat(string value) { recordingPlan.Format = value; recordFormatText.Text = value; if (!recordingPlan.Quick) normalFormat = value; }
+        foreach (var value in new[] { "MP4", "GIF", "WebP" })
+        {
+            var format = value; var item = FloatingTools.Item(format, () => SetFormat(format)); item.IsCheckable = true; item.Tag = format; formatMenu.Items.Add(item);
+        }
+        formatMenu.Opened += (_, _) => { foreach (var item in formatMenu.Items.OfType<MenuItem>()) item.IsChecked = Equals(item.Tag, recordingPlan.Format); };
+        var modeMenu = FloatingTools.Menu(); TextBlock recordModeText;
+        var recordMode = FloatingTools.TextMenuButton(recordingPlan.Quick ? L.Get("快速录制") : L.Get("普通录制"), L.Get("录制模式"), modeMenu, out recordModeText, 104);
+        void SetMode(bool quick)
+        {
+            recordingPlan.Quick = quick; recordModeText.Text = quick ? L.Get("快速录制") : L.Get("普通录制");
+            if (quick) { recordingPlan.Format = "MP4"; recordFormatText.Text = "MP4"; recordFormat.IsEnabled = false; }
+            else { recordingPlan.Format = normalFormat; recordFormatText.Text = recordingPlan.Format; recordFormat.IsEnabled = true; }
+        }
+        var normalMode = FloatingTools.Item(L.Get("普通录制"), () => SetMode(false)); normalMode.IsCheckable = true; normalMode.Tag = false; modeMenu.Items.Add(normalMode);
+        var quickMode = FloatingTools.Item(L.Get("快速录制"), () => SetMode(true)); quickMode.IsCheckable = true; quickMode.Tag = true; modeMenu.Items.Add(quickMode);
+        modeMenu.Opened += (_, _) => { normalMode.IsChecked = !recordingPlan.Quick; quickMode.IsChecked = recordingPlan.Quick; };
+        recordActions.Items.Children.Add(recordMode); recordActions.Items.Children.Add(recordFormat);
+        recordFormat.IsEnabled = !recordingPlan.Quick;
         recordActions.Items.Children.Add(FloatingTools.Divider());
+        AddRecordToolGroup(ToolGlyph.Rectangle, L.Get("录制标注：形状"), AnnotationKind.Rectangle, AnnotationKind.Ellipse, AnnotationKind.Line);
+        AddRecordToolGroup(ToolGlyph.Brush, L.Get("录制标注：画笔"), AnnotationKind.Pen, AnnotationKind.Highlight);
+        var recordArrow = FloatingTools.Button(ToolGlyph.Arrow, L.Get("录制标注：箭头"), () => SetRecordingMarking(AnnotationKind.Arrow)); recordActions.Items.Children.Add(recordArrow); recordToolButtons.Add((recordArrow, new AnnotationKind?[] { AnnotationKind.Arrow }));
+        var recordText = FloatingTools.Button(ToolGlyph.Text, L.Get("录制标注：文字"), () => SetRecordingMarking(AnnotationKind.Text)); recordActions.Items.Children.Add(recordText); recordToolButtons.Add((recordText, new AnnotationKind?[] { AnnotationKind.Text }));
+        var recordCover = FloatingTools.Button(ToolGlyph.Mosaic, L.Get("录制标注：遮挡"), () => SetRecordingMarking(AnnotationKind.Cover)); recordActions.Items.Children.Add(recordCover); recordToolButtons.Add((recordCover, new AnnotationKind?[] { AnnotationKind.Cover }));
+        var exitMarking = FloatingTools.Button(ToolGlyph.Cursor, L.Get("移动选区 / 结束标注"), () => SetRecordingMarking(null)); recordActions.Items.Children.Add(exitMarking); recordToolButtons.Add((exitMarking, new AnnotationKind?[] { null }));
+        UpdateRecordToolSelection();
+        recordActions.Items.Children.Add(FloatingTools.Divider());
+        var recordDrag = FloatingTools.Button(ToolGlyph.Grip, L.Get("拖动录制面板"), () => { }); AttachPanelDrag(recordDrag); recordActions.Items.Children.Add(recordDrag);
         recordActions.Items.Children.Add(FloatingTools.Button(ToolGlyph.Close, L.Get("取消"), () => DialogResult = false, "Esc"));
-        recordActions.Items.Children.Add(FloatingTools.Button(ToolGlyph.Check, L.Get("使用此区域"), () => Complete(CaptureAction.Record), "Enter / Ctrl+C", true));
         surface.Children.Add(actions); surface.Children.Add(recordActions);
         magnifier = new PixelMagnifier(inspector, this.settings); surface.Children.Add(magnifier);
         shortcutHint.Background = new SolidColorBrush(Color.FromArgb(210, 25, 30, 37)); shortcutHint.Padding = new Thickness(10, 5, 10, 5); shortcutHint.Name = "CaptureShortcutHints"; shortcutHint.IsHitTestVisible = false; surface.Children.Add(shortcutHint);
@@ -189,6 +262,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         uiAutomationTimer.Start();
         Closed += (_, _) => StopUiAutomation();
         PreviewKeyDown += KeyDownHandler; PreviewKeyUp += KeyUpHandler;
+        PreviewMouseDown += InlinePointerDown;
     }
 
     private void AddEditGroup(ToolGlyph glyph, string name, params (string Name, CaptureAction Action)[] tools)
@@ -196,6 +270,42 @@ internal sealed partial class CaptureWindow : ProductWindow
         var menu = FloatingTools.Menu(); foreach (var tool in tools) { var action = tool.Action; menu.Items.Add(FloatingTools.Item(tool.Name, () => BeginInlineEdit(AnnotationTool(action)))); }
         var primary = AnnotationTool(tools[0].Action);
         var button = FloatingTools.SplitMenuButton(glyph, name, () => BeginInlineEdit(primary), menu); actions.Items.Children.Add(button); captureToolItems.Add(button);
+    }
+    private void AddRecordToolGroup(ToolGlyph glyph, string name, params AnnotationKind[] kinds)
+    {
+        var menu = FloatingTools.Menu(); Button button = null!;
+        foreach (var kind in kinds)
+        {
+            var tool = kind; var item = FloatingTools.Item(EditorWindow.ToolNames[(int)tool], () => SetRecordingMarking(tool)); item.Tag = tool; menu.Items.Add(item);
+        }
+        menu.Opened += (_, _) => { for (var index = 0; index < kinds.Length; index++) ((MenuItem)menu.Items[index]).IsChecked = recordingMarkingKind == kinds[index]; };
+        button = FloatingTools.SplitMenuButton(glyph, name, () => SetRecordingMarking(kinds[0]), menu);
+        recordActions.Items.Children.Add(button); recordToolButtons.Add((button, kinds.Select(kind => (AnnotationKind?)kind).ToArray()));
+    }
+    internal void SetRecordingMarking(AnnotationKind? kind)
+    {
+        if (!recordingMode || Selection.IsEmpty) return;
+        if (recordingCanvas != null && (recordingCanvas.Image.PixelWidth != Selection.Width || recordingCanvas.Image.PixelHeight != Selection.Height))
+        { surface.Children.Remove(recordingCanvas); recordingCanvas = null; recordingMarkingKind = null; }
+        if (recordingCanvas == null)
+        {
+            var canvas = new AnnotationCanvas(TransparentLayer(Selection.Width, Selection.Height), settings) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, HideEditorChrome = true, ExcludeTextPopupFromCapture = true, IsHitTestVisible = false };
+            recordingCanvas = canvas; canvas.ToolChanged += () => recordingMarkingKind = canvas.LastTool; surface.Children.Insert(0, canvas);
+        }
+        var activeCanvas = recordingCanvas;
+        activeCanvas.SetTool(kind); recordingMarkingKind = kind; activeCanvas.IsHitTestVisible = kind.HasValue;
+        if (kind.HasValue) { activeCanvas.Focus(); Keyboard.Focus(activeCanvas); }
+        else { Focus(); Keyboard.Focus(this); }
+        UpdateRecordToolSelection(); Redraw();
+    }
+    private void UpdateRecordToolSelection()
+    {
+        foreach (var pair in recordToolButtons) FloatingTools.SetSelected(pair.Button, pair.Kinds.Contains(recordingMarkingKind));
+    }
+    private static BitmapSource TransparentLayer(int width, int height)
+    {
+        var pixels = new byte[width * height * 4]; for (var index = 3; index < pixels.Length; index += 4) pixels[index] = 1;
+        var image = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, width * 4); image.Freeze(); return image;
     }
     private void SwitchToRecording()
     {
@@ -219,7 +329,7 @@ internal sealed partial class CaptureWindow : ProductWindow
     }
     private void UpdateShortcutHint()
     {
-        shortcutHint.Text = recordingMode ? L.Get("拖动框选 · Enter 使用此区域 · Esc 取消") : L.Get("拖动框选 · Enter 复制 · Ctrl+T 钉图 · Ctrl+S 保存 · G 录屏 · Space 工具栏 · Esc 取消");
+        shortcutHint.Text = recordingMode ? L.Get("拖动框选 · Enter 开始录制 · Esc 取消") : L.Get("拖动框选 · Enter 复制 · Ctrl+T 钉图 · Ctrl+S 保存 · G 录屏 · Space 工具栏 · Esc 取消");
     }
     internal static AnnotationKind? AnnotationTool(CaptureAction action) => action switch
     {
@@ -239,9 +349,15 @@ internal sealed partial class CaptureWindow : ProductWindow
             var image = ScreenCapture.Crop(SelectedDesktop, bounds, Selection);
             inlineCanvas = new AnnotationCanvas(image, settings) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
             inlineCanvas.ToolChanged += () => LastInlineTool = inlineCanvas.LastTool;
+            inlineCanvas.TextEditorPointerDown += InlineTextPointerDown;
+            inlineCanvas.PreviewMouseLeftButtonDown += InlineCanvasEdgeDown;
             surface.Children.Insert(0, inlineCanvas);
+            annotationList = new AnnotationListBar(inlineCanvas) { Visibility = Visibility.Collapsed };
+            var actionIndex = surface.Children.IndexOf(actions);
+            surface.Children.Insert(actionIndex >= 0 ? actionIndex : surface.Children.Count, annotationList);
             inlineBar = new InlineAnnotationBar(inlineCanvas, settings, withFinish: false, showShortcuts: settings.ScreenshotShowShortcuts) { Visibility = Visibility.Collapsed };
             surface.Children.Add(inlineBar);
+            inlineCanvas.Changed += Redraw;
         }
         inlineEditing = true; inlineCanvas.SetTool(tool ?? RememberedScreenshotTool()); LastInlineTool = inlineCanvas.LastTool;
         foreach (var item in captureToolItems) item.Visibility = Visibility.Collapsed;
@@ -249,6 +365,59 @@ internal sealed partial class CaptureWindow : ProductWindow
     }
     private AnnotationKind RememberedScreenshotTool()
         => settings.MarkRememberScreenshotTool && Enum.TryParse(settings.MarkLastScreenshotTool, out AnnotationKind remembered) ? remembered : AnnotationKind.Arrow;
+    /// <summary>边框拖动结束后按新选区重建标注画布：标记按屏幕位置平移，越界部分由画布裁剪。</summary>
+    private void RebuildInlineForSelection(PixelRect oldSelection)
+    {
+        if (inlineCanvas == null || Selection.IsEmpty) { RemoveInlineUi(); return; }
+        var oldCanvas = inlineCanvas;
+        oldCanvas.CommitPendingText();
+        var items = oldCanvas.Document.Items.ToArray();
+        var tool = oldCanvas.LastTool;
+        var argb = oldCanvas.Argb; var thickness = oldCanvas.Thickness; var family = oldCanvas.FontFamily; var size = oldCanvas.FontSize;
+        var bold = oldCanvas.Bold; var italic = oldCanvas.Italic; var appearance = oldCanvas.Appearance;
+        RemoveInlineUi();
+        var image = ScreenCapture.Crop(SelectedDesktop, bounds, Selection);
+        var canvasSettings = settings.Clone(); canvasSettings.MarkLimitToSelection = false;
+        var canvas = new AnnotationCanvas(image, canvasSettings) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, ClipToBounds = true };
+        canvas.SetTool(tool);
+        canvas.ChangeStyle(argb, thickness, family, size, bold, italic, appearance);
+        var dx = oldSelection.X - Selection.X; var dy = oldSelection.Y - Selection.Y;
+        foreach (var item in items)
+        {
+            try
+            {
+                var moved = item.WithPoints(item.Points.Select(point => new PixelPoint(point.X + dx, point.Y + dy)));
+                if (moved.Points.Any(point => point.X >= 0 && point.Y >= 0 && point.X <= image.PixelWidth && point.Y <= image.PixelHeight)) canvas.Document.Add(moved);
+            }
+            catch (ArgumentException) { }
+        }
+        inlineCanvas = canvas; inlineEditing = true;
+        canvas.ToolChanged += () => LastInlineTool = canvas.LastTool;
+        canvas.TextEditorPointerDown += InlineTextPointerDown;
+        canvas.PreviewMouseLeftButtonDown += InlineCanvasEdgeDown;
+        surface.Children.Insert(0, canvas);
+        annotationList = new AnnotationListBar(canvas) { Visibility = Visibility.Collapsed };
+        var actionIndex = surface.Children.IndexOf(actions);
+        surface.Children.Insert(actionIndex >= 0 ? actionIndex : surface.Children.Count, annotationList);
+        inlineBar = new InlineAnnotationBar(canvas, settings, withFinish: false, showShortcuts: settings.ScreenshotShowShortcuts) { Visibility = Visibility.Collapsed };
+        surface.Children.Add(inlineBar);
+        canvas.Changed += Redraw;
+        foreach (var item in captureToolItems) item.Visibility = Visibility.Collapsed;
+        LastInlineTool = canvas.LastTool; inlineClickRevision = -1;
+        Redraw();
+    }
+    private void RemoveInlineUi()
+    {
+        if (inlineCanvas != null)
+        {
+            inlineCanvas.Changed -= Redraw; inlineCanvas.TextEditorPointerDown -= InlineTextPointerDown; inlineCanvas.PreviewMouseLeftButtonDown -= InlineCanvasEdgeDown;
+            surface.Children.Remove(inlineCanvas); inlineCanvas = null;
+        }
+        if (inlineBar != null) { surface.Children.Remove(inlineBar); inlineBar = null; }
+        if (annotationList != null) { surface.Children.Remove(annotationList); annotationList = null; }
+        inlineEditing = false; inlineResizing = false; inlineClickRevision = -1;
+        foreach (var item in captureToolItems) item.Visibility = Visibility.Visible;
+    }
     private async void DetectInlinePrivacy()
     {
         if (inlineCanvas == null) return;
@@ -276,7 +445,7 @@ internal sealed partial class CaptureWindow : ProductWindow
     private bool IsControl(DependencyObject? source)
     {
         for (var node = source; node != null; node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node))
-            if (ReferenceEquals(node, info) || ReferenceEquals(node, actions) || ReferenceEquals(node, recordActions) || ReferenceEquals(node, modes) || ReferenceEquals(node, inlineCanvas) || ReferenceEquals(node, inlineBar)) return true;
+            if (ReferenceEquals(node, info) || ReferenceEquals(node, actions) || ReferenceEquals(node, recordActions) || ReferenceEquals(node, modes) || ReferenceEquals(node, inlineCanvas) || ReferenceEquals(node, inlineBar) || ReferenceEquals(node, annotationList) || ReferenceEquals(node, recordingCanvas)) return true;
         return false;
     }
     internal void SetSelection(PixelRect selection)
@@ -284,6 +453,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         if (inlineEditing && !selection.Equals(Selection)) return;
         var old = Selection;
         Selection = selection.IsEmpty ? default : selection.Intersect(bounds);
+        if (recordingCanvas != null && !Selection.Equals(old)) { surface.Children.Remove(recordingCanvas); recordingCanvas = null; recordingMarkingKind = null; UpdateRecordToolSelection(); }
         if (!old.IsEmpty && !Selection.IsEmpty && !Selection.Equals(old) && !dragging && !polygonBuilding && (ShapeResult == CaptureShape.Freehand || ShapeResult == CaptureShape.Polygon))
             for (var i = 0; i < contour.Count; i++) contour[i] = new PixelPoint(Selection.X + (contour[i].X - old.X) * Selection.Width / old.Width, Selection.Y + (contour[i].Y - old.Y) * Selection.Height / old.Height);
         if (ratioLocked && !Selection.IsEmpty && !lockedRatio.HasValue) lockedRatio = Selection.Width / (double)Selection.Height;
@@ -321,8 +491,18 @@ internal sealed partial class CaptureWindow : ProductWindow
     private void Down(object sender, MouseButtonEventArgs e)
     {
         if (IsControl(e.OriginalSource as DependencyObject)) return;
-        if (inlineEditing) return;
         var point = CursorPosition();
+        if (inlineEditing)
+        {
+            var sx = surface.ActualWidth / bounds.Width; var sy = surface.ActualHeight / bounds.Height;
+            var handle = sx <= 0 || sy <= 0 ? SelectionHandle.None : SelectionGeometry.HitTest(Selection, point, 6 / sx, 6 / sy);
+            if (!IsEdgeHandle(handle)) return;
+            inlineResizing = true; inlineResizeSelection = Selection;
+            if (inlineCanvas != null) inlineCanvas.Visibility = Visibility.Collapsed;
+            if (inlineBar != null) inlineBar.Visibility = Visibility.Collapsed;
+            if (annotationList != null) annotationList.Visibility = Visibility.Collapsed;
+            Focus(); BeginInteraction(point); surface.CaptureMouse(); Redraw(); e.Handled = true; return;
+        }
         if (ShapeResult == CaptureShape.Polygon)
         {
             if (!polygonBuilding) { contour.Clear(); SetSelection(default); polygonBuilding = true; }
@@ -338,15 +518,24 @@ internal sealed partial class CaptureWindow : ProductWindow
     }
     private void Move(object sender, MouseEventArgs e)
     {
-        if (inlineEditing) return;
-        var point = CursorPosition(); cursor = inspector.Clamp(point);
-        if (dragging && ShapeResult == CaptureShape.Freehand) { contour.Add(point); UpdateContourBounds(); }
-        else if (dragging) UpdateDrag(point);
+        if (inlineEditing && !dragging)
+        {
+            if (!IsControl(e.OriginalSource as DependencyObject))
+            {
+                var point = CursorPosition();
+                var sx = surface.ActualWidth / bounds.Width; var sy = surface.ActualHeight / bounds.Height;
+                if (sx > 0 && sy > 0) Cursor = HandleCursor(SelectionGeometry.HitTest(Selection, point, 6 / sx, 6 / sy));
+            }
+            return;
+        }
+        var current = CursorPosition(); cursor = inspector.Clamp(current);
+        if (dragging && ShapeResult == CaptureShape.Freehand) { contour.Add(current); UpdateContourBounds(); }
+        else if (dragging) UpdateDrag(current);
         else if (Selection.IsEmpty) UpdateHover();
         if (!IsControl(e.OriginalSource as DependencyObject))
         {
             var sx = surface.ActualWidth / bounds.Width; var sy = surface.ActualHeight / bounds.Height;
-            if (sx > 0 && sy > 0) Cursor = HandleCursor(dragging ? dragHandle : SelectionGeometry.HitTest(Selection, point, 6 / sx, 6 / sy));
+            if (sx > 0 && sy > 0) Cursor = HandleCursor(dragging ? dragHandle : SelectionGeometry.HitTest(Selection, current, 6 / sx, 6 / sy));
         }
         else Cursor = Cursors.Arrow;
         Redraw();
@@ -365,7 +554,15 @@ internal sealed partial class CaptureWindow : ProductWindow
     }
     private void Up(object sender, MouseButtonEventArgs e)
     {
-        if (inlineEditing || !dragging) return;
+        if (!dragging) return;
+        if (inlineEditing)
+        {
+            if (!inlineResizing) return;
+            UpdateDrag(CursorPosition()); EndInteraction(); surface.ReleaseMouseCapture(); e.Handled = true;
+            inlineResizing = false;
+            if (Selection.IsEmpty) RemoveInlineUi(); else RebuildInlineForSelection(inlineResizeSelection);
+            Redraw(); return;
+        }
         if (ShapeResult == CaptureShape.Freehand) { contour.Add(CursorPosition()); UpdateContourBounds(); EndInteraction(); surface.ReleaseMouseCapture(); e.Handled = true; return; }
         UpdateDrag(CursorPosition()); EndInteraction(); surface.ReleaseMouseCapture(); e.Handled = true;
         if (Selection.Width < 4 && Selection.Height < 4)
@@ -405,8 +602,91 @@ internal sealed partial class CaptureWindow : ProductWindow
         if (action == CaptureAction.LongScreenshot && ShapeResult != CaptureShape.Rectangle) { info.Notice(L.Get("长截图需要矩形选区。")); return; }
         if (AnnotationTool(action) is AnnotationKind tool) { BeginInlineEdit(tool); if (action == CaptureAction.EditAutoMosaic) DetectInlinePrivacy(); return; }
         if (inlineEditing && inlineCanvas != null) { InlineOutput = BuildInlineOutput(); LastInlineTool = inlineCanvas.LastTool; }
-        ActionResult = action; DialogResult = true;
+        ActionResult = action;
+        if (action == CaptureAction.Record && RecordTransitionRequested != null) { RecordTransitionRequested(this); return; }
+        DialogResult = true;
     }
+    /// <summary>截图就地标注：双击画布复制并关闭；首下误画的标注会撤销。</summary>
+    private void InlinePointerDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!inlineEditing || e.ChangedButton != MouseButton.Left || inlineCanvas == null || !IsInlineCanvas(e.OriginalSource as DependencyObject)) return;
+        if (e.ClickCount == 1)
+        {
+            inlineClickRevision = inlineCanvas.Document.Revision;
+            inlineClickUtc = DateTime.UtcNow;
+            Native.GetCursorPos(out inlineClickScreen);
+            return;
+        }
+        if (e.ClickCount < 2) return;
+        if (inlineClickRevision >= 0 && inlineCanvas.Document.Revision != inlineClickRevision && (DateTime.UtcNow - inlineClickUtc).TotalMilliseconds < 1000)
+        { inlineCanvas.Document.Undo(); inlineCanvas.Refresh(); }
+        inlineClickRevision = -1;
+        e.Handled = true;
+        inlineCanvas.CommitPendingText();
+        Complete(CaptureAction.Copy);
+    }
+    /// <summary>文字输入 Popup 是独立窗口；双击首下打开后，第二下落在输入框上时同样复制并关闭截图。</summary>
+    private void InlineTextPointerDown()
+    {
+        if (!inlineEditing || inlineCanvas == null) return;
+        Native.GetCursorPos(out var point);
+        var threshold = System.Windows.Forms.SystemInformation.DoubleClickSize;
+        if ((DateTime.UtcNow - inlineClickUtc).TotalMilliseconds > System.Windows.Forms.SystemInformation.DoubleClickTime) return;
+        if (Math.Abs(point.X - inlineClickScreen.X) > threshold.Width / 2 || Math.Abs(point.Y - inlineClickScreen.Y) > threshold.Height / 2) return;
+        inlineCanvas.CommitPendingText();
+        Complete(CaptureAction.Copy);
+    }
+    /// <summary>标注画布贴近选区边缘时优先进入边框调整，避免画布挡住边框拖动。</summary>
+    private void InlineCanvasEdgeDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!inlineEditing || inlineResizing || e.ChangedButton != MouseButton.Left) return;
+        var sx = surface.ActualWidth / bounds.Width; var sy = surface.ActualHeight / bounds.Height;
+        var handle = sx <= 0 || sy <= 0 ? SelectionHandle.None : SelectionGeometry.HitTest(Selection, CursorPosition(), 8 / sx, 8 / sy);
+        if (!IsEdgeHandle(handle)) return;
+        inlineResizing = true; inlineResizeSelection = Selection;
+        if (inlineCanvas != null) inlineCanvas.Visibility = Visibility.Collapsed;
+        if (inlineBar != null) inlineBar.Visibility = Visibility.Collapsed;
+        if (annotationList != null) annotationList.Visibility = Visibility.Collapsed;
+        Focus(); BeginInteraction(CursorPosition()); surface.CaptureMouse(); Redraw(); e.Handled = true;
+    }
+    internal static bool IsEdgeHandle(SelectionHandle handle) => handle != SelectionHandle.None && handle != SelectionHandle.Move;
+    private bool IsInlineCanvas(DependencyObject? source)
+    {
+        for (var node = source; node != null; node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node))
+            if (ReferenceEquals(node, inlineCanvas)) return true;
+        return false;
+    }
+    /// <summary>工具栏右侧的拖拽按钮：按住后用屏幕坐标移动选区/截图面板，工具栏跟随。</summary>
+    private void AttachPanelDrag(Button button)
+    {
+        button.PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            if (Selection.IsEmpty) return;
+            panelDragging = true; panelDragSelection = Selection; Native.GetCursorPos(out panelDragStart);
+            button.CaptureMouse(); e.Handled = true;
+        };
+        button.PreviewMouseMove += (_, e) =>
+        {
+            if (!panelDragging) return;
+            Native.GetCursorPos(out var point);
+            var moved = SelectionGeometry.Transform(panelDragSelection, new PixelPoint(point.X - panelDragStart.X, point.Y - panelDragStart.Y), SelectionHandle.Move, bounds);
+            if (!moved.Equals(Selection)) { Selection = moved; Redraw(); }
+            e.Handled = true;
+        };
+        button.PreviewMouseLeftButtonUp += (_, e) =>
+        {
+            if (!panelDragging) return;
+            panelDragging = false; button.ReleaseMouseCapture(); Redraw(); e.Handled = true;
+        };
+        button.LostMouseCapture += (_, _) => panelDragging = false;
+    }
+    /// <summary>开始录制时先保留遮罩和选区边框，隐藏工具条；待录屏边框/控制条就绪后再关闭选区窗口。</summary>
+    internal void HideForRecordingTransition()
+    {
+        recordingTransition = true; toolsHidden = true; Redraw();
+    }
+    internal void FinishRecordingTransition() { if (IsLoaded) DialogResult = true; }
+    internal void CancelRecordingTransition() { if (IsLoaded) DialogResult = false; }
     internal BitmapSource? BuildInlineOutput() => inlineCanvas == null ? null : AnnotationRenderer.Flatten(inlineCanvas.Image, inlineCanvas.Document.Items);
     private void CopySample(bool coordinates)
     {
@@ -437,6 +717,11 @@ internal sealed partial class CaptureWindow : ProductWindow
             inlineCanvas.LayoutTransform = new ScaleTransform(sx, sy);
             Canvas.SetLeft(inlineCanvas, (Selection.X - bounds.X) * sx); Canvas.SetTop(inlineCanvas, (Selection.Y - bounds.Y) * sy);
         }
+        if (recordingCanvas != null && !Selection.IsEmpty)
+        {
+            recordingCanvas.LayoutTransform = new ScaleTransform(sx, sy);
+            Canvas.SetLeft(recordingCanvas, (Selection.X - bounds.X) * sx); Canvas.SetTop(recordingCanvas, (Selection.Y - bounds.Y) * sy);
+        }
         outline.StrokeThickness = contourOutline.StrokeThickness = settings.SelectionBorderWidth * Math.Min(sx, sy);
         var shown = Selection.IsEmpty && !dragging ? hover : Selection;
         var rect = new Rect((shown.X - bounds.X) * sx, (shown.Y - bounds.Y) * sy, shown.Width * sx, shown.Height * sy);
@@ -458,7 +743,7 @@ internal sealed partial class CaptureWindow : ProductWindow
             new Point(rect.Left, rect.Bottom), new Point(rect.Left + rect.Width / 2, rect.Bottom), new Point(rect.Right, rect.Bottom) };
         for (var i = 0; i < handles.Length; i++)
         {
-            handles[i].Visibility = inlineEditing || Selection.IsEmpty || ShapeResult == CaptureShape.Freehand || ShapeResult == CaptureShape.Polygon || settings.SelectionAnchorDisplay == "None" || settings.SelectionAnchorDisplay == "Four" && (i == 1 || i == 3 || i == 4 || i == 6) ? Visibility.Collapsed : Visibility.Visible;
+            handles[i].Visibility = recordingTransition || inlineEditing || recordingMarkingKind.HasValue || Selection.IsEmpty || ShapeResult == CaptureShape.Freehand || ShapeResult == CaptureShape.Polygon || settings.SelectionAnchorDisplay == "None" || settings.SelectionAnchorDisplay == "Four" && (i == 1 || i == 3 || i == 4 || i == 6) ? Visibility.Collapsed : Visibility.Visible;
             Canvas.SetLeft(handles[i], positions[i].X - handles[i].Width / 2); Canvas.SetTop(handles[i], positions[i].Y - handles[i].Height / 2);
         }
         var alt = configuredGuides;
@@ -467,27 +752,54 @@ internal sealed partial class CaptureWindow : ProductWindow
         var activeActions = recordingMode ? recordActions : actions;
         actions.Visibility = recordingMode || Selection.IsEmpty || dragging || toolsHidden ? Visibility.Collapsed : Visibility.Visible;
         recordActions.Visibility = !recordingMode || Selection.IsEmpty || dragging || toolsHidden ? Visibility.Collapsed : Visibility.Visible;
-        activeActions.MaxWidth = Math.Max(1, Math.Min(650, surface.ActualWidth - 16)); activeActions.Measure(new Size(activeActions.MaxWidth, double.PositiveInfinity));
-        var actionRect = activeActions.Visibility == Visibility.Visible ? FloatingLayout.Actions(viewport, rect, activeActions.DesiredSize) : Rect.Empty;
-        if (!actionRect.IsEmpty) Place(activeActions, actionRect);
-        if (inlineEditing && inlineBar != null && !toolsHidden)
+        Rect actionRect;
+        if (inlineEditing && inlineBar != null && !toolsHidden && !inlineResizing)
         {
             inlineBar.Visibility = Visibility.Visible;
-            inlineBar.MaxWidth = Math.Max(1, surface.ActualWidth - 16); inlineBar.Measure(new Size(inlineBar.MaxWidth, double.PositiveInfinity));
-            var editRect = FloatingLayout.Secondary(viewport, rect, inlineBar.DesiredSize, actionRect);
-            Place(inlineBar, editRect);
+            var available = Math.Max(1, surface.ActualWidth - 16);
+            inlineBar.MaxWidth = Math.Max(240, Math.Min(700, available * .55));
+            inlineBar.Measure(new Size(inlineBar.MaxWidth, double.PositiveInfinity));
+            activeActions.MaxWidth = Math.Max(200, Math.Min(650, available - inlineBar.DesiredSize.Width - 6));
+            activeActions.Measure(new Size(activeActions.MaxWidth, double.PositiveInfinity));
+            var row = FloatingLayout.InlineRow(viewport, rect, inlineBar.DesiredSize, activeActions.DesiredSize);
+            Place(inlineBar, row.Inline); Place(activeActions, row.Actions);
+            actionRect = row.Actions;
         }
-        else if (inlineBar != null) inlineBar.Visibility = Visibility.Collapsed;
-        info.Visibility = inlineEditing || toolsHidden || !settings.ScreenshotShowInfoBar && !info.IsExpanded ? Visibility.Collapsed : Visibility.Visible;
+        else
+        {
+            if (inlineBar != null) inlineBar.Visibility = Visibility.Collapsed;
+            activeActions.MaxWidth = Math.Max(1, Math.Min(recordingMode ? 900 : 650, surface.ActualWidth - 16)); activeActions.Measure(new Size(activeActions.MaxWidth, double.PositiveInfinity));
+            actionRect = activeActions.Visibility == Visibility.Visible ? FloatingLayout.Actions(viewport, rect, activeActions.DesiredSize) : Rect.Empty;
+            if (!actionRect.IsEmpty) Place(activeActions, actionRect);
+        }
+        if (annotationList != null)
+        {
+            annotationList.Visibility = inlineEditing && !toolsHidden && !inlineResizing && inlineCanvas != null && inlineCanvas.Document.Items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (annotationList.Visibility == Visibility.Visible)
+            {
+                var listTop = Math.Max(viewport.Top + 8, Math.Min(rect.Top, viewport.Bottom - 80));
+                var fullMax = Math.Max(80, viewport.Bottom - 8 - listTop);
+                annotationList.MaxHeight = fullMax;
+                annotationList.Measure(new Size(double.PositiveInfinity, fullMax));
+                var provisional = FloatingLayout.AnnotationList(viewport, rect, annotationList.DesiredSize);
+                if (!actionRect.IsEmpty && actionRect.Top >= rect.Bottom && provisional.Left < actionRect.Right && provisional.Right > actionRect.Left)
+                {
+                    annotationList.MaxHeight = Math.Max(80, actionRect.Top - 4 - listTop);
+                    annotationList.Measure(new Size(double.PositiveInfinity, annotationList.MaxHeight));
+                }
+                Place(annotationList, FloatingLayout.AnnotationList(viewport, rect, annotationList.DesiredSize));
+            }
+        }
+        info.Visibility = inlineEditing || recordingMode || toolsHidden || !settings.ScreenshotShowInfoBar && !info.IsExpanded ? Visibility.Collapsed : Visibility.Visible;
         info.MaxWidth = Math.Max(1, Math.Min(340, surface.ActualWidth - 16)); info.Measure(new Size(info.MaxWidth, double.PositiveInfinity));
         var infoRect = Selection.IsEmpty ? FloatingLayout.Clamp(viewport, new Point(24, 24), info.DesiredSize) : FloatingLayout.Info(viewport, rect, info.DesiredSize, actionRect);
         Place(info, infoRect);
-        modes.Visibility = inlineEditing || dragging || toolsHidden ? Visibility.Collapsed : Visibility.Visible;
+        modes.Visibility = inlineEditing || recordingMode || dragging || toolsHidden ? Visibility.Collapsed : Visibility.Visible;
         modes.Items.MaxHeight = Math.Max(34, surface.ActualHeight - 26); modes.Measure(new Size(double.PositiveInfinity, surface.ActualHeight - 16));
         var modeRect = Selection.IsEmpty ? FloatingLayout.Clamp(viewport, new Point(viewport.Right - modes.DesiredSize.Width - 12, 24), modes.DesiredSize) : FloatingLayout.Modes(viewport, rect, modes.DesiredSize, infoRect, actionRect);
         Place(modes, modeRect);
         var guideVisible = settings.ScreenshotGuideVisibility == "Always" || settings.ScreenshotGuideVisibility == "Alt" && alt;
-        magnifier.Visibility = !inlineEditing && (magnifierPinned || settings.ScreenshotShowMagnifier && Selection.IsEmpty || settings.GuideMagnifier && guideVisible) ? Visibility.Visible : Visibility.Collapsed;
+        magnifier.Visibility = !recordingTransition && !inlineEditing && !recordingMode && (magnifierPinned || settings.ScreenshotShowMagnifier && Selection.IsEmpty || settings.GuideMagnifier && guideVisible) ? Visibility.Visible : Visibility.Collapsed;
         magnifier.Update(cursor, Selection, colorFormat, relativeCoordinates);
         var mouseX = (cursor.X - bounds.X) * sx; var mouseY = (cursor.Y - bounds.Y) * sy;
         var mx = mouseX + 25 + magnifier.Width < surface.ActualWidth ? mouseX + 25 : mouseX - magnifier.Width - 25;

@@ -200,8 +200,8 @@ internal sealed partial class SettingsWindow
         input.TextChanged += (_, _) => { Update(); changed(); }; Update();
         var frame = new Border { Child = shell, CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), MinHeight = 32, VerticalAlignment = VerticalAlignment.Center, IsEnabled = input.IsEnabled }; frame.SetResourceReference(Border.BackgroundProperty, "PanelBrush"); frame.SetResourceReference(Border.BorderBrushProperty, "BorderBrush"); if (!input.IsEnabled) frame.Opacity = .45;
         shell.MouseLeftButtonDown += (_, _) => input.Focus();
-        input.GotKeyboardFocus += (_, _) => { previous = input.Text; frame.BorderBrush = Ui.Accent; input.SelectAll(); };
-        input.LostKeyboardFocus += (_, _) => frame.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+        input.GotKeyboardFocus += (_, _) => { previous = input.Text; frame.BorderBrush = Ui.Accent; input.SelectAll(); if (global) HotkeyCaptureChanged?.Invoke(true); };
+        input.LostKeyboardFocus += (_, _) => { frame.SetResourceReference(Border.BorderBrushProperty, "BorderBrush"); if (global) HotkeyCaptureChanged?.Invoke(false); };
         return frame;
     }
     private static void SetShortcutText(TextBox input, string value) { input.SetCurrentValue(TextBox.TextProperty, value); input.GetBindingExpression(TextBox.TextProperty)?.UpdateSource(); }

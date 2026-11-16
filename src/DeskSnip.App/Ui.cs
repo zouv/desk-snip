@@ -54,7 +54,7 @@ internal static class Ui
     {
         // 显示错误类别和可操作说明，不把本机文件路径或内容写入日志。
         var reason = exception is System.IO.IOException ? L.Get("文件无法写入或读取，请检查位置、磁盘空间和文件占用。") :
-            exception is System.Runtime.InteropServices.ExternalException ? L.Get("Windows 接口暂时不可用，请重试；MP4 编码需要系统媒体组件。") :
+            exception is System.Runtime.InteropServices.ExternalException ? L.Get("Windows 接口暂时不可用，请重试。") :
             exception is ArgumentException ? exception.Message : L.Get("操作未完成，请重试。");
         if (owner?.IsVisible == true) MessageBox.Show(owner, reason, action, MessageBoxButton.OK, MessageBoxImage.Warning);
         else MessageBox.Show(reason, action, MessageBoxButton.OK, MessageBoxImage.Warning);

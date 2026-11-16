@@ -49,11 +49,11 @@ internal sealed class AnnotationOptionsBar : FloatingToolbar
 
     private void Rebuild()
     {
-        Items.Children.Clear();
-        shapeButtons.Clear(); swatches.Clear(); dashItems.Clear(); widthItems.Clear(); arrowItems.Clear(); effectItems.Clear(); opacityItems.Clear();
         fill = null; textBackground = null; bold = null; italic = null;
         dashButton = null; widthButton = null; arrowButton = null; effectButton = null; opacityButton = null;
         fonts = null; sizes = null; radius = null;
+        Items.Children.Clear();
+        shapeButtons.Clear(); swatches.Clear(); dashItems.Clear(); widthItems.Clear(); arrowItems.Clear(); effectItems.Clear(); opacityItems.Clear();
         var kind = canvas.Kind;
         if (!kind.HasValue) { Visibility = Visibility.Collapsed; return; }
         Visibility = Visibility.Visible;
@@ -208,7 +208,7 @@ internal sealed class AnnotationOptionsBar : FloatingToolbar
         var values = new[] { "0", "2", "4", "6", "8", "12", "16", "24", "32", "48" };
         var box = new ComboBox
         {
-            Width = 56, Height = 26, IsEditable = true, ItemsSource = values, FontSize = 11, VerticalContentAlignment = VerticalAlignment.Center,
+            Width = 56, Height = 26, MinHeight = 0, IsEditable = true, ItemsSource = values, FontSize = 11, VerticalContentAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 2, 0), ToolTip = L.Get("圆角半径")
         };
         AutomationProperties.SetName(box, L.Get("圆角半径"));
@@ -276,7 +276,7 @@ internal sealed class AnnotationOptionsBar : FloatingToolbar
     private void AddFonts()
     {
         var families = new[] { "Microsoft YaHei UI", "SimSun", "Arial", "Segoe UI", "Consolas", "Times New Roman", "Calibri", "Verdana" };
-        var box = new ComboBox { Width = 132, Height = 26, IsEditable = true, ItemsSource = families, Text = canvas.FontFamily, FontSize = 11, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = L.Get("字体") };
+        var box = new ComboBox { Width = 132, Height = 26, MinHeight = 0, IsEditable = true, ItemsSource = families, Text = canvas.FontFamily, FontSize = 11, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = L.Get("字体") };
         AutomationProperties.SetName(box, L.Get("字体"));
         box.LostKeyboardFocus += (_, _) => ApplyFont();
         box.DropDownClosed += (_, _) => ApplyFont();
@@ -286,7 +286,7 @@ internal sealed class AnnotationOptionsBar : FloatingToolbar
 
     private void AddSizes()
     {
-        var box = new ComboBox { Width = 54, Height = 26, IsEditable = true, ItemsSource = new[] { "14", "18", "24", "28", "36", "48", "72" }, FontSize = 11, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = L.Get("字号") };
+        var box = new ComboBox { Width = 54, Height = 26, MinHeight = 0, IsEditable = true, ItemsSource = new[] { "14", "18", "24", "28", "36", "48", "72" }, FontSize = 11, VerticalContentAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), ToolTip = L.Get("字号") };
         AutomationProperties.SetName(box, L.Get("字号"));
         box.LostKeyboardFocus += (_, _) => ApplyFont();
         box.DropDownClosed += (_, _) => ApplyFont();

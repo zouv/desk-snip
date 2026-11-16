@@ -32,13 +32,14 @@ internal sealed partial class SettingsWindow : ProductWindow
     private SettingsPage? selectedPage;
     private bool loading;
     private readonly string settingsDataRoot;
+    internal event Action<bool>? HotkeyCaptureChanged;
     private ObservableCollection<ActionHotkey> actionBindings = new ObservableCollection<ActionHotkey>();
     internal SettingsWindow(AppSettings settings, Action<AppSettings> save, string? dataRoot = null)
     {
         this.save = save; original = settings.Clone(); settingsDataRoot = dataRoot ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeskSnip");
         if (dataRoot != null) serviceCredentials = new ServiceCredentialStore(dataRoot);
-        Title = L.Get("DeskSnip · 设置"); Width = 1020; Height = 780; MinWidth = 760; MinHeight = 540; WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/DeskSnip;component/SettingsControlStyles.xaml", UriKind.Relative) });
+        Title = L.Get("DeskSnip · 设置"); Width = 1020; Height = 780; MinWidth = 760; MinHeight = 540; WindowStartupLocation = WindowStartupLocation.CenterOwner; Topmost = false; ShowInTaskbar = true;
+        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/DeskSnip;component/ControlStyles.xaml", UriKind.Relative) });
         Ui.ApplyThemeResources(Resources, settings); SetResourceReference(BackgroundProperty, "CanvasBrush"); SetResourceReference(ForegroundProperty, "InkBrush"); SetResourceReference(FontFamilyProperty, "InterfaceFont"); FontSize = 13;
         var shell = new Grid { Name = "SettingsShell" }; Content = shell; shell.SetResourceReference(Panel.BackgroundProperty, "CanvasBrush"); shell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(196) }); shell.ColumnDefinitions.Add(new ColumnDefinition());
         var sidebar = new Border { BorderThickness = new Thickness(0, 0, 1, 0) }; sidebar.SetResourceReference(Border.BackgroundProperty, "PanelBrush"); sidebar.SetResourceReference(Border.BorderBrushProperty, "BorderBrush"); shell.Children.Add(sidebar);

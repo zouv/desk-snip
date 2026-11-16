@@ -51,7 +51,7 @@ internal sealed partial class AppController
     private void AfterRecordingSaved(string path) { AfterManualOrQuickSave(path); PlaySound(Store.Settings.SoundSaveSuccess); }
     private static void CopySavedFile(string path, bool file, bool text)
     {
-        var data = new DataObject(); if (file) data.SetFileDropList(new StringCollection { path }); if (text) data.SetText(path); Clipboard.SetDataObject(data, true);
+        var data = new DataObject(); if (file) data.SetFileDropList(new StringCollection { path }); if (text) data.SetText(path); ClipboardRetry.SetDataObject(data);
     }
     private void QuickSaveNoticeClicked()
     {
@@ -87,9 +87,9 @@ internal sealed partial class AppController
     {
         var factor = CapturePreferenceRules.CopyScale(Store.Settings.ScreenshotCopyDpiLimit, screenScale);
         if (factor < 1) { image = new TransformedBitmap(image, new ScaleTransform(factor, factor)); image.Freeze(); }
-        if (!Store.Settings.CopyFileWithImage) { Clipboard.SetImage(image); return; }
+        if (!Store.Settings.CopyFileWithImage) { ClipboardRetry.SetImage(image); return; }
         var directory = new ManagedDirectory(new ManagedDirectory(Store.Root).Resolve("clipboard-files")); var format = Store.Settings.ClipboardImageFileFormat == "Auto" ? "PNG" : Store.Settings.ClipboardImageFileFormat; var path = directory.Resolve("DeskSnip-clipboard" + Extension(format)); ImageFiles.Save(image, path, Store.Settings.JpegQuality, Store.Settings.SaveExif);
-        var data = new DataObject(); data.SetImage(image); data.SetFileDropList(new StringCollection { path }); Clipboard.SetDataObject(data, true);
+        var data = new DataObject(); data.SetImage(image); data.SetFileDropList(new StringCollection { path }); ClipboardRetry.SetDataObject(data);
     }
     internal async void QuickCapture()
     {

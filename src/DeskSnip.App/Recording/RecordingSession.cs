@@ -31,6 +31,9 @@ internal sealed class RecordingSession
     internal RecordingJournal? Journal { get; private set; }
     internal double ExportProgress { get; private set; }
     internal string EncoderUsed { get; private set; } = "Windows H.264";
+    /// <summary>增强录制先只生成可回放的临时素材，最终文件在用户复制/保存时导出。</summary>
+    internal bool DeferFinalExport { get; set; }
+    internal string PlaybackPath => DeferFinalExport && Journal != null && File.Exists(Journal.FilePath("source.mp4")) ? Journal.FilePath("source.mp4") : Path;
     internal RecordingSession(string path, PixelRect region, string format, int fps, bool cursor, Func<PixelRect, IFrameSource>? sourceFactory = null, RecordingOptions? options = null, int quality = 80)
     {
         if (format != "MP4" && format != "GIF" && format != "WebP") throw new ArgumentException(TextCatalog.Get("不支持此录制格式。"));
@@ -196,6 +199,7 @@ internal sealed class RecordingSession
             }
             if (discardRequested) { Journal.Discard(); return; }
             var source = Journal.FilePath("source.mp4"); Ffmpeg.Join(Journal, source, settings.FfmpegPath, CancellationToken.None);
+            if (DeferFinalExport) return;
             var info = Ffmpeg.Probe(source, settings.FfmpegPath);
             var edit = new VideoEditOptions { EndSeconds = info.Duration, Crop = new PixelRect(0, 0, Region.Width, Region.Height), FramesPerSecond = FramesPerSecond, Quality = settings.Quality, Encoder = settings.Encoder };
             EncoderUsed = Ffmpeg.Export(source, Path, edit, settings.FfmpegPath, settings.SystemAudio ? Journal.FilePath("system.wav") : null,

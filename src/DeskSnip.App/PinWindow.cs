@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Effects;
+using System.Windows.Threading;
 using DeskSnip.App.Imaging;
 using DeskSnip.App.Windows;
 using DeskSnip.Core;
@@ -21,6 +22,9 @@ internal sealed partial class PinWindow : ProductWindow
     private readonly Image image;
     private readonly Border frame;
     private readonly PinSelectionGlow selectionGlow;
+    private readonly Border pinHint;
+    private readonly TextBlock pinHintText;
+    private readonly DispatcherTimer pinHintTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1100) };
     private readonly Grid grid;
     private readonly Action<BitmapSource>? persist;
     private readonly bool restored;
@@ -55,16 +59,21 @@ internal sealed partial class PinWindow : ProductWindow
     internal Action<BitmapSource>? QuickSaveRequested { get; set; }
     private bool selected;
     private bool selectionBorderVisible = true;
-    private static readonly Brush SelectionGold = CreateSelectionGold();
-    private static Brush CreateSelectionGold() { var brush = new SolidColorBrush(Color.FromRgb(245, 206, 91)); brush.Freeze(); return brush; }
+    private static readonly Brush SelectionBlue = CreateSelectionBlue();
+    private static Brush CreateSelectionBlue() { var brush = new SolidColorBrush(Color.FromArgb(204, 23, 78, 150)); brush.Freeze(); return brush; }
     private bool inlineEditing;
     private AnnotationCanvas? inlineCanvas;
     private InlineAnnotationBar? inlineBar;
     private Popup? inlinePopup;
+    private AnnotationListBar? inlineList;
+    private Popup? inlineListPopup;
+    private static readonly uint PinProcess = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
     internal Action<AnnotationKind>? RememberToolRequested { get; set; }
     internal bool Selected { get => selected; set { selected = value; UpdateFrame(); } }
     internal bool SelectionBorderVisible => selectionBorderVisible;
     internal PinSelectionGlow SelectionGlow => selectionGlow;
+    internal bool HintVisible => pinHint.Visibility == Visibility.Visible;
+    internal string HintText => pinHintText.Text;
     internal string Id { get; }
     internal string GroupId { get; set; }
     internal bool WantedVisible { get; set; } = true;
@@ -88,7 +97,14 @@ internal sealed partial class PinWindow : ProductWindow
         var grid = new Grid(); grid.Children.Add(image); this.grid = grid;
         frame = new Border { Child = grid, BorderThickness = new Thickness(1), BorderBrush = Ui.Accent, Background = Brushes.White };
         selectionGlow = new PinSelectionGlow { IsHitTestVisible = false, Visibility = Visibility.Collapsed };
-        var root = new Grid { Children = { frame, selectionGlow } }; Content = root;
+        pinHintText = new TextBlock { Foreground = Brushes.White, FontSize = 12, FontFamily = new FontFamily("Microsoft YaHei UI") };
+        pinHint = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(214, 24, 30, 38)), CornerRadius = new CornerRadius(4), Padding = new Thickness(8, 4, 8, 4),
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(10), IsHitTestVisible = false, Visibility = Visibility.Collapsed, Child = pinHintText
+        };
+        var root = new Grid { Children = { frame, selectionGlow, pinHint } }; Content = root;
+        pinHintTimer.Tick += (_, _) => { pinHintTimer.Stop(); pinHint.Visibility = Visibility.Collapsed; };
         Width = Math.Min(source.PixelWidth + 2, 900); Height = Width / source.PixelWidth * source.PixelHeight;
         SourceInitialized += (_, _) =>
         {
@@ -104,11 +120,13 @@ internal sealed partial class PinWindow : ProductWindow
             if (Settings.PinRescueOnShow) Rescue();
             RefreshAppearance();
         };
-        Closed += (_, _) => { closed = true; EndInlineEdit(false); CloseRescueToolbar(); };
+        Closed += (_, _) => { closed = true; pinHintTimer.Stop(); EndInlineEdit(false); CloseRescueToolbar(); };
         LocationChanged += (_, _) => { PositionRescueToolbar(); PresentationChanged?.Invoke(); };
         IsVisibleChanged += (_, _) => { if (!IsVisible && inlineEditing) CancelInlineEdit(); UpdateRescueToolbar(); };
         SizeChanged += (_, _) => UpdateInlineLayout();
         InitializeConfiguredMouse();
+        Activated += (_, _) => ShowInlinePopups();
+        Deactivated += (_, _) => Dispatcher.BeginInvoke(new Action(CheckInlineFocus), DispatcherPriority.Background);
         PreviewKeyDown += Keys;
         AllowDrop = true;
         Drop += (_, e) =>
@@ -135,8 +153,8 @@ internal sealed partial class PinWindow : ProductWindow
         {
             switch (action)
             {
-                case "Zoom": ResizeAnchored(() => Presentation.Zoom(direction, (Keyboard.Modifiers & ModifierKeys.Alt) != 0, Settings.PinZoomStep, Settings.PinFineZoomStep), anchor); break;
-                case "Opacity": Presentation.Fade(direction, Settings.PinOpacityStep); ResizeImage(); break;
+                case "Zoom": ResizeAnchored(() => Presentation.Zoom(direction, (Keyboard.Modifiers & ModifierKeys.Alt) != 0, Settings.PinZoomStep, Settings.PinFineZoomStep, MinimumScale), anchor); ShowZoomHint(); break;
+                case "Opacity": Presentation.Fade(direction, Settings.PinOpacityStep); ResizeImage(); ShowOpacityHint(); break;
                 case "Original": ResizeAnchored(Presentation.ToggleOriginal, anchor); break;
                 case "Close": RequestCloseFromInput(false); break;
                 case "Hide": WantedVisible = false; Hide(); PresentationChanged?.Invoke(); break;
@@ -179,7 +197,7 @@ internal sealed partial class PinWindow : ProductWindow
         var current = Settings;
         var normal = Presentation.ClickThrough ? Brush(current.ClickThroughColor) : Presentation.Locked && current.PinShowLockHint ? Brush(current.LockedPinColor) : Brush(current.AccentColor);
         var glow = Selected && selectionBorderVisible;
-        frame.BorderBrush = glow ? SelectionGold : normal;
+        frame.BorderBrush = glow ? SelectionBlue : normal;
         selectionGlow.Halo = frame.Margin.Left;
         selectionGlow.Visibility = glow ? Visibility.Visible : Visibility.Collapsed;
         selectionGlow.InvalidateVisual();
@@ -231,6 +249,21 @@ internal sealed partial class PinWindow : ProductWindow
         if (exists) Native.SetWindowPos(handle, IntPtr.Zero, (int)Math.Round(position.X), (int)Math.Round(position.Y), 0, 0, 0x0015);
         else { Left = position.X; Top = position.Y; }
         PresentationChanged?.Invoke();
+    }
+    private double MinimumScale
+    {
+        get
+        {
+            var width = Math.Max(1, Bitmap.PixelWidth); var height = Math.Max(1, Bitmap.PixelHeight);
+            return Math.Min(8, Math.Max(.10, Math.Max(30.0 / width, 30.0 / height)));
+        }
+    }
+    private void ShowZoomHint() => ShowPinHint(L.Format("缩放 {0:0}% · {1} × {2} px", Presentation.Scale * 100, Math.Round(Bitmap.PixelWidth * Presentation.Scale), Math.Round(Bitmap.PixelHeight * Presentation.Scale)));
+    private void ShowOpacityHint() => ShowPinHint(L.Format("透明度 {0:0}%", Presentation.Opacity * 100));
+    private void ShowPinHint(string text)
+    {
+        pinHintText.Text = text; pinHint.Visibility = Visibility.Visible;
+        pinHintTimer.Stop(); pinHintTimer.Start();
     }
     private void PositionNew()
     {
@@ -326,7 +359,10 @@ internal sealed partial class PinWindow : ProductWindow
     private void CopyAndClose()
     {
         if (!PinPreferenceRules.CloseAllowed(Settings, Presentation.Locked, false)) return;
-        Copy(); forceClose = true; Close();
+        if (inlineEditing && inlineCanvas != null) inlineCanvas.CommitPendingText();
+        var image = inlineEditing && inlineCanvas != null ? AnnotationRenderer.Flatten(inlineCanvas.Image, inlineCanvas.Document.Items) : OutputBitmap;
+        forceClose = true; Close();
+        Copy(image);
     }
     internal void Rename(string title) { if (string.IsNullOrWhiteSpace(title) || title.Length > 128) throw new ArgumentException(L.Get("标题需要 1–128 字符。")); Title = title; PresentationChanged?.Invoke(); }
     internal PinRecord CaptureRecord(PinRecord record)
@@ -380,7 +416,8 @@ internal sealed partial class PinWindow : ProductWindow
     private void Copy() => Copy(OutputBitmap);
     private void Copy(BitmapSource source)
     {
-        try { if (CopyRequested != null) CopyRequested(source); else Clipboard.SetImage(source); }
+        try { if (CopyRequested != null) CopyRequested(source); else ClipboardRetry.SetImage(source); }
+        catch (System.Runtime.InteropServices.ExternalException) { MessageBox.Show(L.Get("剪贴板暂时不可用，请稍后重试。"), L.Get("复制钉图"), MessageBoxButton.OK, MessageBoxImage.Warning); }
         catch (Exception error) { Ui.Error(this, error, L.Get("复制钉图")); }
     }
     private void Transform(ImageTransform transform)
@@ -390,17 +427,17 @@ internal sealed partial class PinWindow : ProductWindow
     }
 }
 
-/// <summary>选中钉图的淡黄色渐变边框：越靠近窗口外侧透明度越高。</summary>
+/// <summary>选中钉图的深蓝色渐变边框：内侧约 80% 不透明度，过渡带约为空白区的 2/3。</summary>
 internal sealed class PinSelectionGlow : FrameworkElement
 {
     private static readonly Pen[] Rings = CreateRings();
     internal double Halo { get; set; }
     private static Pen[] CreateRings()
     {
-        var pens = new Pen[6];
+        var pens = new Pen[4];
         for (var i = 0; i < pens.Length; i++)
         {
-            var brush = new SolidColorBrush(Color.FromArgb((byte)(28 + i * 26), 245, 206, 91));
+            var brush = new SolidColorBrush(Color.FromArgb((byte)(51 + i * 51), 23, 78, 150));
             var pen = new Pen(brush, 1); brush.Freeze(); pen.Freeze(); pens[i] = pen;
         }
         return pens;
@@ -408,10 +445,10 @@ internal sealed class PinSelectionGlow : FrameworkElement
     protected override void OnRender(DrawingContext dc)
     {
         if (ActualWidth < 4 || ActualHeight < 4 || Halo < 1) return;
-        var rings = Math.Min(Rings.Length, (int)Math.Floor(Halo));
+        var rings = Math.Min(Rings.Length, (int)Math.Floor(Halo * 2 / 3));
         for (var i = 0; i < rings; i++)
         {
-            var inset = i + .5;
+            var inset = Halo - rings + .5 + i;
             dc.DrawRectangle(null, Rings[i], new Rect(inset, inset, Math.Max(0, ActualWidth - inset * 2), Math.Max(0, ActualHeight - inset * 2)));
         }
     }

@@ -16,6 +16,9 @@ internal sealed partial class PinWindow
     internal Action<System.Windows.Media.Imaging.BitmapSource, string>? ServiceOperationRequested { get; set; }
     private MouseButton? draggingButton;
     private readonly PinPointerGesture pointerGesture = new PinPointerGesture();
+    private int inlineClickRevision = -1;
+    private DateTime inlineClickUtc;
+    private Native.Point inlineClickScreen;
     internal void SetClickThrough(bool enabled) { Presentation.ClickThrough = enabled; SetInteraction(); }
     private string? BoundMouse(string gesture)
     {
@@ -30,11 +33,20 @@ internal sealed partial class PinWindow
     private static string ButtonName(MouseButton button) => button == MouseButton.Left ? "Left" : button == MouseButton.Right ? "Right" : button == MouseButton.Middle ? "Middle" : button == MouseButton.XButton1 ? "X1" : "X2";
     private void InitializeConfiguredMouse()
     {
+        PreviewMouseDown += (_, e) =>
+        {
+            if (e.ChangedButton != MouseButton.Left) return;
+            if (e.ClickCount == 1 && inlineEditing && inlineCanvas != null) { inlineClickRevision = inlineCanvas.Document.Revision; inlineClickUtc = DateTime.UtcNow; Native.GetCursorPos(out inlineClickScreen); }
+            if (e.ClickCount < 2) return;
+            if (inlineEditing && inlineCanvas != null && inlineClickRevision >= 0 && inlineCanvas.Document.Revision != inlineClickRevision && (DateTime.UtcNow - inlineClickUtc).TotalMilliseconds < 1000)
+            { inlineCanvas.Document.Undo(); inlineCanvas.Refresh(); }
+            inlineClickRevision = -1;
+            e.Handled = true; CopyAndClose();
+        };
         MouseDown += (_, e) =>
         {
             if (inlineEditing) return;
             if (e.OriginalSource is Button) return;
-            if (e.ChangedButton == MouseButton.Left && e.ClickCount >= 2) { CopyAndClose(); e.Handled = true; return; }
             var button = ButtonName(e.ChangedButton); var action = BoundMouse(button + (e.ClickCount >= 2 ? "DoubleClick" : "Click"));
             if (e.ClickCount >= 2) { pointerGesture.Cancel(); if (action != null && action != "None") { ExecuteMouse(action); e.Handled = true; } return; }
             if (e.ChangedButton == MouseButton.Left && action != "MultiSelect") SelectRequested?.Invoke(this, false);
@@ -65,7 +77,7 @@ internal sealed partial class PinWindow
         switch (action)
         {
             case "Scale": MouseAction("Zoom", direction, Settings.PinWheelAnchor); break;
-            case "FineScale": ResizeAnchored(() => Presentation.Zoom(direction, true, Settings.PinZoomStep, Settings.PinFineZoomStep), Settings.PinWheelAnchor); break;
+            case "FineScale": ResizeAnchored(() => Presentation.Zoom(direction, true, Settings.PinZoomStep, Settings.PinFineZoomStep, MinimumScale), Settings.PinWheelAnchor); ShowZoomHint(); break;
             case "Reset": MouseAction("Original", direction, Settings.PinMiddleAnchor); break;
             case "CopyClose": CopyAndClose(); break;
             case "Destroy": if (!PinPreferenceRules.CloseAllowed(Settings, Presentation.Locked, false)) return; if (MessageBox.Show(this, L.Get("永久销毁当前钉图？此操作不能从关闭历史恢复。"), L.Get("销毁钉图"), MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) DestroyRequested?.Invoke(); break;

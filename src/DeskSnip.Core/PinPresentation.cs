@@ -11,10 +11,13 @@ public sealed class PinPresentation
     public bool Locked { get; set; }
     public bool ClickThrough { get; set; }
     public bool Topmost { get; set; } = true;
-    public void Zoom(int direction, bool fine = false, int step = 10, int fineStep = 1)
+    public void Zoom(int direction, bool fine = false, int step = 10, int fineStep = 1, double minimumScale = .10)
     {
         if (step < 1 || step > 100 || fineStep < 1 || fineStep > 100) throw new ArgumentOutOfRangeException(nameof(step));
-        if (!Locked) SetScale(Math.Max(.01, Scale + (fine ? fineStep : step) / 100d * Math.Sign(direction)));
+        if (double.IsNaN(minimumScale) || double.IsInfinity(minimumScale) || minimumScale <= 0 || minimumScale > 8) throw new ArgumentOutOfRangeException(nameof(minimumScale));
+        if (Locked || direction == 0) return;
+        if (direction < 0 && Scale <= minimumScale) return;
+        SetScale(Math.Max(minimumScale, Scale + (fine ? fineStep : step) / 100d * Math.Sign(direction)));
     }
     public void SetScale(double value)
     {

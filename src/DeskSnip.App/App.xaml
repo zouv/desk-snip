@@ -4,52 +4,54 @@
              xmlns:local="clr-namespace:DeskSnip.App"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
-        <SolidColorBrush x:Key="CanvasBrush" Color="#F4F7F8"/>
-        <SolidColorBrush x:Key="PanelBrush" Color="White"/>
-        <SolidColorBrush x:Key="InkBrush" Color="#1C2B38"/>
-        <SolidColorBrush x:Key="SubtleBrush" Color="#677984"/>
-        <SolidColorBrush x:Key="AccentBrush" Color="#3489F5"/>
-        <SolidColorBrush x:Key="BorderBrush" Color="#D3DEE3"/>
-        <SolidColorBrush x:Key="PinPanelBrush" Color="#EAF2FF"/>
-        <SolidColorBrush x:Key="NoticeBrush" Color="#FFF4D9"/>
-        <SolidColorBrush x:Key="NoticeInkBrush" Color="#80621D"/>
-        <FontFamily x:Key="InterfaceFont">Microsoft YaHei UI</FontFamily>
-        <Style TargetType="Window">
-            <Setter Property="FontFamily" Value="{DynamicResource InterfaceFont}"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Background" Value="{DynamicResource CanvasBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource InkBrush}"/>
-        </Style>
-        <Style TargetType="{x:Type local:ProductWindow}" BasedOn="{StaticResource {x:Type Window}}"/>
-        <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
-        <Style TargetType="TextBox"><Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/><Setter Property="CaretBrush" Value="{DynamicResource InkBrush}"/></Style>
-        <Style TargetType="ListBox"><Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
-        <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
-        <Style TargetType="RadioButton"><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
-        <Style TargetType="ComboBox"><Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource InkBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="14,8"/>
-            <Setter Property="MinHeight" Value="36"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.8"/></Trigger>
-                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Opacity" Value="0.4"/></Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter TargetName="Frame" Property="BorderThickness" Value="2"/></Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="CanvasBrush" Color="#F4F7F8"/>
+            <SolidColorBrush x:Key="PanelBrush" Color="White"/>
+            <SolidColorBrush x:Key="InkBrush" Color="#1C2B38"/>
+            <SolidColorBrush x:Key="SubtleBrush" Color="#677984"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#3489F5"/>
+            <SolidColorBrush x:Key="BorderBrush" Color="#D3DEE3"/>
+            <SolidColorBrush x:Key="PinPanelBrush" Color="#EAF2FF"/>
+            <SolidColorBrush x:Key="NoticeBrush" Color="#FFF4D9"/>
+            <SolidColorBrush x:Key="NoticeInkBrush" Color="#80621D"/>
+            <FontFamily x:Key="InterfaceFont">Microsoft YaHei UI</FontFamily>
+            <Style TargetType="Window">
+                <Setter Property="FontFamily" Value="{DynamicResource InterfaceFont}"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="Background" Value="{DynamicResource CanvasBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource InkBrush}"/>
+            </Style>
+            <Style TargetType="{x:Type local:ProductWindow}" BasedOn="{StaticResource {x:Type Window}}"/>
+            <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
+            <Style TargetType="TextBox"><Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/><Setter Property="CaretBrush" Value="{DynamicResource InkBrush}"/></Style>
+            <Style TargetType="ListBox"><Setter Property="Background" Value="{DynamicResource PanelBrush}"/><Setter Property="Foreground" Value="{DynamicResource InkBrush}"/></Style>
+            <Style TargetType="Button">
+                <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource InkBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="14,8"/>
+                <Setter Property="MinHeight" Value="36"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.8"/></Trigger>
+                                <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Opacity" Value="0.4"/></Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter TargetName="Frame" Property="BorderThickness" Value="2"/></Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

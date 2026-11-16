@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using DeskSnip.App;
@@ -40,6 +42,61 @@ public class PinTests
         var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder(); encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
         using var output = System.IO.File.Create(System.IO.Path.Combine(directory, name)); encoder.Save(output);
     }
+    [Fact] public void WheelHintsShowZoomSizeAndOpacity() => ImagingTests.Sta(() =>
+    {
+        var pin = new PinWindow(Image());
+        try
+        {
+            pin.MouseAction("Zoom", 1, "TopLeft");
+            Assert.True(pin.HintVisible); Assert.Contains("110%", pin.HintText); Assert.Contains("44 × 33", pin.HintText);
+            pin.MouseAction("Opacity", -1);
+            Assert.True(pin.HintVisible); Assert.Contains("95%", pin.HintText);
+        }
+        finally { pin.Close(); }
+    });
+    [Fact] public void WheelZoomStopsAtThirtyPixelShortSide() => ImagingTests.Sta(() =>
+    {
+        var pixels = new byte[100 * 50 * 4]; for (var i = 3; i < pixels.Length; i += 4) pixels[i] = 255;
+        var image = BitmapSource.Create(100, 50, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, pixels, 400); image.Freeze();
+        var pin = new PinWindow(image);
+        try
+        {
+            for (var i = 0; i < 20; i++) pin.MouseAction("Zoom", -1, "TopLeft");
+            Assert.Equal(.6, pin.Presentation.Scale, 5);
+            Assert.Equal(60, Math.Round(100 * pin.Presentation.Scale)); Assert.Equal(30, Math.Round(50 * pin.Presentation.Scale));
+        }
+        finally { pin.Close(); }
+    });
+    [Fact] public void CopyAndCloseFlattensInlineAnnotationsEvenWithMarkingToolActive() => ImagingTests.Sta(() =>
+    {
+        var pin = new PinWindow(Image()); BitmapSource? copied = null; pin.CopyRequested = image => copied = image;
+        try
+        {
+            pin.BeginInlineEdit(AnnotationKind.Rectangle);
+            pin.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(5, 5), new PixelPoint(20, 20) }, 0xffff0000, 3, appearance: new AnnotationAppearance(fill: true)));
+            typeof(PinWindow).GetMethod("CopyAndClose", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(pin, null);
+            Assert.NotNull(copied);
+            var pixel = new byte[4]; copied!.CopyPixels(new Int32Rect(10, 10, 1, 1), pixel, 4, 0);
+            Assert.True(pixel[2] > 200); Assert.True(pixel[0] < 80);
+        }
+        finally { pin.Close(); }
+    });
+    [Fact] public void PinInlineEditingExposesSameAnnotationListAsScreenshot() => ImagingTests.Sta(() =>
+    {
+        var pin = new PinWindow(Image());
+        try
+        {
+            pin.BeginInlineEdit(AnnotationKind.Rectangle);
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var list = (AnnotationListBar)typeof(PinWindow).GetField("inlineList", flags)!.GetValue(pin)!;
+            Assert.NotNull(list);
+            pin.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(5, 5), new PixelPoint(20, 20) }, 0xffff0000, 3));
+            pin.InlineCanvas.Refresh();
+            Assert.Equal(System.Windows.Visibility.Visible, list.Visibility);
+            Assert.Contains(Descendants(list).OfType<Button>(), button => AutomationProperties.GetName(button) == "1 · 矩形");
+        }
+        finally { pin.Close(); }
+    });
     [Fact] public void PinContextMenuUsesIconsAndShortcutHintsAndSelectionGlowToggles() => ImagingTests.Sta(() =>
     {
         var pin = new PinWindow(Image());
@@ -75,7 +132,14 @@ public class PinTests
         var pin = new PinPresentation(); for (var i = 0; i < 100; i++) { pin.Zoom(1); pin.Fade(-1); }
         Assert.Equal(8, pin.Scale); Assert.Equal(.1, pin.Opacity);
         for (var i = 0; i < 100; i++) { pin.Zoom(-1); pin.Fade(1); }
-        Assert.Equal(.01, pin.Scale); Assert.Equal(1, pin.Opacity);
+        Assert.Equal(.1, pin.Scale); Assert.Equal(1, pin.Opacity);
+    }
+    [Fact] public void ManualZoomStopsAtTenPercentOrRequestedPixelFloor()
+    {
+        var pin = new PinPresentation(); for (var i = 0; i < 30; i++) pin.Zoom(-1);
+        Assert.Equal(.1, pin.Scale, 5); pin.Zoom(-1); Assert.Equal(.1, pin.Scale, 5);
+        var small = new PinPresentation(); for (var i = 0; i < 30; i++) small.Zoom(-1, minimumScale: .3);
+        Assert.Equal(.3, small.Scale, 5); small.Zoom(1); Assert.Equal(.4, small.Scale, 5);
     }
     [Fact] public void RecoveryAlwaysRestoresInteraction()
     {
@@ -93,5 +157,10 @@ public class PinTests
     {
         var pin = new PinPresentation(); pin.Zoom(1, true); Assert.Equal(1.01, pin.Scale, 5);
         pin.Fade(-1); Assert.Equal(.95, pin.Opacity);
+    }
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        foreach (var item in LogicalTreeHelper.GetChildren(root))
+            if (item is DependencyObject child) { yield return child; foreach (var nested in Descendants(child)) yield return nested; }
     }
 }

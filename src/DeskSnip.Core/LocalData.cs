@@ -162,6 +162,16 @@ public sealed class LocalStore
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         return path;
     }
+    /// <summary>普通录制的待确认文件：停止后先放这里，用户复制/保存时才写最终位置或登记历史。</summary>
+    public string NewPendingRecordingPath(string format)
+    {
+        var ext = Extension(format);
+        if (ext == ".png") throw new ArgumentException(TextCatalog.Get("录制格式无效。"));
+        var relative = "recordings/pending/" + Guid.NewGuid().ToString("N") + ext;
+        var path = directory.Resolve(relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        return path;
+    }
     private void AddEntry(HistoryEntry entry)
     {
         var next = new[] { entry }.Concat(history).Take(Settings.HistoryLimit).ToList();

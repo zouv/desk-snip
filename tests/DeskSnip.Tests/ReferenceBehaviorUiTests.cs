@@ -23,6 +23,17 @@ namespace DeskSnip.Tests;
 
 public class ReferenceBehaviorUiTests
 {
+    private static void Preview(FrameworkElement element, int width, int height, string name)
+    {
+        var directory = Environment.GetEnvironmentVariable("DESK_SNIP_TEST_PREVIEW_DIR");
+        if (string.IsNullOrEmpty(directory)) return;
+        Directory.CreateDirectory(directory);
+        element.Measure(new Size(width, height)); element.Arrange(new Rect(0, 0, width, height)); element.UpdateLayout();
+        var image = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); image.Render(element);
+        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
+        using var output = File.Create(Path.Combine(directory, name)); encoder.Save(output);
+    }
+
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     { foreach (var item in LogicalTreeHelper.GetChildren(root)) if (item is DependencyObject child) { yield return child; foreach (var nested in Descendants(child)) yield return nested; } }
     private static BitmapSource Image(int width = 180, int height = 120)
@@ -33,17 +44,47 @@ public class ReferenceBehaviorUiTests
         Assert.Equal(WindowStyle.None, bar.WindowStyle); Assert.True(bar.Topmost); Assert.False(bar.ShowInTaskbar); Assert.Equal(300, bar.Width); Assert.True(bar.Height > 400);
         bar.Close();
         var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 200, 200));
-        Assert.Equal(WindowStyle.None, overlay.WindowStyle); Assert.True(overlay.Topmost); Assert.False(overlay.ShowInTaskbar); Assert.Equal(WindowStartupLocation.Manual, overlay.WindowStartupLocation);
+        Assert.Equal(WindowStyle.None, overlay.WindowStyle); Assert.False(overlay.Topmost); Assert.True(overlay.ShowInTaskbar); Assert.Equal(WindowStartupLocation.Manual, overlay.WindowStartupLocation);
         var normal = new PlaybackWindow("missing.mp4", "MP4");
         Assert.NotEqual(WindowStyle.None, normal.WindowStyle); Assert.False(normal.Topmost);
+    });
+
+    [Fact] public void InlinePlaybackEditorUsesCompactToolbarAndSaveFormat() => ImagingTests.Sta(() =>
+    {
+        var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 400, 300));
+        var root = (DockPanel)((Border)overlay.Content).Child;
+        var buttons = Descendants(root).OfType<Button>().ToArray();
+        Assert.Contains(buttons, button => AutomationProperties.GetName(button) == "播放");
+        Assert.Contains(buttons, button => AutomationProperties.GetName(button) == "保存录屏");
+        Assert.Contains(buttons, button => AutomationProperties.GetName(button) == "剪辑与导出选项");
+        Assert.Contains(buttons, button => AutomationProperties.GetName(button) == "复制录制文件");
+        var format = Descendants(root).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "保存格式");
+        Assert.Equal(new[] { "MP4", "GIF", "WebP" }, format.ContextMenu!.Items.OfType<MenuItem>().Select(item => item.Header as string).ToArray());
+        var speed = Descendants(root).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "播放倍速");
+        Assert.Contains(speed.ContextMenu!.Items.OfType<MenuItem>(), item => Equals(item.Header, "1.0X"));
+        Assert.Contains(Descendants(root).OfType<Button>(), button => AutomationProperties.GetName(button) == "窗口置顶");
+        Assert.Single(Descendants(root).OfType<Slider>());
+        Assert.False(overlay.Topmost);
+        typeof(PlaybackWindow).GetMethod("ToggleTopmost", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(overlay, null);
+        Assert.True(overlay.Topmost);
+        Preview((FrameworkElement)overlay.Content, 820, 560, "playback-inline.png");
+    });
+
+    [Fact] public void PendingPlaybackDefaultsToOriginalSaveFormat() => ImagingTests.Sta(() =>
+    {
+        var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 400, 300),
+            pending: true, defaultSaveFormat: "GIF", sourceRequiresExport: true);
+        var root = (DockPanel)((Border)overlay.Content).Child;
+        var format = Descendants(root).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "保存格式");
+        Assert.Equal("GIF", Descendants(format).OfType<TextBlock>().First().Text);
     });
 
     [Fact] public void PinCopyCloseAndEscapeBypassCloseConfirmation() => ImagingTests.Sta(() =>
     {
         var pin = new PinWindow(Image(), settings: new AppSettings { PinShowShadow = false, PinConfirmKeyClose = true, PinConfirmMouseClose = true });
-        var copied = false; pin.CopyRequested = _ => copied = true;
+        var copied = false; var closed = false; pin.Closed += (_, _) => closed = true; pin.CopyRequested = _ => copied = true;
         typeof(PinWindow).GetMethod("CopyAndClose", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(pin, null);
-        Assert.True(copied);
+        Assert.True(copied); Assert.True(closed);
         var escapePin = new PinWindow(Image(), settings: new AppSettings { PinShowShadow = false, PinConfirmKeyClose = true });
         try { typeof(PinWindow).GetMethod("CloseFromEscape", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(escapePin, null); }
         finally { escapePin.Close(); }

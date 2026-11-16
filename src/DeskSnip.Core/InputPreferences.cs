@@ -22,6 +22,7 @@ public sealed partial class AppSettings
     // 旧设置：工具栏默认工具现在始终按组记忆并持久化到 MarkToolDefaults。
     [DataMember] public bool MarkRememberToolVariants { get; set; }
     [DataMember] public string MarkToolDefaults { get; set; } = "";
+    [DataMember] public string MarkToolStyles { get; set; } = "";
     [DataMember] public bool MarkDisableWheel { get; set; }
     [DataMember] public int MarkQuickSettingsPadding { get; set; }
     [DataMember] public string MarkRoundedControls { get; set; } = "Hover";
@@ -74,6 +75,7 @@ public sealed partial class AppSettings
         InputBindingRules.ValidateShortcuts(BuiltinShortcuts, BuiltinMergeNumberKeys);
         InputBindingRules.ValidateMouse(PinMouseBindings, false); InputBindingRules.ValidateMouse(GlobalMouseBindings, true);
         AnnotationPreferenceRules.ParseToolDefaults(MarkToolDefaults);
+        AnnotationStyleRules.Validate(MarkToolStyles);
         InputBindingRules.ProcessNames(ShortcutIgnoredProcesses); InputBindingRules.ProcessNames(GlobalMouseIgnoredProcesses);
         if (HiddenDefaultActions != null && (HiddenDefaultActions.Count > 16 || HiddenDefaultActions.Distinct().Count() != HiddenDefaultActions.Count || HiddenDefaultActions.Any(a => !DesktopActions.DefaultNames.Contains(a)))) throw new ArgumentException(TextCatalog.Get("默认动作配置无效。"));
     }

@@ -58,12 +58,12 @@ internal sealed partial class EditorWindow
 internal sealed partial class AnnotationCanvas
 {
     private readonly AppSettings preferences;
-    private readonly Dictionary<AnnotationKind, uint> toolColors = new Dictionary<AnnotationKind, uint>();
     private bool secondaryEditing;
     private PixelPoint pointer;
     private static int globalSerial;
     internal AnnotationKind LastTool { get; private set; } = AnnotationKind.Arrow;
     internal event Action? ToolChanged;
+    internal event Action? TextEditorPointerDown;
     internal void ToggleSecondaryEditing() { secondaryEditing = !secondaryEditing; ClearSelection(); }
     internal bool HandleEditKey(KeyEventArgs e)
     {

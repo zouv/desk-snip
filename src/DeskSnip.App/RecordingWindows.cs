@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,6 +14,7 @@ using Microsoft.Win32;
 
 namespace DeskSnip.App;
 
+/// <summary>旧的独立录制设置对话框；当前录制流程不再打开，参数由 CaptureWindow.Plan 与设置页提供。</summary>
 internal sealed class RecordingSetup : ProductWindow
 {
     private readonly ComboBox format;
@@ -57,7 +59,7 @@ internal sealed class RecordingSetup : ProductWindow
         systemAudio = new CheckBox { Content = L.Get("系统播放声音"), IsChecked = settings.RecordSystemAudio, Margin = new Thickness(3, 10, 3, 5) };
         microphone = new CheckBox { Content = L.Get("麦克风"), IsChecked = settings.RecordMicrophone, Margin = new Thickness(3, 10, 3, 5) };
         var sounds = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) }; sounds.Children.Add(systemAudio); microphone.Margin = new Thickness(20, 10, 3, 5); sounds.Children.Add(microphone); sounds.Children.Add(cursor); root.Children.Add(sounds);
-        toolbar = new CheckBox { Content = L.Get("显示录制工具栏（隐藏时从托盘停止并保存）"), IsChecked = settings.RecordingToolbarDisplayMode != "Hidden" || settings.TrayIconMode == "Hidden", IsEnabled = settings.RecordingToolbarDisplayMode == "Ask" && settings.TrayIconMode != "Hidden", Margin = new Thickness(3, 4, 3, 10) };
+        toolbar = new CheckBox { Content = L.Get("显示录制工具栏（隐藏时从托盘停止录制）"), IsChecked = settings.RecordingToolbarDisplayMode != "Hidden" || settings.TrayIconMode == "Hidden", IsEnabled = settings.RecordingToolbarDisplayMode == "Ask" && settings.TrayIconMode != "Hidden", Margin = new Thickness(3, 4, 3, 10) };
         toolbar.ToolTip = settings.TrayIconMode == "Hidden" ? L.Get("托盘隐藏时保留工具栏，以便停止录制") : L.Get("默认行为可在截图设置中调整"); System.Windows.Automation.AutomationProperties.SetName(toolbar, L.Get("显示录制工具栏")); root.Children.Add(toolbar);
         var advanced = new StackPanel { Margin = new Thickness(5, 10, 5, 8) }; var advancedPanel = new Expander { Header = L.Get("声音设备与高级选项"), Content = advanced, Margin = new Thickness(0, 0, 0, 12) }; root.Children.Add(advancedPanel);
         systemDevice = new ComboBox { MinWidth = 330, Margin = new Thickness(3) }; microphoneDevice = new ComboBox { MinWidth = 330, Margin = new Thickness(3) };
@@ -120,21 +122,21 @@ internal sealed class RecordingBar : ProductWindow
     private readonly Button stopButton;
     private readonly TextBlock label;
     private readonly System.Windows.Shapes.Ellipse indicator;
-    private readonly Button moreButton;
+    private readonly Button? restartButton;
+    private readonly Button? discardButton;
+    private readonly Button dragButton;
     private readonly Size toolbarSize;
     private RecordingRegionWindow? regionWindow;
     private bool stopRequested;
     private readonly string pauseHotkey;
     private readonly DispatcherTimer timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
     internal bool Finishing { get; set; }
-    internal RecordingBar(RecordingSession session, Action stop, Action? discard = null, Action? restart = null, AppSettings? settings = null)
+    internal RecordingBar(RecordingSession session, Action stop, Action? discard = null, Action? restart = null, AppSettings? settings = null, RecordingAnnotationOverlay? overlay = null)
     {
         this.session = session; this.stop = stop;
         pauseHotkey = settings?.ScreenshotShowShortcuts == false ? "" : settings?.RecordHotkey ?? "Ctrl+Alt+R";
         Title = L.Get("DeskSnip · 录制中"); WindowStyle = WindowStyle.None; AllowsTransparency = true; Background = Brushes.Transparent; ResizeMode = ResizeMode.NoResize; Topmost = true; ShowInTaskbar = false; ShowActivated = false;
         var root = new FloatingToolbar { Name = "RecordingControls", Margin = new Thickness(6) }; Content = root;
-        var grip = new Border { Width = 18, Height = 32, Cursor = Cursors.SizeAll, Background = Brushes.Transparent, ToolTip = L.Get("拖动控制条"), Child = new ToolIcon(ToolGlyph.Grip) { Width = 12, Height = 18, Color = FloatingTools.MutedInk } };
-        grip.MouseLeftButtonDown += (_, e) => { if (e.ButtonState == MouseButtonState.Pressed) DragMove(); e.Handled = true; }; root.Items.Children.Add(grip);
         var state = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(3, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center };
         indicator = new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Fill = FloatingTools.Red, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) }; state.Children.Add(indicator);
         label = Ui.Text("00:00", 12, FloatingTools.Ink); label.Width = 78; label.FontFamily = new FontFamily("Consolas"); label.TextWrapping = TextWrapping.NoWrap; label.VerticalAlignment = VerticalAlignment.Center; state.Children.Add(label); root.Items.Children.Add(state);
@@ -142,14 +144,41 @@ internal sealed class RecordingBar : ProductWindow
         var details = FloatingTools.Menu(); details.Items.Add(new MenuItem { Header = L.Join(session.Format,L.Get(" · 区域录制")), IsEnabled = false }); details.Items.Add(new MenuItem { Header = $"{session.Region.Width} × {session.Region.Height} px", IsEnabled = false }); details.Items.Add(new MenuItem { Header = session.CursorIncluded ? L.Get("包含鼠标指针") : L.Get("不包含鼠标指针"), IsEnabled = false });
         var format = FloatingTools.MenuButton(ToolGlyph.Window, L.Get("查看录制参数"), details); var formatContent = new StackPanel { Orientation = Orientation.Horizontal }; formatContent.Children.Add(Ui.Text(session.Format, 11, FloatingTools.Ink)); formatContent.Children.Add(new ToolIcon(ToolGlyph.Chevron) { Width = 10, Height = 12, Margin = new Thickness(5, 0, 0, 0), Color = FloatingTools.MutedInk }); format.Content = formatContent; format.Width = 62; root.Items.Children.Add(format);
         root.Items.Children.Add(FloatingTools.Divider());
-        stopButton = FloatingTools.Button(ToolGlyph.Stop, L.Get("停止并保存"), RequestStop); stopButton.Foreground = FloatingTools.Red; root.Items.Children.Add(stopButton);
+        stopButton = FloatingTools.Button(ToolGlyph.Stop, L.Get("停止录制"), RequestStop); stopButton.Foreground = FloatingTools.Red; root.Items.Children.Add(stopButton);
         pause = FloatingTools.Button(ToolGlyph.Pause, L.Get("暂停录制"), TogglePause, pauseHotkey); root.Items.Children.Add(pause);
         var sound = FloatingTools.Menu(); sound.Items.Add(new MenuItem { Header = L.Get("声音在开始录制时固定"), IsEnabled = false }); sound.Items.Add(new MenuItem { Header = session.SystemAudioEnabled ? L.Get("系统声音：已开启") : L.Get("系统声音：未开启"), IsEnabled = false }); sound.Items.Add(new MenuItem { Header = session.MicrophoneEnabled ? L.Get("麦克风：已开启") : L.Get("麦克风：未开启"), IsEnabled = false });
         root.Items.Children.Add(FloatingTools.MenuButton(session.SystemAudioEnabled || session.MicrophoneEnabled ? ToolGlyph.Sound : ToolGlyph.Muted, L.Get("查看声音状态"), sound));
-        root.Items.Children.Add(FloatingTools.Divider()); var more = FloatingTools.Menu();
-        if (restart != null) more.Items.Add(FloatingTools.Item(L.Get("重新录制"), () => Confirm(L.Get("丢弃当前录制并从头开始？"), L.Get("重新录制"), restart)));
-        if (discard != null) more.Items.Add(FloatingTools.Item(L.Get("放弃录制"), () => Confirm(L.Get("停止并丢弃当前录制？"), L.Get("放弃录制"), discard)));
-        more.Items.Add(FloatingTools.Item(L.Get("停止并保存"), RequestStop)); moreButton = FloatingTools.MenuButton(ToolGlyph.More, L.Get("更多录制操作"), more); root.Items.Children.Add(moreButton);
+        if (overlay != null)
+        {
+            var activeOverlay = overlay; var markingButtons = new List<(Button Button, AnnotationKind?[] Kinds)>();
+            void UpdateMarking() { foreach (var pair in markingButtons) FloatingTools.SetSelected(pair.Button, pair.Kinds.Contains(activeOverlay.Canvas.Kind)); }
+            void SelectMarking(AnnotationKind? kind) { activeOverlay.SetTool(kind); UpdateMarking(); }
+            void AddMarkingGroup(ToolGlyph glyph, string name, params AnnotationKind[] kinds)
+            {
+                var menu = FloatingTools.Menu(); Button button = null!;
+                foreach (var kind in kinds) { var tool = kind; var item = FloatingTools.Item(EditorWindow.ToolNames[(int)tool], () => SelectMarking(tool)); item.Tag = tool; menu.Items.Add(item); }
+                menu.Opened += (_, _) => { for (var index = 0; index < kinds.Length; index++) ((MenuItem)menu.Items[index]).IsChecked = activeOverlay.Canvas.Kind == kinds[index]; };
+                button = FloatingTools.SplitMenuButton(glyph, name, () => SelectMarking(kinds[0]), menu); root.Items.Children.Add(button); markingButtons.Add((button, kinds.Select(kind => (AnnotationKind?)kind).ToArray()));
+            }
+            root.Items.Children.Add(FloatingTools.Divider());
+            AddMarkingGroup(ToolGlyph.Rectangle, L.Get("录制标注：形状"), AnnotationKind.Rectangle, AnnotationKind.Ellipse, AnnotationKind.Line);
+            AddMarkingGroup(ToolGlyph.Brush, L.Get("录制标注：画笔"), AnnotationKind.Pen, AnnotationKind.Highlight);
+            var markingArrow = FloatingTools.Button(ToolGlyph.Arrow, L.Get("录制标注：箭头"), () => SelectMarking(AnnotationKind.Arrow)); root.Items.Children.Add(markingArrow); markingButtons.Add((markingArrow, new AnnotationKind?[] { AnnotationKind.Arrow }));
+            var markingText = FloatingTools.Button(ToolGlyph.Text, L.Get("录制标注：文字"), () => SelectMarking(AnnotationKind.Text)); root.Items.Children.Add(markingText); markingButtons.Add((markingText, new AnnotationKind?[] { AnnotationKind.Text }));
+            var markingCover = FloatingTools.Button(ToolGlyph.Mosaic, L.Get("录制标注：遮挡"), () => SelectMarking(AnnotationKind.Cover)); root.Items.Children.Add(markingCover); markingButtons.Add((markingCover, new AnnotationKind?[] { AnnotationKind.Cover }));
+            var exitMarking = FloatingTools.Button(ToolGlyph.Cursor, L.Get("结束标注 / 移动控制条"), () => SelectMarking(null)); root.Items.Children.Add(exitMarking); markingButtons.Add((exitMarking, new AnnotationKind?[] { null }));
+            UpdateMarking();
+        }
+        root.Items.Children.Add(FloatingTools.Divider());
+        if (restart != null)
+        {
+            restartButton = FloatingTools.Button(ToolGlyph.Restart, L.Get("重新录制"), () => restart()); restartButton.Foreground = FloatingTools.Red; root.Items.Children.Add(restartButton);
+        }
+        if (discard != null)
+        {
+            discardButton = FloatingTools.Button(ToolGlyph.Close, L.Get("放弃录制"), () => discard()); discardButton.Foreground = FloatingTools.Red; root.Items.Children.Add(discardButton);
+        }
+        dragButton = FloatingTools.Button(ToolGlyph.Grip, L.Get("录制中不可拖动"), () => { }); dragButton.Foreground = FloatingTools.MutedInk; dragButton.IsEnabled = false; root.Items.Children.Add(dragButton);
         if (settings != null) FloatingTools.Configure(root.Items, settings.ToolbarIconSize, settings.ScreenshotShowShortcuts);
         root.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); toolbarSize = root.DesiredSize; Width = toolbarSize.Width; Height = toolbarSize.Height;
         SourceInitialized += (_, _) =>
@@ -171,23 +200,20 @@ internal sealed class RecordingBar : ProductWindow
     }
     private void RequestStop()
     {
-        if (Finishing || stopRequested) return; stopRequested = true; pause.IsEnabled = stopButton.IsEnabled = moreButton.IsEnabled = false; stop();
-    }
-    private void Confirm(string message, string title, Action action)
-    {
-        if (!Finishing && !stopRequested && MessageBox.Show(this, message, title, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-        { stopRequested = true; pause.IsEnabled = stopButton.IsEnabled = moreButton.IsEnabled = false; action(); }
+        if (Finishing || stopRequested) return; stopRequested = true; pause.IsEnabled = stopButton.IsEnabled = false;
+        if (restartButton != null) restartButton.IsEnabled = false; if (discardButton != null) discardButton.IsEnabled = false;
+        stop();
     }
     internal void TogglePause() { if (!Finishing && !stopRequested) { session.TogglePause(); Update(); } }
     internal void Update()
     {
-        if (Finishing) { label.Text = L.Format("保存中 {0:0}%",session.ExportProgress); label.ToolTip = L.Get("正在保存录制，请稍候"); indicator.Fill = FloatingTools.Blue; return; }
+        if (Finishing) { label.Text = L.Format("正在完成录制 {0:0}%",session.ExportProgress); label.ToolTip = L.Get("正在完成录制，请稍候"); indicator.Fill = FloatingTools.Blue; return; }
         var elapsed = session.Elapsed; var paused = session.State == RecordingState.Paused;
         label.Text = $"{(int)elapsed.TotalMinutes:00}:{elapsed.Seconds:00}"; label.ToolTip = paused ? L.Get("已暂停，暂停时间不计入录制") : L.Get("录制时长"); indicator.Fill = paused ? Brushes.DarkOrange : FloatingTools.Red;
         FloatingTools.SetIcon(pause, paused ? ToolGlyph.Play : ToolGlyph.Pause, paused ? L.Get("继续录制") : L.Get("暂停录制"), pauseHotkey); FloatingTools.SetSelected(pause, paused);
         Title = paused ? L.Get("DeskSnip · 录制已暂停") : L.Get("DeskSnip · 录制中");
     }
-    internal void ShowFinishing() { Finishing = true; pause.IsEnabled = stopButton.IsEnabled = moreButton.IsEnabled = false; regionWindow?.Close(); regionWindow = null; Update(); }
+    internal void ShowFinishing() { Finishing = true; pause.IsEnabled = stopButton.IsEnabled = false; if (restartButton != null) restartButton.IsEnabled = false; if (discardButton != null) discardButton.IsEnabled = false; regionWindow?.Close(); regionWindow = null; Update(); }
 }
 
 internal sealed class RecordingRegionWindow : ProductWindow

@@ -45,5 +45,14 @@ public sealed class LocalDataTests : IDisposable
         var store = new LocalStore(root); var item = store.AddImage(2, 2, s => s.WriteByte(1)); File.Delete(store.HistoryPath(item));
         Assert.Empty(new LocalStore(root).History);
     }
+    [Fact] public void PendingRecordingPathStaysInInternalFolderWithFormatExtension()
+    {
+        var store = new LocalStore(root);
+        var path = store.NewPendingRecordingPath("WebP");
+        Assert.StartsWith(Path.Combine(store.Root, "recordings", "pending"), path);
+        Assert.EndsWith(".webp", path);
+        Assert.False(File.Exists(path));
+        Assert.Throws<ArgumentException>(() => store.NewPendingRecordingPath("PNG"));
+    }
     public void Dispose() { if (Directory.Exists(root)) Directory.Delete(root, true); }
 }

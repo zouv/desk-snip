@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using DeskSnip.App.Imaging;
+using DeskSnip.App.Windows;
 using DeskSnip.Core;
 
 namespace DeskSnip.App;
@@ -14,6 +15,9 @@ internal sealed partial class AppController
     private bool persistingPins;
     private readonly HashSet<string> selectedPins = new HashSet<string>();
     private readonly System.Windows.Threading.DispatcherTimer pinSaveTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(450) };
+    private readonly System.Windows.Threading.DispatcherTimer pinSelectionTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
+    private static readonly uint PinProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+    private bool pinSelectionMouseDown;
     private void OpenPin(BitmapSource image, PinRecord record, bool restored, PixelRect region = default)
     {
         if (!restored) { record.Topmost = Store.Settings.PinDefaultTopmost; record.Opacity = Store.Settings.PinDefaultOpacity / 100d; }
@@ -45,6 +49,7 @@ internal sealed partial class AppController
             if (!multiple && !selectedPins.Contains(pin.Id)) selectedPins.Clear();
             if (multiple && selectedPins.Contains(pin.Id)) selectedPins.Remove(pin.Id); else selectedPins.Add(pin.Id);
             foreach (var active in pins) active.Selected = selectedPins.Contains(active.Id);
+            RefreshPinSelectionTimer();
         };
         window.MoveRequested = (pin, dx, dy) =>
         {
@@ -52,7 +57,7 @@ internal sealed partial class AppController
         };
         window.Closed += (_, _) =>
         {
-            pins.Remove(window); selectedPins.Remove(window.Id);
+            pins.Remove(window); selectedPins.Remove(window.Id); RefreshPinSelectionTimer();
             if (!Exiting)
             {
                 try { Workspace.Update(window.CaptureRecord(record)); Workspace.Close(record.Id); }
@@ -64,6 +69,42 @@ internal sealed partial class AppController
         window.Show(); ApplyPinVisibility(); Refresh();
     }
     private void SavePinsTick(object? sender, EventArgs e) { pinSaveTimer.Stop(); PersistPins(); }
+    private void RefreshPinSelectionTimer()
+    {
+        if (Exiting || selectedPins.Count == 0) StopPinSelectionWatch();
+        else StartPinSelectionWatch();
+    }
+    private void StartPinSelectionWatch()
+    {
+        if (pinSelectionTimer.IsEnabled) return;
+        pinSelectionMouseDown = (Native.GetAsyncKeyState(0x01) & 0x8000) != 0;
+        pinSelectionTimer.Tick -= PinSelectionTick; pinSelectionTimer.Tick += PinSelectionTick;
+        pinSelectionTimer.Start();
+    }
+    private void StopPinSelectionWatch()
+    {
+        pinSelectionTimer.Stop(); pinSelectionTimer.Tick -= PinSelectionTick; pinSelectionMouseDown = false;
+    }
+    private void PinSelectionTick(object? sender, EventArgs e)
+    {
+        var state = Native.GetAsyncKeyState(0x01);
+        var down = (state & 0x8000) != 0;
+        var pressed = down && !pinSelectionMouseDown || !down && (state & 0x0001) != 0;
+        pinSelectionMouseDown = down;
+        if (!pressed || selectedPins.Count == 0 || pins.Any(pin => pin.InlineEditing)) return;
+        Native.GetCursorPos(out var point);
+        Native.GetWindowThreadProcessId(Native.WindowFromPoint(point), out var processId);
+        if (processId == PinProcessId) return;
+        ClearPinSelection();
+    }
+    private void ClearPinSelection()
+    {
+        if (selectedPins.Count == 0) return;
+        selectedPins.Clear();
+        foreach (var pin in pins) pin.Selected = false;
+        StopPinSelectionWatch();
+        Refresh();
+    }
     private void PersistPins()
     {
         pinSaveTimer.Stop(); persistingPins = true;

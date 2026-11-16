@@ -33,6 +33,11 @@ internal sealed partial class AppController : IDisposable
     private CaptureWindow? selectionWindow;
     private RecordingSession? session;
     private RecordingBar? recordingBar;
+    private RecordingPlan? pendingRecordingPlan;
+    private IReadOnlyList<Annotation>? pendingRecordingAnnotations;
+    private RecordingAnnotationOverlay? recordingOverlay;
+    private bool recordingQuick;
+    private bool recordingStartedFromSelection;
     private Task? finishing;
     private Task? exporting;
     private CancellationTokenSource? exportCancellation;
@@ -48,6 +53,7 @@ internal sealed partial class AppController : IDisposable
     {
         Store = new LocalStore(dataRoot);
         AnnotationToolDefaults.Load(Store.Settings.MarkToolDefaults); AnnotationToolDefaults.Changed += SaveToolDefaults;
+        AnnotationStylePersistence.Changed += SaveToolStyles;
         L.Apply(Store.Settings.InterfaceLanguage);
         Ui.ApplyTheme(Store.Settings);
         Workspace = new PinWorkspace(dataRoot);
@@ -60,7 +66,7 @@ internal sealed partial class AppController : IDisposable
         icon = TrayIcon(); tray = new Forms.NotifyIcon { Icon = icon, Text = L.Get("DeskSnip · 截图 / 钉图 / 录屏"), Visible = true };
         var menu = new Forms.ContextMenuStrip();
         Add(menu, L.Get("打开主界面"), Show); Add(menu, L.Get("截取屏幕"), Capture); Add(menu, L.Get("钉住剪贴板"), PinClipboard); Add(menu, L.Get("录制 / 暂停"), Record);
-        Add(menu, L.Get("显示录制工具栏"), () => recordingBar?.Show()); Add(menu, L.Get("停止并保存录制"), () => { _ = FinishRecording(); });
+        Add(menu, L.Get("显示录制工具栏"), () => recordingBar?.Show()); Add(menu, L.Get("停止录制"), () => { _ = FinishRecording(); });
         menu.Items.Add(new Forms.ToolStripSeparator());
         Add(menu, L.Get("显示 / 隐藏全部钉图"), TogglePins); Add(menu, L.Get("解除全部穿透 / 锁定"), RecoverPins); Add(menu, L.Get("恢复最近关闭的钉图"), RestorePin); Add(menu, L.Get("设置"), Settings);
         menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, L.Get("退出"), RequestExit);
@@ -162,8 +168,13 @@ internal sealed partial class AppController : IDisposable
             var preferences = Store.Settings.Clone(); if (cursorIncluded) preferences.ScreenshotCursorVisible = true;
             var recent = preferences.ScreenshotAreaHistoryLimit == 0 ? Array.Empty<PixelRect>() : Profiles.Snapshot.Recent.Take(preferences.ScreenshotAreaHistoryLimit).Select(r => r.Bounds).ToArray();
             selectionWindow = new CaptureWindow(frames.Image, bounds, recording, targets, recent, initial, initialShape, preferences, frames.WithCursor);
+            selectionWindow.RecordTransitionRequested = BeginRecordingFromSelection;
             if (!recording) PlaySound(preferences.SoundCaptureStart);
-            if (selectionWindow.ShowDialog() != true) return (null, default, CaptureAction.Edit);
+            var accepted = selectionWindow.ShowDialog() == true;
+            if (recordingStartedFromSelection) { if (!recording) recordingStartedFromSelection = false; return (null, default, CaptureAction.Record); }
+            if (!accepted) { pendingRecordingPlan = null; pendingRecordingAnnotations = null; return (null, default, CaptureAction.Edit); }
+            pendingRecordingPlan = recording || selectionWindow.RecordingMode ? selectionWindow.Plan : null;
+            pendingRecordingAnnotations = recording || selectionWindow.RecordingMode ? selectionWindow.RecordingAnnotations : null;
             var region = selectionWindow.Selection;
             Profiles.Remember(region, preferences.ScreenshotAreaHistoryLimit);
             var image = selectionWindow.InlineOutput ?? ScreenCapture.Crop(selectionWindow.SelectedDesktop, bounds, region);
@@ -177,8 +188,9 @@ internal sealed partial class AppController : IDisposable
         }
         finally
         {
+            var keepHidden = selectionWindow != null && selectionWindow.ActionResult == CaptureAction.Record;
             selectionWindow = null; selecting = false;
-            if (!Exiting) { if (wasVisible) Window.Show(); foreach (var editor in visibleEditors) if (editors.Contains(editor)) editor.Show(); }
+            if (!Exiting && !keepHidden) { if (wasVisible) Window.Show(); foreach (var editor in visibleEditors) if (editors.Contains(editor)) editor.Show(); }
         }
     }
     private HistoryEntry Remember(BitmapSource image)
@@ -234,7 +246,12 @@ internal sealed partial class AppController : IDisposable
         try
         {
             if (entry.Kind == "Image") Edit(ImageFiles.Load(Store.HistoryPath(entry)));
-            else new PlaybackWindow(Store.HistoryPath(entry), entry.Kind, Store.Settings.FfmpegPath, FindRecordingJournal(entry), Store.Settings.RecordingCloseAfterExport, AfterRecordingSaved, inlineRegion) { Owner = Window.IsVisible ? Window : null }.Show();
+            else
+            {
+                var playback = new PlaybackWindow(Store.HistoryPath(entry), entry.Kind, Store.Settings.FfmpegPath, FindRecordingJournal(entry), Store.Settings.RecordingCloseAfterExport, AfterRecordingSaved, inlineRegion, Store.Settings.OutputDirectory);
+                if (inlineRegion.IsEmpty) playback.Owner = Window.IsVisible ? Window : null;
+                playback.Show();
+            }
         }
         catch (Exception e) { Ui.Error(Window, e, L.Get("打开历史")); }
     }
@@ -289,18 +306,24 @@ internal sealed partial class AppController : IDisposable
     internal void Settings()
     {
         if (hotkeysSuspended) return;
+        var initialToolStyles = Store.Settings.MarkToolStyles;
         var dialog = new SettingsWindow(Store.Settings, value =>
         {
             var parsed = new[] { value.CaptureHotkey, value.PinHotkey, value.RecordHotkey }.Concat(value.ActionBindings.Select(b => b.Hotkey)).Where(k => !string.IsNullOrWhiteSpace(k)).Select(Hotkeys.Parse).ToArray();
             if (parsed.Distinct().Count() != parsed.Length) throw new ArgumentException(L.Get("全局快捷键不能相同。"));
             value.MarkToolDefaults = AnnotationToolDefaults.Serialize();
+            if (value.MarkToolStyles == initialToolStyles) value.MarkToolStyles = Store.Settings.MarkToolStyles;
             using (var integration = new SystemIntegrationChange(Store.Settings, value)) { Store.SaveSettings(value); integration.Commit(); }
             Workspace.Configure(value.PinRestoreOnStart, value.PinHistoryLimit);
             L.Apply(value.InterfaceLanguage); Ui.ApplyTheme(value); ApplyTrayAppearance(); ApplyTrayActions(); foreach (var pin in pins.ToArray()) pin.RefreshAppearance(); ApplyHotkeys(); ApplyGlobalMouse(); Refresh();
         }, Store.Root);
         if (Window.IsVisible) dialog.Owner = Window;
         else dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        hotkeysSuspended = true; hotkeys.Clear();
+        dialog.HotkeyCaptureChanged += capturing =>
+        {
+            if (capturing) { hotkeysSuspended = true; hotkeys.Clear(); }
+            else { hotkeysSuspended = false; ApplyHotkeys(); }
+        };
         try { dialog.ShowDialog(); }
         finally { hotkeysSuspended = false; ApplyHotkeys(); }
         if (!tray.Visible && !Window.IsVisible && session == null) Show();
@@ -315,6 +338,16 @@ internal sealed partial class AppController : IDisposable
         }
         catch (Exception) { Window.ShowNotice(L.Get("工具栏默认工具未保存。")); }
     }
+    private void SaveToolStyles(string value)
+    {
+        if (Exiting) return;
+        try
+        {
+            var next = Store.Settings.Clone(); next.MarkToolStyles = value;
+            if (next.MarkToolStyles != Store.Settings.MarkToolStyles) Store.SaveSettings(next);
+        }
+        catch (Exception) { Window.ShowNotice(L.Get("标注样式未保存。")); }
+    }
     private void ApplyHotkeys()
     {
         if (hotkeysSuspended) return;
@@ -328,36 +361,115 @@ internal sealed partial class AppController : IDisposable
         if (Exiting || selecting || finishing != null || startingRecording) return;
         if (session != null) { recordingBar?.TogglePause(); return; }
         startingRecording = true;
+        var selectionStarted = false;
         try
         {
+            var plan = pendingRecordingPlan; pendingRecordingPlan = null;
+            var annotations = pendingRecordingAnnotations; pendingRecordingAnnotations = null;
             var region = initialRegion;
-            if (region.IsEmpty) { var selected = await Select(true); if (selected.Image == null || Exiting) return; region = selected.Region; }
-            var initialPreferences = Store.Settings.Clone(); if (initialFormat != null) initialPreferences.RecordingFormat = initialFormat;
-            var setup = new RecordingSetup(region, initialPreferences, format => DefaultRecordingPath(format, region), Store.Root);
-            if (setup.ShowDialog() != true) return;
-            var preferences = Store.Settings.Clone(); setup.ApplyPreferences(preferences); Store.SaveSettings(preferences);
-            Window.Hide();
-            if (setup.Delay > 0 && new CountdownWindow(setup.Delay).ShowDialog() != true) { Show(); return; }
-            if (Exiting) return;
-            var recording = new RecordingSession(setup.OutputPath, region, setup.Format, setup.Fps, setup.CursorIncluded, options: setup.Options, quality: setup.Quality);
-            session = recording; Window.Hide();
-            await recording.StartAsync();
-            if (Exiting) { await recording.StopAsync(); return; }
-            recordingBar = new RecordingBar(recording, () => { _ = FinishRecording(); }, () => DiscardRecording(false), () => DiscardRecording(true), Store.Settings); recordingBar.Show(); if (!setup.ToolbarVisible) recordingBar.Hide(); _ = ObserveRecording(recording);
+            if (region.IsEmpty)
+            {
+                var selected = await Select(true);
+                selectionStarted = recordingStartedFromSelection;
+                recordingStartedFromSelection = false;
+                if (selectionStarted) return;
+                if (selected.Image == null || Exiting) return;
+                region = selected.Region; plan = pendingRecordingPlan; pendingRecordingPlan = null;
+                annotations = pendingRecordingAnnotations; pendingRecordingAnnotations = null;
+            }
+            plan ??= RecordingPlan.FromSettings(Store.Settings);
+            if (initialFormat != null) plan.Format = initialFormat;
+            else if (plan.Quick) plan.Format = "MP4";
+            await StartRecordingCore(region, plan, annotations, null);
         }
-        catch (Exception e) { session = null; if (!Exiting) { Ui.Error(Window, e, L.Get("开始录制")); Show(); } }
+        catch (Exception e) { if (!Exiting) Ui.Error(Window, e, L.Get("开始录制")); }
+        finally { if (!selectionStarted) startingRecording = false; }
+    }
+    /// <summary>选区窗口仍在显示时启动录制；录屏边框/控制条/叠加层就绪后再关闭选区，避免桌面空档闪烁。</summary>
+    private void BeginRecordingFromSelection(CaptureWindow window)
+    {
+        if (recordingStartedFromSelection || Exiting) return;
+        recordingStartedFromSelection = true;
+        window.HideForRecordingTransition();
+        _ = StartRecordingCore(window.Selection, window.Plan, window.RecordingAnnotations, window);
+    }
+    private async Task StartRecordingCore(PixelRect region, RecordingPlan plan, IReadOnlyList<Annotation>? annotations, CaptureWindow? selection)
+    {
+        startingRecording = true;
+        try
+        {
+            var format = plan.Format;
+            var preferences = Store.Settings.Clone();
+            preferences.RecordSystemAudio = plan.SystemAudio; preferences.RecordMicrophone = plan.Microphone; preferences.FramesPerSecond = plan.Fps;
+            if (!plan.Quick) preferences.RecordingFormat = plan.Format;
+            Store.SaveSettings(preferences);
+            var options = BuildRecordingOptions(plan, format, preferences);
+            Window.Hide();
+            if (preferences.RecordingDelay > 0 && new CountdownWindow(preferences.RecordingDelay).ShowDialog() != true)
+            { selection?.CancelRecordingTransition(); Show(); return; }
+            if (Exiting) { selection?.CancelRecordingTransition(); return; }
+            recordingOverlay = new RecordingAnnotationOverlay(region, annotations); recordingOverlay.Show();
+            var pending = !plan.Quick;
+            var outputPath = plan.Quick ? QuickRecordingPath(format, region) : Store.NewPendingRecordingPath(format);
+            var recording = new RecordingSession(outputPath, region, format, plan.Fps, preferences.CaptureCursor, options: options, quality: preferences.VideoQuality) { DeferFinalExport = pending && options != null };
+            session = recording; recordingQuick = plan.Quick;
+            recordingBar = new RecordingBar(recording, () => { _ = FinishRecording(); }, () => DiscardRecording(false), () => DiscardRecording(true), Store.Settings, recordingOverlay); recordingBar.Show(); if (!plan.ToolbarVisible) recordingBar.Hide();
+            if (selection != null)
+            {
+                await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Render);
+                await Task.Delay(30);
+            }
+            selection?.FinishRecordingTransition();
+            var starting = recording.StartAsync();
+            await starting;
+            if (Exiting)
+            {
+                if (recordingBar != null) { recordingBar.Finishing = true; recordingBar.Close(); recordingBar = null; }
+                await recording.StopAsync(); CloseRecordingOverlay(); return;
+            }
+            _ = ObserveRecording(recording);
+        }
+        catch (Exception e)
+        {
+            if (recordingBar != null) { recordingBar.Finishing = true; recordingBar.Close(); recordingBar = null; }
+            session = null; recordingQuick = false; CloseRecordingOverlay(); selection?.CancelRecordingTransition();
+            if (!Exiting) Ui.Error(Window, e, L.Get("开始录制"));
+        }
         finally { startingRecording = false; }
     }
-    private string DefaultRecordingPath(string format, PixelRect region)
+    private RecordingOptions? BuildRecordingOptions(RecordingPlan plan, string format, AppSettings preferences)
+    {
+        var required = plan.SystemAudio || plan.Microphone || format == "WebP" || preferences.VideoEncoder != VideoEncoder.Software;
+        string? executable = null;
+        try { executable = Ffmpeg.Find(preferences.FfmpegPath); }
+        catch (InvalidOperationException) when (!required) { }
+        if (executable == null) return null;
+        string systemDevice = "", microphoneDevice = "";
+        if (plan.SystemAudio)
+        {
+            IReadOnlyList<AudioDevice> devices;
+            try { devices = AudioDevices.List(true); } catch (Exception) { throw new InvalidOperationException(L.Get("未检测到系统音频设备。")); }
+            if (devices.Count == 0) throw new InvalidOperationException(L.Get("未检测到系统音频设备。"));
+            systemDevice = devices[0].Id;
+        }
+        if (plan.Microphone)
+        {
+            IReadOnlyList<AudioDevice> devices;
+            try { devices = AudioDevices.List(false); } catch (Exception) { throw new InvalidOperationException(L.Get("未检测到麦克风设备。")); }
+            if (devices.Count == 0) throw new InvalidOperationException(L.Get("未检测到麦克风设备。"));
+            microphoneDevice = devices[0].Id;
+        }
+        return new RecordingOptions
+        {
+            DataRoot = Store.Root, FfmpegPath = executable, SystemAudio = plan.SystemAudio, Microphone = plan.Microphone,
+            SystemDeviceId = systemDevice, MicrophoneDeviceId = microphoneDevice, Quality = preferences.VideoQuality, Encoder = preferences.VideoEncoder
+        };
+    }
+    private string QuickRecordingPath(string format, PixelRect region)
     {
         var settings = Store.Settings;
-        if (settings.QuickRecordingEnabled && format == "MP4")
-        {
-            var directory = string.IsNullOrEmpty(settings.QuickRecordingDirectory) ? new ManagedDirectory(Store.Root).Resolve("recordings") : settings.QuickRecordingDirectory;
-            return SaveNaming.ChoosePath(directory, SaveNaming.Expand(settings.QuickRecordingNameTemplate, DateTime.Now, region.Width, region.Height, "Recording"), ".mp4", settings.QuickRecordingOverwrite);
-        }
-        if (string.IsNullOrEmpty(Store.Settings.OutputDirectory)) return Store.NewRecordingPath(format);
-        return System.IO.Path.Combine(Store.Settings.OutputDirectory, "DeskSnip-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 4) + "." + format.ToLowerInvariant());
+        var directory = string.IsNullOrEmpty(settings.QuickRecordingDirectory) ? new ManagedDirectory(Store.Root).Resolve("recordings") : settings.QuickRecordingDirectory;
+        return SaveNaming.ChoosePath(directory, SaveNaming.Expand(settings.QuickRecordingNameTemplate, DateTime.Now, region.Width, region.Height, "Recording"), "." + format.ToLowerInvariant(), settings.QuickRecordingOverwrite);
     }
     private async Task ObserveRecording(RecordingSession recording)
     {
@@ -366,9 +478,16 @@ internal sealed partial class AppController : IDisposable
         {
             if (finishing != null) return;
             session = null; if (recordingBar != null) { recordingBar.Finishing = true; recordingBar.Close(); recordingBar = null; }
+            CloseRecordingOverlay();
             if (Exiting) exitRecordingError = e;
-            else { Ui.Error(Window, e, L.Get("录制中断")); Show(); }
+            else Ui.Error(Window, e, L.Get("录制中断"));
         }
+    }
+    private void CloseRecordingOverlay()
+    {
+        var overlay = recordingOverlay; recordingOverlay = null;
+        if (overlay == null) return;
+        try { overlay.CloseForExit(); } catch (Exception) { }
     }
     private Task FinishRecording()
     {
@@ -382,33 +501,74 @@ internal sealed partial class AppController : IDisposable
         try
         {
             recordingBar?.ShowFinishing(); await recording.StopAsync();
-            var entry = Store.ImportRecording(recording.Path, recording.Format, recording.Region.Width, recording.Region.Height, recording.Journal?.Snapshot.Id ?? "");
-            AfterRecordingSaved(recording.Path);
-            if (!Exiting) { Show(); Window.ShowNotice(L.Get("录制已保存，历史中可播放和另存为。")); if (!Store.Settings.RecordingCloseAfterExport) OpenHistory(entry, recording.Region); }
+            if (recordingQuick)
+            {
+                Store.ImportRecording(recording.Path, recording.Format, recording.Region.Width, recording.Region.Height, recording.Journal?.Snapshot.Id ?? "");
+                AfterRecordingSaved(recording.Path);
+            }
+            else if (!Exiting) OpenPendingRecording(recording);
+            else CleanupPendingRecording(recording, false);
         }
         catch (Exception e)
         {
             if (Exiting) exitRecordingError = e;
-            else { Show(); Ui.Error(Window, e, L.Get("保存录制")); }
+            else Ui.Error(Window, e, L.Get("完成录制"));
         }
         finally
         {
             if (recordingBar != null) { recordingBar.Finishing = true; recordingBar.Close(); recordingBar = null; }
-            session = null; finishing = null; Refresh();
+            CloseRecordingOverlay();
+            session = null; finishing = null; recordingQuick = false; Refresh();
         }
+    }
+    private void OpenPendingRecording(RecordingSession recording)
+    {
+        var committed = false;
+        var sourceRequiresExport = recording.DeferFinalExport && recording.Journal != null;
+        void Commit(string path)
+        {
+            if (committed) return;
+            try
+            {
+                var extension = System.IO.Path.GetExtension(path).ToLowerInvariant();
+                var kind = extension == ".mp4" ? "MP4" : extension == ".gif" ? "GIF" : extension == ".webp" ? "WebP" : recording.Format;
+                Store.ImportRecording(path, kind, recording.Region.Width, recording.Region.Height, recording.Journal?.Snapshot.Id ?? "");
+                recording.Journal?.MarkPublished();
+                committed = true;
+                AfterRecordingSaved(path);
+            }
+            catch (Exception error) { Ui.Error(Window, error, L.Get("保存录制")); }
+        }
+        void Discard()
+        {
+            try { if (System.IO.File.Exists(recording.Path)) System.IO.File.Delete(recording.Path); } catch (Exception) { }
+            if (committed) return;
+            try { recording.Journal?.Discard(); } catch (Exception) { }
+        }
+        var playback = new PlaybackWindow(recording.PlaybackPath, sourceRequiresExport ? "MP4" : recording.Format, Store.Settings.FfmpegPath, recording.Journal,
+            Store.Settings.RecordingCloseAfterExport, Commit, recording.Region, Store.Settings.OutputDirectory,
+            pending: true, defaultSaveFormat: recording.Format, discardPending: Discard, sourceRequiresExport: sourceRequiresExport);
+        playback.Show();
+    }
+    private static void CleanupPendingRecording(RecordingSession recording, bool committed)
+    {
+        try { if (System.IO.File.Exists(recording.Path)) System.IO.File.Delete(recording.Path); } catch (Exception) { }
+        if (!committed) { try { recording.Journal?.Discard(); } catch (Exception) { } }
     }
     private async void DiscardRecording(bool restart)
     {
         if (session == null || finishing != null) return;
-        var recording = session; recordingBar?.ShowFinishing(); finishing = recording.DiscardAsync();
+        var recording = session; var restartRegion = restart ? recording.Region : default;
+        recordingBar?.ShowFinishing(); finishing = recording.DiscardAsync();
         try { await finishing; }
         catch (Exception error) { if (!Exiting) Ui.Error(Window, error, L.Get("丢弃录制")); }
         finally
         {
             if (recordingBar != null) { recordingBar.Finishing = true; recordingBar.Close(); recordingBar = null; }
+            CloseRecordingOverlay();
             session = null; finishing = null;
         }
-        if (!Exiting) { Show(); if (restart) Record(); }
+        if (!Exiting && restart) { if (restartRegion.IsEmpty) Record(); else RecordRegion(restartRegion, null); }
     }
     private RecordingJournal? FindRecordingJournal(HistoryEntry entry)
     {
@@ -431,5 +591,5 @@ internal sealed partial class AppController : IDisposable
         tray.Visible = false; Window.Close(); System.Windows.Application.Current.Shutdown();
     }
     private void Refresh() { if (!Exiting) Window.Refresh(); }
-    public void Dispose() { AnnotationToolDefaults.Changed -= SaveToolDefaults; globalMouse?.Dispose(); gestureOverlay?.Close(); trayClickTimer.Stop(); hotkeys.Dispose(); tray.Dispose(); icon.Dispose(); }
+    public void Dispose() { AnnotationToolDefaults.Changed -= SaveToolDefaults; AnnotationStylePersistence.Changed -= SaveToolStyles; StopPinSelectionWatch(); CloseRecordingOverlay(); globalMouse?.Dispose(); gestureOverlay?.Close(); trayClickTimer.Stop(); hotkeys.Dispose(); tray.Dispose(); icon.Dispose(); }
 }

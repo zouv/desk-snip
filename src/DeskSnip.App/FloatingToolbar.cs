@@ -20,7 +20,7 @@ internal enum ToolGlyph
     Palette, Keyboard, Transfer, Info, Mouse, GlobalMouse,
     LineSolid, LineDash, LineDot, Width, CornerRadius, Opacity,
     RotateClockwise, FlipHorizontal, FlipVertical, Grayscale, Invert, BrightnessUp, BrightnessDown,
-    ZoomOut, OriginalSize, FitScreen, OpacityUp, OpacityDown, OpacityFull, Lock
+    ZoomOut, OriginalSize, FitScreen, OpacityUp, OpacityDown, OpacityFull, Lock, Record, Crop
 }
 
 /// <summary>截图和录屏共用的自绘工具；图标不依赖外部字体或图片资源。</summary>
@@ -96,6 +96,18 @@ internal static class FloatingTools
     internal static Button MenuButton(ToolGlyph glyph, string name, ContextMenu menu)
     {
         Button button = null!; button = CreateMenuButton(glyph, name, () => Open(menu, button), menu); return button;
+    }
+    /// <summary>文字下拉按钮：与图标按钮共用浮动栏样式，避免默认 ComboBox 外观割裂。</summary>
+    internal static Button TextMenuButton(string text, string name, ContextMenu menu, out TextBlock label, double width = 0)
+    {
+        label = new TextBlock { Text = text, Foreground = Ink, FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
+        var content = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0) };
+        content.Children.Add(label);
+        content.Children.Add(new ToolIcon(ToolGlyph.Chevron) { Width = 9, Height = 12, Margin = new Thickness(4, 0, 0, 0), Color = MutedInk });
+        Button button = null!;
+        button = Button(ToolGlyph.More, name, () => Open(menu, button));
+        button.Content = content; button.Width = width > 0 ? width : double.NaN; button.Height = 28; button.ContextMenu = menu;
+        return button;
     }
     internal static Button SplitMenuButton(ToolGlyph glyph, string name, Action primary, ContextMenu menu)
     {
@@ -236,6 +248,8 @@ internal sealed class ToolIcon : FrameworkElement
             case ToolGlyph.OpacityDown: Circle(12,12,8); Path("M 7,12 L 17,12"); break;
             case ToolGlyph.OpacityFull: dc.DrawEllipse(Color, null, new Point(12,12), 8, 8); break;
             case ToolGlyph.Lock: dc.DrawRoundedRectangle(null, pen, new Rect(5,10,14,11), 2, 2); Path("M 8,10 L 8,7 C 8,2 16,2 16,7 L 16,10"); break;
+            case ToolGlyph.Record: dc.DrawEllipse(Color, null, new Point(12,12), 7, 7); break;
+            case ToolGlyph.Crop: Path("M 7,3 L 7,17 21,17 M 3,7 L 17,7 17,21"); break;
         }
         dc.Pop();
     }
@@ -253,12 +267,39 @@ internal static class FloatingLayout
     internal static Rect Actions(Rect viewport, Rect selection, Size size)
     {
         var y = selection.Bottom + size.Height + 8 <= viewport.Bottom ? selection.Bottom + 8 : selection.Top - size.Height - 8 >= viewport.Top ? selection.Top - size.Height - 8 : viewport.Bottom - size.Height - 8;
-        return Clamp(viewport, new Point(selection.Right - size.Width, y), size);
+        var x = Math.Max(viewport.Left + 8, Math.Min(selection.Left, viewport.Right - size.Width - 8));
+        return Clamp(viewport, new Point(x, y), size);
     }
-    internal static Rect Secondary(Rect viewport, Rect selection, Size size, Rect primary)
+    /// <summary>标注工具条固定在选区左下方，截图工具条紧贴其右；整组避开屏幕边缘。</summary>
+    internal static (Rect Inline, Rect Actions) InlineRow(Rect viewport, Rect selection, Size inlineSize, Size actionsSize)
     {
-        var candidates = new[] { new Point(selection.Left, selection.Top - size.Height - 8), new Point(selection.Right - size.Width, selection.Bottom + 8), new Point(selection.Left, primary.Top - size.Height - 8), new Point(viewport.Left + 8, viewport.Top + 8) };
-        return Available(viewport, size, candidates, new[] { primary });
+        const double gap = 6;
+        var width = inlineSize.Width + gap + actionsSize.Width;
+        var height = Math.Max(inlineSize.Height, actionsSize.Height);
+        var x = selection.Left;
+        if (x + width > viewport.Right - 8) x = viewport.Right - width - 8;
+        if (x < viewport.Left + 8) x = viewport.Left + 8;
+        var y = selection.Bottom + 8;
+        if (y + height > viewport.Bottom - 8)
+        {
+            y = selection.Top - height - 8;
+            if (y < viewport.Top + 8) y = viewport.Bottom - height - 8;
+        }
+        y = Math.Max(viewport.Top + 8, Math.Min(y, viewport.Bottom - height - 8));
+        return (new Rect(x, y, inlineSize.Width, inlineSize.Height), new Rect(x + inlineSize.Width + gap, y, actionsSize.Width, actionsSize.Height));
+    }
+    /// <summary>标记列表优先放在选区左侧；左侧无屏幕空间时放右侧，最后贴选区内侧。</summary>
+    internal static Rect AnnotationList(Rect viewport, Rect selection, Size size)
+    {
+        var x = selection.Left - size.Width - 8;
+        if (x < viewport.Left + 8)
+        {
+            var right = selection.Right + 8;
+            x = right + size.Width <= viewport.Right - 8 ? right : Math.Max(viewport.Left + 8, selection.Left + 8);
+        }
+        if (x + size.Width > viewport.Right - 8) x = viewport.Left + 8;
+        var y = Math.Max(viewport.Top + 8, Math.Min(selection.Top, viewport.Bottom - size.Height - 8));
+        return Clamp(viewport, new Point(x, y), size);
     }
     internal static Rect Info(Rect viewport, Rect selection, Size size, Rect actions)
         => Available(viewport, size, new[] { new Point(selection.Left, selection.Top - size.Height - 8), new Point(selection.Left + 8, selection.Top + 8), new Point(selection.Left, actions.Top - size.Height - 8), new Point(selection.Right - size.Width, actions.Bottom + 8), new Point(viewport.Left + 8, viewport.Top + 8) }, new[] { actions });

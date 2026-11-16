@@ -357,7 +357,7 @@
     <translation>WebP preview failed. The original file is kept.</translation>
   </text>
   <text>
-    <source>Windows 接口暂时不可用，请重试；MP4 编码需要系统媒体组件。</source>
+    <source>Windows 接口暂时不可用，请重试。</source>
     <translation>A Windows interface is temporarily unavailable. Try again. MP4 encoding requires Windows media components.</translation>
   </text>
   <text>
@@ -719,8 +719,8 @@ Select, annotate, then copy or pin it to your desktop.</translation>
     <translation>Save…</translation>
   </text>
   <text>
-    <source>保存中 {0:0}%</source>
-    <translation>Saving {0:0}%</translation>
+    <source>正在完成录制 {0:0}%</source>
+    <translation>Finishing recording {0:0}%</translation>
   </text>
   <text>
     <source>保存位置</source>
@@ -883,12 +883,8 @@ Select, annotate, then copy or pin it to your desktop.</translation>
     <translation>Stop and discard this recording?</translation>
   </text>
   <text>
-    <source>停止并保存</source>
-    <translation>Stop and save</translation>
-  </text>
-  <text>
-    <source>停止并保存录制</source>
-    <translation>Stop and save recording</translation>
+    <source>停止录制</source>
+    <translation>Stop recording</translation>
   </text>
   <text>
     <source>元素检测边距</source>
@@ -3163,8 +3159,8 @@ Select, annotate, then copy or pin it to your desktop.</translation>
     <translation>Show recording toolbar</translation>
   </text>
   <text>
-    <source>显示录制工具栏（隐藏时从托盘停止并保存）</source>
-    <translation>Show recording toolbar (when hidden, stop and save from the tray)</translation>
+    <source>显示录制工具栏（隐藏时从托盘停止录制）</source>
+    <translation>Show recording toolbar (when hidden, stop from the tray)</translation>
   </text>
   <text>
     <source>显示快捷键提示（F1 临时切换）</source>
@@ -3603,8 +3599,8 @@ Select, annotate, then copy or pin it to your desktop.</translation>
     <translation>Enable secondary editing with the eraser</translation>
   </text>
   <text>
-    <source>正在保存录制，请稍候</source>
-    <translation>Saving recording…</translation>
+    <source>正在完成录制，请稍候</source>
+    <translation>Finishing recording, please wait.</translation>
   </text>
   <text>
     <source>正在停止预览和导出，原文件保留…</source>
@@ -3941,8 +3937,8 @@ Right-click to manage · Drag to move</translation>
     <translation>Leave empty to use quick-saves in the local data folder</translation>
   </text>
   <text>
-    <source>留空使用本机数据目录下的 recordings</source>
-    <translation>Leave empty to use recordings in the local data folder</translation>
+    <source>普通录制保存时的初始文件夹；留空使用“视频”或桌面</source>
+    <translation>Initial folder when saving normal recordings; leave empty to use Videos or Desktop</translation>
   </text>
   <text>
     <source>留空使用独立本机目录 auto-saves；文件添加 DeskSnip-auto- 标识以便安全清理</source>
@@ -5783,5 +5779,113 @@ Right-click to manage · Drag to move</translation>
   <text>
     <source>圆角半径</source>
     <translation>Corner radius</translation>
+  </text>
+  <text>
+    <source>工具子操作栏样式配置无效。</source>
+    <translation>Tool options style configuration is invalid.</translation>
+  </text>
+  <text>
+    <source>标注样式未保存。</source>
+    <translation>Annotation style was not saved.</translation>
+  </text>
+  <text>
+    <source>缩放 {0:0}% · {1} × {2} px</source>
+    <translation>Zoom {0:0}% · {1} × {2} px</translation>
+  </text>
+  <text>
+    <source>透明度 {0:0}%</source>
+    <translation>Opacity {0:0}%</translation>
+  </text>
+  <text>
+    <source>普通录制</source>
+    <translation>Normal recording</translation>
+  </text>
+  <text>
+    <source>录制模式</source>
+    <translation>Recording mode</translation>
+  </text>
+  <text>
+    <source>拖动框选 · Enter 开始录制 · Esc 取消</source>
+    <translation>Drag to select · Enter starts recording · Esc cancels</translation>
+  </text>
+  <text>
+    <source>播放</source>
+    <translation>Play</translation>
+  </text>
+  <text>
+    <source>暂停</source>
+    <translation>Pause</translation>
+  </text>
+  <text>
+    <source>剪辑与导出选项</source>
+    <translation>Trim and export options</translation>
+  </text>
+  <text>
+    <source>播放倍速</source>
+    <translation>Playback speed</translation>
+  </text>
+  <text>
+    <source>保存格式</source>
+    <translation>Save format</translation>
+  </text>
+  <text>
+    <source>保存录屏</source>
+    <translation>Save recording</translation>
+  </text>
+  <text>
+    <source>拖动回放窗口</source>
+    <translation>Drag playback window</translation>
+  </text>
+  <text>
+    <source>选择保存录屏的文件夹</source>
+    <translation>Choose a folder to save the recording</translation>
+  </text>
+  <text>
+    <source>录制已保存。</source>
+    <translation>Recording saved.</translation>
+  </text>
+  <text>
+    <source>开始与结束秒、裁剪、画质和音量用于重新编码；无改动时保存会直接复制原文件。</source>
+    <translation>Start/end time, crop, quality, and volume are used when re-encoding; saving without changes copies the original file.</translation>
+  </text>
+  <text>
+    <source>显示（默认）</source>
+    <translation>Show (default)</translation>
+  </text>
+  <text>
+    <source>保存 / 导出后关闭回放编辑器</source>
+    <translation>Close the playback editor after saving / exporting</translation>
+  </text>
+  <text>
+    <source>录制：形状标注</source>
+    <translation>Recording: shape</translation>
+  </text>
+  <text>
+    <source>录制：画笔</source>
+    <translation>Recording: pen</translation>
+  </text>
+  <text>
+    <source>录制：箭头</source>
+    <translation>Recording: arrow</translation>
+  </text>
+  <text>
+    <source>录制：文字</source>
+    <translation>Recording: text</translation>
+  </text>
+  <text>
+    <source>录制：马赛克</source>
+    <translation>Recording: mosaic</translation>
+  </text>
+  <text>
+    <source>录制格式（可在设置中修改）</source>
+    <translation>Recording format (change it in Settings)</translation>
+  </text>
+  <text>
+    <source>剪贴板暂时不可用，请稍后重试。</source>
+    <translation>The clipboard is temporarily unavailable. Try again shortly.</translation>
+  </text>
+  <text>
+    <source>取消置顶</source>
+    <translation>Cancel always on top</translation>
   </text>
 </strings>

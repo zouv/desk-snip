@@ -11,7 +11,7 @@
 - `EnableWhen` 多重勾选绑定控制依赖，禁用保留草稿；目录输入及浏览按钮一起联动，AutomaticSaveDays 同时依赖总开关及年龄清理。AddSavePreview/PreviewPath 使用独立模板、格式和类型，目录修改即时更新完整路径；自动保存预览包含实际 DeskSnip-auto- 前缀。
 - `Ui.ApplyThemeResources` 支持窗口自身的浅/深/系统资源，设置草稿在保存时应用到应用；字体可选本机字体也可输入，强调色用系统选择器。目录/FFmpeg 选择不写配置，只有保存才生效；文件名预览调用 `SaveNaming.Expand`，采用合成尺寸且不创建文件。
 - `InterfaceLanguage` 的系统/中文/English 选项保留草稿，AppController 仅保存成功后 L.Apply。ProductWindow 只刷新产品显示文字；SettingsWindow 同步所有独立页与专用快捷键显示，ChoiceItem 的标签弱订阅语言变化，Value/用户标题不变。服务源/目标语言与 OCR 语言各自独立。
-- `SettingsControlStyles.xaml` 仅在设置窗口合并，统一下拉、勾选、单选与页签的深浅背景；`FitLeft` 按可用宽度约束输入，Row 的 minimumEditorWidth 为鼠标组合保留 320 DIP，避免最小窗口截断修饰键；NumberInput 提供带边界的上下调整。内置页签使用 WrapPanel 保持原顺序，选中页签字重仅作用于页签文字。UI 验证等待布局完成后截取页首/页底。
+- `ControlStyles.xaml` 在应用级与设置窗口同时合并，统一全局下拉、勾选、单选、页签与数据表格的深浅背景；设置窗口保留自身合并以支持独立主题资源。`FitLeft` 按可用宽度约束输入，Row 的 minimumEditorWidth 为鼠标组合保留 320 DIP，避免最小窗口截断修饰键；NumberInput 提供带边界的上下调整。内置页签使用 WrapPanel 保持原顺序，选中页签字重仅作用于页签文字。UI 验证等待布局完成后截取页首/页底。
 - 联网服务页在 partial 文件接线；语言位于系统页，凭据保留到保存事务。读取、切页、恢复本页和导出不写密钥；恢复服务默认只丢弃待保存的新密钥输入，清除已存密钥仍需勾选明确选项后保存。
 - `Hotkeys.Apply` 注册基础三动作和额外全局动作；托盘单击/双击/中键按偏好执行，双击取消延迟单击。ApplyTrayAppearance 支持图标模式/颜色；若录制中隐藏托盘，显示停止工具栏。设置保存后若托盘已隐藏且主窗口不可见，非录制状态显示主窗口，避免无入口。设置窗口打开期间 AppController 暂停全局热键（hotkeysSuspended），关闭后按最新配置恢复，避免录入组合被 WM_HOTKEY 抢占。热键暂停仅解除注册，不丢动作配置。
 - `CapturePreferenceRules` 为检测边距/外部点击扩展/颜色顺序/复制缩放提供 Core 规则；CaptureWindow / PixelMagnifier 消费检测、辅助线、边框/锚点、指针、放大镜和鼠标偏好。PinPreferenceRules 独立控制锁定限制与缩放基准点，PinWindow 应用步长、位置、背景/阴影、原图输出和穿透工具栏生命周期。

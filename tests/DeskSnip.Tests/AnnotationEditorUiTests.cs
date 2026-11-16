@@ -179,6 +179,53 @@ public class AnnotationEditorUiTests
         Assert.NotEqual(before, canvas.Selected!.Points[1]);
     });
 
+    [Fact] public void EditorStylePanelReflectsSavedToolStyleWithoutSelection() => ImagingTests.Sta(() =>
+    {
+        var saved = new AnnotationStyle(0xff00aa00, 8, true, AnnotationDash.Dot, AnnotationArrow.Outline, .5, 4, true, 0, "Arial", 24, true, true);
+        var settings = new AppSettings { MarkToolStyles = AnnotationStyleRules.Serialize(new Dictionary<string, AnnotationStyle> { ["Arrow"] = saved }, null) };
+        var editor = new EditorWindow(Image(), _ => { }, _ => null!, settings: settings, initialTool: AnnotationKind.Arrow);
+        try
+        {
+            var styles = Descendants((DependencyObject)editor.Content).OfType<Border>().Single(border => border.Name == "AnnotationStyles");
+            var boxes = Descendants(styles).OfType<ComboBox>().ToArray();
+            Assert.Equal("#FF00AA00", boxes.Single(box => AutomationProperties.GetName(box) == "颜色").SelectedItem);
+            Assert.Equal("8", boxes.Single(box => AutomationProperties.GetName(box) == "线宽（px）").SelectedItem);
+            Assert.Equal(2, boxes.Single(box => AutomationProperties.GetName(box) == "线型").SelectedIndex);
+            Assert.Equal(1, boxes.Single(box => AutomationProperties.GetName(box) == "箭头样式").SelectedIndex);
+            Assert.Equal(4d, boxes.Single(box => AutomationProperties.GetName(box) == "效果强度 / 放大倍率").SelectedItem);
+            Assert.Equal(.5d, boxes.Single(box => AutomationProperties.GetName(box) == "不透明度").SelectedItem);
+            Assert.Equal("Arial", boxes.Single(box => AutomationProperties.GetName(box) == "字体").Text);
+            Assert.Equal("24", boxes.Single(box => AutomationProperties.GetName(box) == "字号").Text);
+            Assert.Contains(Descendants(styles).OfType<CheckBox>(), box => Equals(box.Content, "填充") && box.IsChecked == true);
+            Assert.Contains(Descendants(styles).OfType<CheckBox>(), box => Equals(box.Content, "文字底色") && box.IsChecked == true);
+            Assert.Contains(Descendants(styles).OfType<CheckBox>(), box => Equals(box.Content, "粗体") && box.IsChecked == true);
+            Assert.Contains(Descendants(styles).OfType<CheckBox>(), box => Equals(box.Content, "斜体") && box.IsChecked == true);
+        }
+        finally { editor.Close(); }
+    });
+
+    [Fact] public void ToolStyleSubBarStatePersistsPerGroupAndSharedColor() => ImagingTests.Sta(() =>
+    {
+        var rect = new AnnotationStyle(0xff112233, 5, true, AnnotationDash.Dash, AnnotationArrow.Filled, .75, 4, true, 12, "Segoe UI", 24, true, false);
+        var arrow = new AnnotationStyle(0xff445566, 8, false, AnnotationDash.Dot, AnnotationArrow.Outline, 1, 2, false, 0, "Arial", 18, false, true);
+        var styles = new Dictionary<string, AnnotationStyle> { ["Rectangle"] = rect, ["Arrow"] = arrow };
+        var settings = new AppSettings { MarkSharedColor = false, MarkToolStyles = AnnotationStyleRules.Serialize(styles, 0xff778899), MarkPolylineJoin = "Miter" };
+        var canvas = new AnnotationCanvas(Image(), settings);
+        canvas.SetTool(AnnotationKind.Rectangle);
+        Assert.Equal(0xff112233u, canvas.Argb); Assert.Equal(5, canvas.Thickness); Assert.Equal(AnnotationDash.Dash, canvas.Appearance.Dash);
+        Assert.Equal(12, canvas.Appearance.CornerRadius); Assert.True(canvas.Appearance.Fill); Assert.True(canvas.Bold); Assert.Equal(AnnotationLineJoin.Miter, canvas.Appearance.LineJoin);
+        canvas.ChangeStyle(argb: 0xff00aa00, thickness: 6);
+        var saved = AnnotationStyleRules.Parse(canvas.PersistedStyles);
+        Assert.Equal(0xff00aa00u, saved.Styles["Rectangle"].Argb); Assert.Equal(6, saved.Styles["Rectangle"].Thickness);
+        canvas.SetTool(AnnotationKind.Arrow);
+        Assert.Equal(0xff445566u, canvas.Argb); Assert.Equal(8, canvas.Thickness); Assert.Equal(AnnotationDash.Dot, canvas.Appearance.Dash); Assert.True(canvas.Italic);
+        canvas.SetTool(AnnotationKind.Rectangle);
+        Assert.Equal(0xff00aa00u, canvas.Argb); Assert.Equal(6, canvas.Thickness);
+        var shared = new AnnotationCanvas(Image(), new AppSettings { MarkSharedColor = true, MarkToolStyles = AnnotationStyleRules.Serialize(styles, 0xff778899) });
+        shared.SetTool(AnnotationKind.Rectangle); Assert.Equal(0xff778899u, shared.Argb);
+        shared.ChangeStyle(argb: 0xff00aa00); shared.SetTool(AnnotationKind.Arrow); Assert.Equal(0xff00aa00u, shared.Argb);
+    });
+
     [Fact] public void SquareCornerActionClearsExplicitRadius() => ImagingTests.Sta(() =>
     {
         var canvas = new AnnotationCanvas(Image());

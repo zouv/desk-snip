@@ -25,6 +25,12 @@ public class RecordingUiTests
         public void Copy(byte[] pixels, bool cursor) { for (var i = 0; i < pixels.Length; i += 4) { pixels[i] = 37; pixels[i + 1] = 34; pixels[i + 2] = 31; pixels[i + 3] = 255; } }
         public void Dispose() { }
     }
+    [Fact] public void RecordingPlanUsesSavedAudioFpsAndToolbarPreferences()
+    {
+        var settings = new AppSettings { QuickRecordingEnabled = true, RecordSystemAudio = true, RecordMicrophone = true, FramesPerSecond = 30, RecordingFormat = "GIF", RecordingToolbarDisplayMode = "Hidden", TrayIconMode = "Auto" };
+        var plan = RecordingPlan.FromSettings(settings);
+        Assert.True(plan.Quick); Assert.True(plan.SystemAudio); Assert.True(plan.Microphone); Assert.Equal(30, plan.Fps); Assert.Equal("MP4", plan.Format); Assert.False(plan.ToolbarVisible);
+    }
     [Theory]
     [InlineData(100, 70, 600, 380, true)]
     [InlineData(600, 590, 300, 100, false)]
@@ -56,8 +62,8 @@ public class RecordingUiTests
             var pause = buttons.Single(button => AutomationProperties.GetName(button) == "暂停录制"); pause.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.Equal(RecordingState.Paused, session.State); Assert.Equal("继续录制", AutomationProperties.GetName(pause)); Assert.Equal(ToolGlyph.Play, ((ToolIcon)pause.Content).Glyph);
             var paused = session.Elapsed; await Task.Delay(100); Assert.Equal(paused, session.Elapsed); Preview(root, "recording-paused");
             pause.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.Equal(RecordingState.Recording, session.State); Preview(root, "recording-controls");
-            var stop = buttons.Single(button => AutomationProperties.GetName(button) == "停止并保存"); stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.Equal(1, requests);
-            bar.ShowFinishing(); Assert.False(frame.IsVisible); Assert.False(pause.IsEnabled); Assert.False(stop.IsEnabled); Assert.False(buttons.Single(button => AutomationProperties.GetName(button) == "更多录制操作").IsEnabled); bar.TogglePause(); Assert.Equal(RecordingState.Recording, session.State); Preview(root, "recording-saving");
+            var stop = buttons.Single(button => AutomationProperties.GetName(button) == "停止录制"); stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.Equal(1, requests);
+            bar.ShowFinishing(); Assert.False(frame.IsVisible); Assert.False(pause.IsEnabled); Assert.False(stop.IsEnabled); Assert.False(buttons.Single(button => AutomationProperties.GetName(button) == "放弃录制").IsEnabled); Assert.False(buttons.Single(button => AutomationProperties.GetName(button) == "重新录制").IsEnabled); Assert.False(buttons.Single(button => AutomationProperties.GetName(button) == "录制中不可拖动").IsEnabled); bar.TogglePause(); Assert.Equal(RecordingState.Recording, session.State); Preview(root, "recording-saving");
             bar.Close(); bar = new RecordingBar(session, () => requests++); bar.Close(); bar.Close(); Assert.Equal(2, requests);
         }
         finally { if (bar != null) { bar.Finishing = true; bar.Close(); } await session.StopAsync(); Directory.Delete(directory, true); }

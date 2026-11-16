@@ -140,6 +140,46 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Style TargetType="Slider">
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid MinHeight="18" VerticalAlignment="Center">
+                        <Border Height="4" CornerRadius="2" Background="{DynamicResource BorderBrush}" VerticalAlignment="Center"/>
+                        <Track x:Name="PART_Track" Orientation="Horizontal" Height="18" VerticalAlignment="Center">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="{x:Static Slider.DecreaseLarge}" Focusable="False" IsTabStop="False">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Width="14" Height="14" Cursor="Hand">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Ellipse Fill="{DynamicResource AccentBrush}" Stroke="{DynamicResource PanelBrush}" StrokeThickness="2"/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="{x:Static Slider.IncreaseLarge}" Focusable="False" IsTabStop="False">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     <Style TargetType="TabControl">
         <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource InkBrush}"/>
