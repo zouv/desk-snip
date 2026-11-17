@@ -2,7 +2,7 @@
 
 ## 状态快照
 
-- 最近更新：2026-11-17。无进行中开发任务。当前版本 0.4.0，发布产物已生成；提交、main/v0.4.0 推送和 GitHub Release 由本次 release 流程继续执行。
+- 最近更新：2026-11-17。无进行中任务。当前版本 0.4.0，main、v0.4.0 标签与 GitHub Release 均已发布；Release 页面：https://github.com/zouv/desk-snip/releases/tag/v0.4.0。
 - 远程 origin 已关联 https://github.com/zouv/desk-snip，本地 main 按用户要求推送并跟踪该远端。
 - 最后验证：`sh manager.sh verify` 通过：完整 343 项测试、严格编译 0 警告、check-docs 全部通过；7 项本轮聚焦测试也单独通过。真实桌面输入与截图仍未完成，不能写成实机验收通过。
 - 最新包：dist/release/DeskSnip_0.4.0_win-x64-unpack.zip 与 dist/dev/DeskSnip_0.4.0_win-x64-unpack-debug.zip；版本和两个 SHA256 均已校验。
