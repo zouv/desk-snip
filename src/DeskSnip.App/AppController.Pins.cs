@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using DeskSnip.App.Imaging;
 using DeskSnip.App.Windows;
@@ -18,12 +19,12 @@ internal sealed partial class AppController
     private readonly System.Windows.Threading.DispatcherTimer pinSelectionTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
     private static readonly uint PinProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
     private bool pinSelectionMouseDown;
-    private void OpenPin(BitmapSource image, PinRecord record, bool restored, PixelRect region = default)
+    private void OpenPin(BitmapSource image, PinRecord record, bool restored, PixelRect region = default, BitmapSource? annotationBase = null, AnnotationDocument? annotations = null, bool activate = false)
     {
         if (!restored) { record.Topmost = Store.Settings.PinDefaultTopmost; record.Opacity = Store.Settings.PinDefaultOpacity / 100d; }
         var originalPath = Workspace.ImagePath(record.Id, true);
         var window = new PinWindow(image, record, changed => Workspace.SaveImage(record.Id, output => ImageFiles.WritePng(changed, output)), restored,
-            File.Exists(originalPath) ? ImageFiles.Load(originalPath) : image, Store.Settings, region);
+            File.Exists(originalPath) ? ImageFiles.Load(originalPath) : image, Store.Settings, region, annotationBase, annotations);
         window.RememberToolRequested = kind =>
         {
             if (Exiting || !Store.Settings.MarkRememberPinTool) return;
@@ -67,6 +68,7 @@ internal sealed partial class AppController
         };
         pinSaveTimer.Tick -= SavePinsTick; pinSaveTimer.Tick += SavePinsTick;
         window.Show(); ApplyPinVisibility(); Refresh();
+        if (activate && window.IsVisible) { window.Activate(); window.Focus(); Keyboard.Focus(window); }
     }
     private void SavePinsTick(object? sender, EventArgs e) { pinSaveTimer.Stop(); PersistPins(); }
     private void RefreshPinSelectionTimer()

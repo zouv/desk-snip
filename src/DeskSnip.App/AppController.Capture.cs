@@ -28,7 +28,7 @@ internal sealed partial class AppController
                 try { await Task.Delay(150); if (Exiting) return; var image = CaptureMasks.Apply(ScreenCapture.Capture(initial, preset.Cursor), preset.Shape); Profiles.Remember(initial, Store.Settings.ScreenshotAreaHistoryLimit); CompleteCapture(image, CaptureAction.Edit, initial); }
                 finally { selecting = false; if (!Exiting) foreach (var editor in open) if (editors.Contains(editor)) editor.Show(); }
             }
-            else { var selected = await Select(false, initial, preset.Cursor, preset.Shape); if (selected.Image != null) CompleteCapture(selected.Image, selected.Action, selected.Region); }
+            else { var selected = await Select(false, initial, preset.Cursor, preset.Shape); if (selected.Image != null) CompleteCapture(selected.Image, selected.Action, selected.Region, selected.AnnotationBase, selected.Annotations); }
         }
         catch (Exception error) { Ui.Error(Window, error, L.Get("预设截图")); }
         finally { if (visible && !Exiting) Window.Show(); }

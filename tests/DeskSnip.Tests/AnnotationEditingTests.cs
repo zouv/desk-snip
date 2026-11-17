@@ -71,6 +71,14 @@ public class AnnotationEditingTests
         Assert.False(document.CanRedo); Assert.Equal(10, document.Items[0].Points[0].X);
     }
 
+    [Fact] public void ClonePreservesUndoRedoWithoutSharingLaterChanges()
+    {
+        var document = new AnnotationDocument(100, 80); document.Add(Arrow()); document.Move(0, new PixelPoint(10, 0)); document.Undo();
+        var copy = document.Clone(); Assert.Equal(document.Revision, copy.Revision); Assert.True(copy.CanRedo);
+        copy.Redo(); Assert.Equal(20, copy.Items[0].Points[0].X); Assert.Equal(10, document.Items[0].Points[0].X); Assert.True(document.CanRedo);
+        copy.Undo(); copy.Add(Arrow()); Assert.False(copy.CanRedo); Assert.True(document.CanRedo); Assert.Single(document.Items);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(481)]

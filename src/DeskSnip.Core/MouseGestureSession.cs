@@ -31,6 +31,33 @@ public sealed class MouseGestureSession
     public void Cancel() { button = Action = null; Region = default; }
 }
 
+/// <summary>右键短按保留原动作；达到按住时长并越过阈值后只进入拖动。</summary>
+public sealed class LongPressDragGesture
+{
+    public bool Active { get; private set; }
+    public bool LongPressed { get; private set; }
+    public bool Dragging { get; private set; }
+    public PixelPoint Start { get; private set; }
+    public void Begin(PixelPoint point)
+    {
+        Start = point; Active = true; LongPressed = Dragging = false;
+    }
+    public bool Update(PixelPoint point, double heldMilliseconds, double holdMilliseconds = 200, double moveThreshold = 4)
+    {
+        if (!Active) return false;
+        if (heldMilliseconds >= holdMilliseconds) LongPressed = true;
+        if (!LongPressed || Dragging) return Dragging;
+        if (Math.Max(Math.Abs(point.X - Start.X), Math.Abs(point.Y - Start.Y)) < moveThreshold) return false;
+        Dragging = true; return true;
+    }
+    public bool Finish()
+    {
+        var click = Active && !LongPressed && !Dragging;
+        Cancel(); return click;
+    }
+    public void Cancel() { Active = LongPressed = Dragging = false; Start = default; }
+}
+
 /// <summary>同一组合可以同时绑定单击与拖动；越过移动阈值后只执行拖动。</summary>
 public sealed class PinPointerGesture
 {

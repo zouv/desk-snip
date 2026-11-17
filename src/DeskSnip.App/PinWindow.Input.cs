@@ -16,6 +16,9 @@ internal sealed partial class PinWindow
     internal Action<System.Windows.Media.Imaging.BitmapSource, string>? ServiceOperationRequested { get; set; }
     private MouseButton? draggingButton;
     private readonly PinPointerGesture pointerGesture = new PinPointerGesture();
+    private readonly LongPressDragGesture rightDrag = new LongPressDragGesture();
+    private DateTime rightDragUtc;
+    private string? rightClickAction;
     private int inlineClickRevision = -1;
     private DateTime inlineClickUtc;
     private Native.Point inlineClickScreen;
@@ -51,9 +54,15 @@ internal sealed partial class PinWindow
             if (e.ClickCount >= 2) { pointerGesture.Cancel(); if (action != null && action != "None") { ExecuteMouse(action); e.Handled = true; } return; }
             if (e.ChangedButton == MouseButton.Left && action != "MultiSelect") SelectRequested?.Invoke(this, false);
             var dragAction = BoundMouse(button + "Drag");
+            Native.GetCursorPos(out dragStart);
+            if (e.ChangedButton == MouseButton.Right && dragAction == null && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                BeginRightDrag(new PixelPoint(dragStart.X, dragStart.Y), action == "None" ? null : action);
+                draggingButton = e.ChangedButton; CaptureMouse(); e.Handled = true; return;
+            }
             if (dragAction == null && Settings.PinMouseBindings == null && e.ChangedButton == MouseButton.Left && Keyboard.Modifiers == ModifierKeys.None) dragAction = "Move";
             if (dragAction == "Move" && !CanMove) { dragAction = null; UpdateFrame(); }
-            Native.GetCursorPos(out dragStart); pointerGesture.Begin(button, new PixelPoint(dragStart.X, dragStart.Y), action == "None" ? null : action, dragAction == "None" ? null : dragAction);
+            pointerGesture.Begin(button, new PixelPoint(dragStart.X, dragStart.Y), action == "None" ? null : action, dragAction == "None" ? null : dragAction);
             if (!pointerGesture.Active) return;
             var point = e.GetPosition(this); resizeHandle = SelectionGeometry.HitTest(new PixelRect(0, 0, (int)ActualWidth, (int)ActualHeight), new PixelPoint(point.X, point.Y), 6, 6);
             draggingButton = e.ChangedButton; initialScale = Presentation.Scale; initialLeft = Left; initialTop = Top;
@@ -61,16 +70,52 @@ internal sealed partial class PinWindow
         };
         MouseMove += (_, e) =>
         {
-            if (inlineEditing || !pointerGesture.Active) return; Native.GetCursorPos(out var point);
+            if (inlineEditing || !pointerGesture.Active && !rightDrag.Active) return;
+            Native.GetCursorPos(out var point);
+            if (rightDrag.Active)
+            {
+                if (UpdateRightDrag(new PixelPoint(point.X, point.Y), (DateTime.UtcNow - rightDragUtc).TotalMilliseconds)) e.Handled = true;
+                return;
+            }
             var began = pointerGesture.Move(new PixelPoint(point.X, point.Y));
             if (began == "DragContent") { pointerGesture.Cancel(); ReleaseMouseCapture(); var data = new DataObject(); data.SetData(DataFormats.Bitmap, OutputBitmap); DragDrop.DoDragDrop(this, data, DragDropEffects.Copy); e.Handled = true; return; }
             if (began == "Move") { if (Settings.PinResizeFromBorder && resizeHandle != SelectionHandle.None && resizeHandle != SelectionHandle.Move) resizing = true; else moving = true; }
             ResizeDrag(); if (!moving || !CanMove) return; var dx = point.X - dragStart.X; var dy = point.Y - dragStart.Y; dragStart = point; if (dx == 0 && dy == 0) return;
             if (MoveRequested != null) MoveRequested(this, dx, dy); else MoveByPhysical(dx, dy);
         };
-        MouseUp += (_, e) => { if (inlineEditing || draggingButton != e.ChangedButton) return; Native.GetCursorPos(out var point); var action = pointerGesture.Finish(ButtonName(e.ChangedButton), new PixelPoint(point.X, point.Y)); resizing = moving = false; draggingButton = null; ReleaseMouseCapture(); if (action != null && action != "Move" && action != "DragContent") ExecuteMouse(action); PresentationChanged?.Invoke(); e.Handled = true; };
-        LostMouseCapture += (_, _) => { pointerGesture.Cancel(); resizing = moving = false; draggingButton = null; };
+        MouseUp += (_, e) =>
+        {
+            if (inlineEditing || draggingButton != e.ChangedButton) return;
+            Native.GetCursorPos(out var point);
+            if (rightDrag.Active)
+            {
+                UpdateRightDrag(new PixelPoint(point.X, point.Y), (DateTime.UtcNow - rightDragUtc).TotalMilliseconds);
+                var click = rightDrag.Finish(); var action = click ? rightClickAction : null;
+                moving = false; draggingButton = null; rightClickAction = null; ReleaseMouseCapture();
+                if (action != null) ExecuteMouse(action); PresentationChanged?.Invoke(); e.Handled = true; return;
+            }
+            var finished = pointerGesture.Finish(ButtonName(e.ChangedButton), new PixelPoint(point.X, point.Y));
+            resizing = moving = false; draggingButton = null; ReleaseMouseCapture();
+            if (finished != null && finished != "Move" && finished != "DragContent") ExecuteMouse(finished);
+            PresentationChanged?.Invoke(); e.Handled = true;
+        };
+        LostMouseCapture += (_, _) => { pointerGesture.Cancel(); rightDrag.Cancel(); rightClickAction = null; resizing = moving = false; draggingButton = null; };
         MouseWheel += (_, e) => { if (inlineEditing) return; var action = BoundMouse("Wheel"); if (action == null || action == "None") return; ExecuteMouse(action, e.Delta); e.Handled = true; };
+    }
+    internal void BeginRightDrag(PixelPoint point, string? clickAction)
+    {
+        dragStart = new Native.Point { X = (int)point.X, Y = (int)point.Y };
+        rightDrag.Begin(point); rightDragUtc = DateTime.UtcNow; rightClickAction = clickAction;
+    }
+    internal bool UpdateRightDrag(PixelPoint point, double heldMilliseconds)
+    {
+        if (!rightDrag.Update(point, heldMilliseconds)) return false;
+        moving = CanMove; if (!moving) return true;
+        var dx = (int)(point.X - dragStart.X); var dy = (int)(point.Y - dragStart.Y);
+        dragStart = new Native.Point { X = (int)point.X, Y = (int)point.Y };
+        if (dx == 0 && dy == 0) return true;
+        if (MoveRequested != null) MoveRequested(this, dx, dy); else MoveByPhysical(dx, dy);
+        return true;
     }
     internal void ExecuteMouse(string action, int direction = 1)
     {

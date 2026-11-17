@@ -56,6 +56,10 @@ internal sealed partial class CaptureWindow : ProductWindow
     private DateTime inlineClickUtc;
     private Native.Point inlineClickScreen;
     private bool panelDragging;
+    private readonly LongPressDragGesture rightDrag = new LongPressDragGesture();
+    private DateTime rightDragUtc;
+    private PixelRect rightDragSelection;
+    private bool rightDragCancelsOnClick;
     private Native.Point panelDragStart;
     private PixelRect panelDragSelection;
     private bool inlineResizing;
@@ -69,6 +73,8 @@ internal sealed partial class CaptureWindow : ProductWindow
     internal Action<CaptureWindow>? RecordTransitionRequested { get; set; }
     internal AnnotationKind? LastInlineTool { get; private set; }
     internal AnnotationCanvas? InlineCanvas => inlineCanvas;
+    internal BitmapSource? InlineBaseImage => inlineCanvas?.Image;
+    internal AnnotationDocument? InlineDocument => inlineCanvas?.Document;
     internal bool InlineEditing => inlineEditing;
     internal IReadOnlyList<Annotation> RecordingAnnotations => recordingCanvas?.Document.Items ?? Array.Empty<Annotation>();
     internal AnnotationCanvas? RecordingCanvas => recordingCanvas;
@@ -254,8 +260,10 @@ internal sealed partial class CaptureWindow : ProductWindow
         Loaded += (_, _) => { Position(); cursor = inspector.Clamp(CursorPosition()); Activate(); Focus(); Keyboard.Focus(this); ForceForeground(); Redraw(); };
         SizeChanged += (_, _) => Redraw();
         surface.MouseLeftButtonDown += Down; surface.MouseMove += Move; surface.MouseLeftButtonUp += Up;
-        surface.LostMouseCapture += (_, _) => { dragging = false; Redraw(); };
-        surface.MouseRightButtonDown += (_, e) => { if (!IsControl(e.OriginalSource as DependencyObject)) DialogResult = false; };
+        surface.LostMouseCapture += (_, _) => { dragging = false; rightDrag.Cancel(); Redraw(); };
+        surface.PreviewMouseRightButtonDown += RightDown;
+        surface.PreviewMouseMove += (_, e) => { if (!rightDrag.Active) return; UpdateRightDrag(CursorPosition()); e.Handled = true; };
+        surface.PreviewMouseRightButtonUp += RightUp;
         surface.MouseWheel += Wheel;
         surface.MouseDown += (_, e) => { if (e.ChangedButton == MouseButton.Middle && !inlineEditing && !IsControl(e.OriginalSource as DependencyObject)) { InvokeMouseAction(this.settings.ScreenshotMiddleClickAction); e.Handled = true; } };
         uiAutomationTimer.Tick += (_, _) => { if (!uiAutomationClosed && IsVisible && !inlineEditing && !dragging && Selection.IsEmpty) UpdateHover(); };
@@ -488,6 +496,41 @@ internal sealed partial class CaptureWindow : ProductWindow
     internal void EndInteraction() { dragging = false; Redraw(); }
     private void UpdateDrag(PixelPoint point)
         => UpdateInteraction(point, (Keyboard.Modifiers & ModifierKeys.Shift) != 0, (Keyboard.Modifiers & ModifierKeys.Alt) != 0, Keyboard.IsKeyDown(Key.Space));
+    internal bool BeginRightDrag(PixelPoint point, bool cancelOnClick = true)
+    {
+        if (dragging || panelDragging || recordingTransition || Selection.IsEmpty || point.X < Selection.X || point.X >= Selection.Right || point.Y < Selection.Y || point.Y >= Selection.Bottom) return false;
+        rightDrag.Begin(point); rightDragUtc = DateTime.UtcNow; rightDragSelection = Selection; rightDragCancelsOnClick = cancelOnClick; return true;
+    }
+    internal bool UpdateRightDrag(PixelPoint point, double? heldMilliseconds = null)
+    {
+        if (!rightDrag.Active) return false;
+        if (!rightDrag.Update(point, heldMilliseconds ?? (DateTime.UtcNow - rightDragUtc).TotalMilliseconds)) return false;
+        Selection = SelectionGeometry.Transform(rightDragSelection, new PixelPoint(point.X - rightDrag.Start.X, point.Y - rightDrag.Start.Y), SelectionHandle.Move, bounds);
+        cursor = inspector.Clamp(point); Redraw(); return true;
+    }
+    internal bool EndRightDrag(PixelPoint point, double? heldMilliseconds = null)
+    {
+        UpdateRightDrag(point, heldMilliseconds); var click = rightDrag.Finish(); Redraw(); return click;
+    }
+    private void RightDown(object sender, MouseButtonEventArgs e)
+    {
+        var source = e.OriginalSource as DependencyObject;
+        var annotationInput = IsInlineCanvas(source) || IsRecordingCanvas(source);
+        if (IsControl(source) && !annotationInput) return;
+        if (!BeginRightDrag(CursorPosition(), !IsControl(source)))
+        {
+            if (!IsControl(source)) DialogResult = false;
+            return;
+        }
+        surface.CaptureMouse(); e.Handled = true;
+    }
+    private void RightUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!rightDrag.Active) return;
+        var click = EndRightDrag(CursorPosition()); surface.ReleaseMouseCapture();
+        if (click && rightDragCancelsOnClick) DialogResult = false;
+        e.Handled = true;
+    }
     private void Down(object sender, MouseButtonEventArgs e)
     {
         if (IsControl(e.OriginalSource as DependencyObject)) return;
@@ -654,6 +697,12 @@ internal sealed partial class CaptureWindow : ProductWindow
     {
         for (var node = source; node != null; node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node))
             if (ReferenceEquals(node, inlineCanvas)) return true;
+        return false;
+    }
+    private bool IsRecordingCanvas(DependencyObject? source)
+    {
+        for (var node = source; node != null; node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node))
+            if (ReferenceEquals(node, recordingCanvas)) return true;
         return false;
     }
     /// <summary>工具栏右侧的拖拽按钮：按住后用屏幕坐标移动选区/截图面板，工具栏跟随。</summary>

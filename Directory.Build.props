@@ -5,7 +5,7 @@
     <BaseTfm>net48</BaseTfm>
 
     <!-- 版本号唯一出处：exe / zip 文件名 / 程序集版本都读它。 -->
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <Authors>DeskSnip contributors</Authors>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 

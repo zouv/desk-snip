@@ -130,19 +130,24 @@ internal sealed partial class AppController : IDisposable
             {
                 if (selected.Action == CaptureAction.LongScreenshot) LongScreenshot(selected.Region);
                 else if (selected.Action == CaptureAction.Record) RecordRegion(selected.Region, null);
-                else CompleteCapture(selected.Image, selected.Action, selected.Region);
+                else CompleteCapture(selected.Image, selected.Action, selected.Region, selected.AnnotationBase, selected.Annotations);
             }
         }
         catch (Exception e) { Ui.Error(Window, e, L.Get("截图")); Show(); }
     }
-    private void CompleteCapture(BitmapSource image, CaptureAction action, PixelRect region = default)
+    private void CompleteCapture(BitmapSource image, CaptureAction action, PixelRect region = default, BitmapSource? annotationBase = null, AnnotationDocument? annotations = null)
     {
         SaveAutomatically(image, "Capture");
-        if (action != CaptureAction.Edit && Store.Settings.MarkAutomaticWatermark) image = AnnotationRenderer.Flatten(image, new[] { new Annotation(AnnotationKind.Watermark, new[] { new PixelPoint(8, 8) }, 0x55909090, 3, Store.Settings.MarkWatermarkText.Replace("{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")), appearance: new AnnotationAppearance(opacity: .6)) });
+        if (action != CaptureAction.Edit && Store.Settings.MarkAutomaticWatermark)
+        {
+            var watermark = new Annotation(AnnotationKind.Watermark, new[] { new PixelPoint(8, 8) }, 0x55909090, 3, Store.Settings.MarkWatermarkText.Replace("{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")), appearance: new AnnotationAppearance(opacity: .6));
+            image = AnnotationRenderer.Flatten(image, new[] { watermark });
+            if (action == CaptureAction.Pin && annotations != null) { try { annotations.Add(watermark); } catch (ArgumentException) { } }
+        }
         switch (action)
         {
             case CaptureAction.Copy: CopyImage(image, region.IsEmpty ? 1 : ScreenCapture.MonitorScale(new PixelPoint(region.X + region.Width / 2, region.Y + region.Height / 2))); SaveAutomatically(image, "Copy"); Remember(image); PlaySound(Store.Settings.SoundCaptureCopy); Window.ShowNotice(L.Get("截图已复制；历史已保存。")); break;
-            case CaptureAction.Pin: Remember(image); Pin(image, region); PlaySound(Store.Settings.SoundCapturePin); break;
+            case CaptureAction.Pin: Remember(image); Pin(image, region, annotationBase, annotations, true); PlaySound(Store.Settings.SoundCapturePin); break;
             case CaptureAction.Ocr: Recognize(image); break;
             case CaptureAction.ServiceRecognition: RecognizeService(image); break;
             case CaptureAction.TranslationRecognition: RecognizeService(image, "translation"); break;
@@ -155,14 +160,14 @@ internal sealed partial class AppController : IDisposable
                 break;
         }
     }
-    private async Task<(BitmapSource? Image, PixelRect Region, CaptureAction Action)> Select(bool recording, PixelRect initial = default, bool cursorIncluded = false, CaptureShape initialShape = CaptureShape.Rectangle)
+    private async Task<(BitmapSource? Image, PixelRect Region, CaptureAction Action, BitmapSource? AnnotationBase, AnnotationDocument? Annotations)> Select(bool recording, PixelRect initial = default, bool cursorIncluded = false, CaptureShape initialShape = CaptureShape.Rectangle)
     {
         selecting = true;
         var wasVisible = Window.IsVisible; var visibleEditors = editors.Where(e => e.IsVisible).ToArray();
         Window.Hide(); foreach (var editor in visibleEditors) editor.Hide();
         try
         {
-            await Task.Delay(180); if (Exiting) return (null, default, CaptureAction.Edit);
+            await Task.Delay(180); if (Exiting) return (null, default, CaptureAction.Edit, null, null);
             var bounds = ScreenCapture.DesktopBounds; var frames = ScreenCapture.CapturePair(bounds);
             var targets = Store.Settings.ScreenshotUiDetection == "None" ? Array.Empty<CaptureTarget>() : CaptureTargetReader.Snapshot(bounds);
             var preferences = Store.Settings.Clone(); if (cursorIncluded) preferences.ScreenshotCursorVisible = true;
@@ -171,20 +176,26 @@ internal sealed partial class AppController : IDisposable
             selectionWindow.RecordTransitionRequested = BeginRecordingFromSelection;
             if (!recording) PlaySound(preferences.SoundCaptureStart);
             var accepted = selectionWindow.ShowDialog() == true;
-            if (recordingStartedFromSelection) { if (!recording) recordingStartedFromSelection = false; return (null, default, CaptureAction.Record); }
-            if (!accepted) { pendingRecordingPlan = null; pendingRecordingAnnotations = null; return (null, default, CaptureAction.Edit); }
+            if (recordingStartedFromSelection) { if (!recording) recordingStartedFromSelection = false; return (null, default, CaptureAction.Record, null, null); }
+            if (!accepted) { pendingRecordingPlan = null; pendingRecordingAnnotations = null; return (null, default, CaptureAction.Edit, null, null); }
             pendingRecordingPlan = recording || selectionWindow.RecordingMode ? selectionWindow.Plan : null;
             pendingRecordingAnnotations = recording || selectionWindow.RecordingMode ? selectionWindow.RecordingAnnotations : null;
             var region = selectionWindow.Selection;
             Profiles.Remember(region, preferences.ScreenshotAreaHistoryLimit);
             var image = selectionWindow.InlineOutput ?? ScreenCapture.Crop(selectionWindow.SelectedDesktop, bounds, region);
-            if (!recording) image = CaptureMasks.Apply(image, selectionWindow.ShapeResult, selectionWindow.ShapePoints);
+            var annotationBase = selectionWindow.InlineBaseImage ?? image;
+            var annotations = selectionWindow.InlineDocument ?? new AnnotationDocument(image.PixelWidth, image.PixelHeight, preferences.MarkLimitToSelection);
+            if (!recording)
+            {
+                image = CaptureMasks.Apply(image, selectionWindow.ShapeResult, selectionWindow.ShapePoints);
+                annotationBase = CaptureMasks.Apply(annotationBase, selectionWindow.ShapeResult, selectionWindow.ShapePoints);
+            }
             if (selectionWindow.InlineOutput != null && selectionWindow.LastInlineTool is AnnotationKind editedTool && Store.Settings.MarkRememberScreenshotTool)
             {
                 try { var next = Store.Settings.Clone(); next.MarkLastScreenshotTool = editedTool.ToString(); Store.SaveSettings(next); }
                 catch (Exception) { Window.ShowNotice(L.Get("标注工具记忆未保存，已编辑图片仍保留。")); }
             }
-            return (image, region, selectionWindow.ActionResult);
+            return (image, region, selectionWindow.ActionResult, annotationBase, annotations);
         }
         finally
         {
@@ -210,7 +221,7 @@ internal sealed partial class AppController : IDisposable
         }; editor.Show(); return editor;
     }
     private void Pin(BitmapSource image) => Pin(image, default);
-    private void Pin(BitmapSource image, PixelRect region)
+    private void Pin(BitmapSource image, PixelRect region, BitmapSource? annotationBase = null, AnnotationDocument? annotations = null, bool activate = false)
     {
         if (!Store.Settings.PinImageEnabled) { Window.ShowNotice(L.Get("图像钉图已禁用，请在钉图设置中启用。")); return; }
         if (Store.Settings.PinAlsoCopy) CopyImage(image); SaveAutomatically(image, "Pin");
@@ -220,7 +231,7 @@ internal sealed partial class AppController : IDisposable
             Workspace.SetHidden(false);
         }
         var record = Workspace.Add(image.PixelWidth, image.PixelHeight, output => ImageFiles.WritePng(image, output));
-        OpenPin(image, record, false, region);
+        OpenPin(image, record, false, region, annotationBase, annotations, activate);
     }
     internal void PinClipboard()
     {

@@ -33,6 +33,8 @@ internal sealed partial class PinWindow : ProductWindow
     private Window? rescueToolbar;
     private AppSettings Settings => SettingsRequested?.Invoke() ?? initialSettings;
     internal BitmapSource OutputBitmap => Settings.PinOutputImage == "Original" ? original : Bitmap;
+    internal BitmapSource EditableBaseImage => editableBase;
+    internal AnnotationDocument? EditableDocument => editableDocument;
     internal bool CanMove => PinPreferenceRules.MovementAllowed(Settings, Presentation.Locked);
     private Native.Point dragStart;
     private double initialScale;
@@ -45,6 +47,8 @@ internal sealed partial class PinWindow : ProductWindow
     private bool closing;
     private bool closed;
     private BitmapSource original;
+    private BitmapSource editableBase;
+    private AnnotationDocument? editableDocument;
     private IntPtr handle;
     internal BitmapSource Bitmap { get; private set; }
     internal PinPresentation Presentation { get; } = new PinPresentation();
@@ -67,6 +71,7 @@ internal sealed partial class PinWindow : ProductWindow
     private Popup? inlinePopup;
     private AnnotationListBar? inlineList;
     private Popup? inlineListPopup;
+    private FloatingToolbar? inlineActionBar;
     private static readonly uint PinProcess = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
     internal Action<AnnotationKind>? RememberToolRequested { get; set; }
     internal bool Selected { get => selected; set { selected = value; UpdateFrame(); } }
@@ -77,9 +82,9 @@ internal sealed partial class PinWindow : ProductWindow
     internal string Id { get; }
     internal string GroupId { get; set; }
     internal bool WantedVisible { get; set; } = true;
-    internal PinWindow(BitmapSource source, PinRecord? record = null, Action<BitmapSource>? persist = null, bool restored = false, BitmapSource? originalSource = null, AppSettings? settings = null, PixelRect captureRegion = default)
+    internal PinWindow(BitmapSource source, PinRecord? record = null, Action<BitmapSource>? persist = null, bool restored = false, BitmapSource? originalSource = null, AppSettings? settings = null, PixelRect captureRegion = default, BitmapSource? annotationBase = null, AnnotationDocument? annotations = null)
     {
-        Bitmap = source; original = originalSource ?? source; this.persist = persist; this.restored = restored;
+        Bitmap = source; original = originalSource ?? source; editableBase = annotationBase ?? source; editableDocument = annotations; this.persist = persist; this.restored = restored;
         initialSettings = settings?.Clone() ?? new AppSettings(); this.captureRegion = captureRegion;
         Id = record?.Id ?? Guid.NewGuid().ToString("N"); GroupId = record?.GroupId ?? "default";
         Title = L.Get("DeskSnip · 钉图"); WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; AllowsTransparency = true; Background = Brushes.Transparent;
@@ -121,8 +126,12 @@ internal sealed partial class PinWindow : ProductWindow
             RefreshAppearance();
         };
         Closed += (_, _) => { closed = true; pinHintTimer.Stop(); EndInlineEdit(false); CloseRescueToolbar(); };
-        LocationChanged += (_, _) => { PositionRescueToolbar(); PresentationChanged?.Invoke(); };
-        IsVisibleChanged += (_, _) => { if (!IsVisible && inlineEditing) CancelInlineEdit(); UpdateRescueToolbar(); };
+        LocationChanged += (_, _) => { PositionRescueToolbar(); RepositionInlinePopups(); PresentationChanged?.Invoke(); };
+        IsVisibleChanged += (_, _) =>
+        {
+            if (!IsVisible) { inlineCanvas?.CommitPendingText(); HideInlinePopups(); } else ShowInlinePopups();
+            UpdateRescueToolbar();
+        };
         SizeChanged += (_, _) => UpdateInlineLayout();
         InitializeConfiguredMouse();
         Activated += (_, _) => ShowInlinePopups();
@@ -375,7 +384,8 @@ internal sealed partial class PinWindow : ProductWindow
     }
     internal void Replace(BitmapSource replacement)
     {
-        replacement = ImageFiles.Normalize(replacement); persist?.Invoke(replacement); Bitmap = replacement; image.Source = Bitmap; ResizeImage();
+        replacement = ImageFiles.Normalize(replacement); editableBase = replacement; editableDocument = null;
+        persist?.Invoke(replacement); Bitmap = replacement; image.Source = Bitmap; ResizeImage();
     }
     private void Keys(object sender, KeyEventArgs e)
     {
@@ -408,9 +418,13 @@ internal sealed partial class PinWindow : ProductWindow
     private void Save()
     {
         if (SaveRequested != null) { SaveRequested(OutputBitmap, this); return; }
+        SaveWithDialog(OutputBitmap);
+    }
+    private void SaveWithDialog(BitmapSource source)
+    {
         var dialog = new SaveFileDialog { Filter = L.Get("PNG 图片|*.png|JPEG 图片|*.jpg|BMP 图片|*.bmp"), FileName = "DeskSnip-pin.png", AddExtension = true };
         if (dialog.ShowDialog(this) != true) return;
-        try { ImageFiles.Save(OutputBitmap, dialog.FileName, Settings.JpegQuality, Settings.SaveExif); }
+        try { ImageFiles.Save(source, dialog.FileName, Settings.JpegQuality, Settings.SaveExif); }
         catch (Exception e) { Ui.Error(this, e, L.Get("保存钉图")); }
     }
     private void Copy() => Copy(OutputBitmap);

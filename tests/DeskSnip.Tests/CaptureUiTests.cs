@@ -210,6 +210,27 @@ public class CaptureUiTests
         }
         finally { window.Close(); }
     });
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RightLongPressMovesSelectionAndKeepsAnnotationCanvas(bool recording) => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), recording);
+        try
+        {
+            window.SetSelection(new PixelRect(40, 40, 400, 300));
+            if (recording) window.SetRecordingMarking(AnnotationKind.Rectangle); else window.BeginInlineEdit(AnnotationKind.Rectangle);
+            var canvas = recording ? window.RecordingCanvas! : window.InlineCanvas!;
+            canvas.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(5, 5), new PixelPoint(40, 30) }, 0xffff0000, 3));
+            var start = new PixelPoint(100, 100); Assert.True(window.BeginRightDrag(start));
+            Assert.False(window.UpdateRightDrag(new PixelPoint(150, 150), 199)); Assert.True(window.EndRightDrag(start, 100)); Assert.Equal(new PixelRect(40, 40, 400, 300), window.Selection);
+            Assert.True(window.BeginRightDrag(start)); Assert.True(window.UpdateRightDrag(new PixelPoint(120, 110), 250));
+            Assert.Equal(new PixelRect(60, 50, 400, 300), window.Selection); Assert.Same(canvas, recording ? window.RecordingCanvas : window.InlineCanvas); Assert.Single(canvas.Document.Items);
+            Assert.False(window.EndRightDrag(new PixelPoint(120, 110), 260));
+        }
+        finally { window.Close(); }
+    });
+
     private static bool actionsRectIsRightOf(Rect inline, Rect actions) => actions.Left >= inline.Right - 1 && actions.Left <= inline.Right + 8;
 
     [Fact] public void CaptureToolbarWithoutMarkupToolAlignsToSelectionLeft() => ImagingTests.Sta(() =>

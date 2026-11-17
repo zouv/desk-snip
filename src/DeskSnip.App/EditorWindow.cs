@@ -271,10 +271,11 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
     private Rect handleBounds;
     private readonly Dictionary<string, AnnotationStyle> savedStyles = new Dictionary<string, AnnotationStyle>(StringComparer.Ordinal);
     private uint? sharedArgb;
-    internal AnnotationCanvas(BitmapSource image, AppSettings? settings = null)
+    internal AnnotationCanvas(BitmapSource image, AppSettings? settings = null, AnnotationDocument? document = null)
     {
         preferences = settings?.Clone() ?? new AppSettings(); secondaryEditing = preferences.MarkSecondaryEditing;
-        Image = image; Document = new AnnotationDocument(image.PixelWidth, image.PixelHeight, preferences.MarkLimitToSelection);
+        if (document != null && (document.Width != image.PixelWidth || document.Height != image.PixelHeight)) throw new ArgumentException("标注文档与图片尺寸不一致。", nameof(document));
+        Image = image; Document = document ?? new AnnotationDocument(image.PixelWidth, image.PixelHeight, preferences.MarkLimitToSelection);
         LoadSavedStyles();
         var initial = SavedStyle(AnnotationKind.Arrow);
         if (initial != null) ApplyStyle(initial, false); else Appearance = BuildAppearance(null);

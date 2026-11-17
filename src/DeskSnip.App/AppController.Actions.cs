@@ -56,7 +56,7 @@ internal sealed partial class AppController
     private async void CaptureAs(CaptureAction action)
     {
         if (selecting || Exiting) return;
-        try { var selected = await Select(false); if (selected.Image != null) CompleteCapture(selected.Image, action, selected.Region); }
+        try { var selected = await Select(false); if (selected.Image != null) CompleteCapture(selected.Image, action, selected.Region, selected.AnnotationBase, selected.Annotations); }
         catch (Exception error) { Ui.Error(Window, error, L.Get("截图动作")); }
     }
 }

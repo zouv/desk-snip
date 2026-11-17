@@ -6,6 +6,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using DeskSnip.App;
+using DeskSnip.App.Imaging;
 using DeskSnip.Core;
 using Xunit;
 
@@ -97,6 +98,56 @@ public class PinTests
         }
         finally { pin.Close(); }
     });
+    [Fact] public void PinReopensInheritedAnnotationsAndCancelDoesNotCommitChanges() => ImagingTests.Sta(() =>
+    {
+        var clean = Image(); var inherited = new AnnotationDocument(40, 30);
+        inherited.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(5, 5), new PixelPoint(20, 20) }, 0xffff0000, 3));
+        var flat = AnnotationRenderer.Flatten(clean, inherited.Items);
+        var pin = new PinWindow(flat, annotationBase: clean, annotations: inherited, settings: new AppSettings { PinShowShadow = false });
+        try
+        {
+            pin.BeginInlineEdit(AnnotationKind.Ellipse); Assert.Single(pin.InlineCanvas!.Document.Items); Assert.NotSame(inherited, pin.InlineCanvas.Document);
+            pin.InlineCanvas.Document.Remove(0); pin.InlineCanvas.Document.Add(new Annotation(AnnotationKind.Ellipse, new[] { new PixelPoint(4, 4), new PixelPoint(22, 18) }, 0xff00ff00, 3));
+            pin.CommitInlineEdit(); Assert.Same(clean, pin.EditableBaseImage); Assert.Equal(AnnotationKind.Ellipse, pin.EditableDocument!.Items.Single().Kind); Assert.Single(inherited.Items);
+            pin.BeginInlineEdit(); pin.InlineCanvas!.Document.Remove(0); pin.CancelInlineEdit(); Assert.Single(pin.EditableDocument.Items);
+            pin.BeginInlineEdit(); Assert.Equal(AnnotationKind.Ellipse, pin.InlineCanvas!.Document.Items.Single().Kind); pin.CancelInlineEdit();
+            pin.Replace(Image()); Assert.Null(pin.EditableDocument); Assert.Same(pin.Bitmap, pin.EditableBaseImage);
+        }
+        finally { pin.CloseForExit(); }
+    });
+
+    [Fact] public void HiddenPinKeepsInlineSessionAndExposesCaptureLikeActions() => ImagingTests.Sta(() =>
+    {
+        var pin = new PinWindow(Image(), settings: new AppSettings { PinShowShadow = false });
+        try
+        {
+            pin.Show(); pin.BeginInlineEdit(AnnotationKind.Rectangle); var canvas = pin.InlineCanvas!;
+            canvas.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(5, 5), new PixelPoint(20, 20) }, 0xffff0000, 3));
+            var popup = (System.Windows.Controls.Primitives.Popup)typeof(PinWindow).GetField("inlinePopup", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(pin)!;
+            var actions = Descendants(popup.Child).OfType<FloatingToolbar>().Single(bar => bar.Name == "PinInlineActions");
+            var names = Descendants(actions).OfType<Button>().Select(AutomationProperties.GetName).ToArray();
+            Assert.Contains("文字识别", names); Assert.Contains("联网识别", names); Assert.Contains("保存", names); Assert.Contains("拖动钉图面板", names); Assert.Contains("复制当前标注图", names);
+            pin.Hide(); Assert.True(pin.InlineEditing); Assert.Same(canvas, pin.InlineCanvas); Assert.Single(canvas.Document.Items);
+            pin.Show(); Assert.True(pin.InlineEditing); Assert.Same(canvas, pin.InlineCanvas); pin.CommitInlineEdit(); Assert.Single(pin.EditableDocument!.Items);
+        }
+        finally { pin.CloseForExit(); }
+    });
+
+    [Fact] public void RightLongPressMovesPinAndHonorsMovementLock() => ImagingTests.Sta(() =>
+    {
+        var pin = new PinWindow(Image(), settings: new AppSettings { PinLockMovement = true, PinShowShadow = false });
+        try
+        {
+            var moves = new List<PixelPoint>(); pin.MoveRequested = (_, dx, dy) => moves.Add(new PixelPoint(dx, dy));
+            pin.BeginRightDrag(new PixelPoint(100, 100), "Menu");
+            Assert.False(pin.UpdateRightDrag(new PixelPoint(150, 150), 199)); Assert.Empty(moves);
+            Assert.True(pin.UpdateRightDrag(new PixelPoint(130, 120), 250)); Assert.Equal(new PixelPoint(30, 20), Assert.Single(moves));
+            pin.Presentation.Locked = true; pin.BeginRightDrag(new PixelPoint(130, 120), "Menu");
+            Assert.True(pin.UpdateRightDrag(new PixelPoint(180, 170), 250)); Assert.Single(moves);
+        }
+        finally { pin.CloseForExit(); }
+    });
+
     [Fact] public void PinContextMenuUsesIconsAndShortcutHintsAndSelectionGlowToggles() => ImagingTests.Sta(() =>
     {
         var pin = new PinWindow(Image());

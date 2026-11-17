@@ -136,4 +136,14 @@ public class InputPreferenceTests
         gesture.Begin("Left", new PixelPoint(10, 10), "MultiSelect", "DragContent"); Assert.Equal("DragContent", gesture.Move(new PixelPoint(18, 10))); Assert.Null(gesture.Move(new PixelPoint(20, 10))); Assert.Equal("DragContent", gesture.Finish("Left", new PixelPoint(20, 10)));
         gesture.Begin("Left", new PixelPoint(10, 10), "Copy", "Move"); gesture.Cancel(); Assert.Null(gesture.Finish("Left", new PixelPoint(20, 10)));
     }
+
+    [Fact]
+    public void LongPressDragDistinguishesClickHoldAndMovement()
+    {
+        var gesture = new LongPressDragGesture(); gesture.Begin(new PixelPoint(10, 10));
+        Assert.False(gesture.Update(new PixelPoint(40, 40), 199)); Assert.True(gesture.Finish()); Assert.False(gesture.Active);
+        gesture.Begin(new PixelPoint(10, 10)); Assert.False(gesture.Update(new PixelPoint(10, 10), 200)); Assert.True(gesture.LongPressed); Assert.False(gesture.Finish());
+        gesture.Begin(new PixelPoint(10, 10)); Assert.False(gesture.Update(new PixelPoint(13, 10), 250)); Assert.True(gesture.Update(new PixelPoint(14, 10), 250)); Assert.True(gesture.Dragging);
+        Assert.True(gesture.Update(new PixelPoint(10, 10), 300)); Assert.False(gesture.Finish()); Assert.False(gesture.Dragging);
+    }
 }

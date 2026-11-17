@@ -55,6 +55,13 @@ public sealed class AnnotationDocument
     public bool CanUndo => index > 0;
     public bool CanRedo => index < states.Count - 1;
     public int Revision { get; private set; }
+    /// <summary>保留当前对象与撤销栈的独立副本；Annotation 本身不可变。</summary>
+    public AnnotationDocument Clone()
+    {
+        var copy = new AnnotationDocument(Width, Height, LimitToCanvas);
+        copy.states.Clear(); copy.states.AddRange(states.Select(state => (Annotation[])state.Clone()));
+        copy.index = index; copy.Revision = Revision; return copy;
+    }
     public void Add(Annotation item)
     {
         Validate(item);
