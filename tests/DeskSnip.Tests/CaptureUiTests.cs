@@ -243,7 +243,7 @@ public class CaptureUiTests
             window.SwitchToRecording(); content.UpdateLayout();
             Assert.True(window.RecordingMode); Assert.True(window.LiveScreenPreview);
             Assert.Equal(Visibility.Collapsed, window.DesktopSnapshotVisibility);
-            Assert.Equal(1, window.MaskAlpha); Assert.True(window.EdgeGrabVisible);
+            Assert.Equal(1, window.MaskAlpha); Assert.True(window.EdgeGrabVisible); Assert.False(window.MaskVisible);
             Assert.True(window.IsRecordingInterior(new PixelPoint(200, 200)));
             Assert.False(window.IsRecordingInterior(new PixelPoint(40, 200)));
             Assert.False(window.IsRecordingInterior(new PixelPoint(239, 44)));
@@ -269,6 +269,83 @@ public class CaptureUiTests
             Assert.False(window.RecordingInputPlateVisible); Assert.True(window.IsRecordingInterior(new PixelPoint(200, 200)));
             window.SetSelection(new PixelRect(80, 60, 200, 100)); content.UpdateLayout();
             Assert.Null(window.RecordingCanvas); Assert.False(window.RecordingInputPlateVisible);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void SwitchingToRecordingDuringInlineEditingCarriesMarkupAndRestoresPassThrough() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            window.BeginInlineEdit(AnnotationKind.Rectangle);
+            window.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(20, 20), new PixelPoint(120, 90) }, 0xffff0000, 3));
+            window.SwitchToRecording(); content.UpdateLayout();
+            Assert.True(window.RecordingMode); Assert.True(window.LiveScreenPreview);
+            Assert.Null(window.InlineCanvas); Assert.NotNull(window.RecordingCanvas);
+            Assert.Single(window.RecordingAnnotations); Assert.Equal(AnnotationKind.Rectangle, window.RecordingAnnotations[0].Kind);
+            Assert.Null(window.RecordingMarkingKind); Assert.False(window.RecordingInputPlateVisible);
+            Assert.True(window.IsRecordingInterior(new PixelPoint(200, 200))); Assert.True(window.EdgeGrabVisible);
+            Assert.False(window.RecordingBackdropVisible);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void SwitchingToRecordingWithoutSelectionKeepsAFullScreenInputLayer() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SwitchToRecording(); content.UpdateLayout();
+            Assert.True(window.RecordingMode); Assert.True(window.Selection.IsEmpty);
+            Assert.Equal(Visibility.Collapsed, window.DesktopSnapshotVisibility); Assert.True(window.RecordingBackdropVisible); Assert.True(window.MaskVisible);
+            window.BeginInteraction(new PixelPoint(100, 120));
+            window.UpdateInteraction(new PixelPoint(260, 300), false, false, false); window.EndInteraction();
+            Assert.Equal(new PixelRect(100, 120, 160, 180), window.Selection);
+            content.UpdateLayout(); Assert.False(window.RecordingBackdropVisible); Assert.False(window.MaskVisible);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void RecordingAfterSelectionLocksOuterClicksButKeepsBorderAdjustments() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), true);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            Assert.False(window.RecordingBackdropVisible); Assert.False(window.MaskVisible); Assert.True(window.EdgeGrabVisible);
+            Assert.True(window.IsRecordingOutsideLocked(new PixelPoint(10, 10)));
+            Assert.True(window.IsRecordingOutsideLocked(new PixelPoint(20, 200)));
+            Assert.False(window.IsRecordingOutsideLocked(new PixelPoint(36, 200)));
+            Assert.False(window.IsRecordingOutsideLocked(new PixelPoint(200, 200)));
+            Assert.False(window.IsRecordingOutsideLocked(new PixelPoint(40, 200)));
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void GReturnsToScreenshotWithMarkupAndBackToRecording() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            window.ToggleRecording(); content.UpdateLayout();
+            window.SetRecordingMarking(AnnotationKind.Rectangle); content.UpdateLayout();
+            window.RecordingCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(20, 20), new PixelPoint(120, 90) }, 0xffff0000, 3));
+            window.ToggleRecording(); content.UpdateLayout();
+            Assert.False(window.RecordingMode); Assert.Null(window.RecordingCanvas);
+            Assert.Equal(Visibility.Visible, window.DesktopSnapshotVisibility); Assert.True(window.MaskVisible); Assert.True(window.MaskAlpha > 8);
+            Assert.True(window.InlineEditing); Assert.NotNull(window.InlineCanvas);
+            Assert.Single(window.InlineCanvas!.Document.Items); Assert.Equal(AnnotationKind.Rectangle, window.InlineCanvas.Document.Items[0].Kind);
+            Assert.Null(window.RecordingMarkingKind);
+            window.ToggleRecording(); content.UpdateLayout();
+            Assert.True(window.RecordingMode); Assert.Null(window.InlineCanvas); Assert.NotNull(window.RecordingCanvas);
+            Assert.Single(window.RecordingAnnotations); Assert.False(window.MaskVisible);
         }
         finally { window.Close(); }
     });

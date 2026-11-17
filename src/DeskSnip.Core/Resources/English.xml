@@ -5809,6 +5809,14 @@ Right-click to manage · Drag to move</translation>
     <translation>Drag to select · Enter starts recording · Esc cancels</translation>
   </text>
   <text>
+    <source>拖动框选 · Enter 开始录制 · G 截图 · Esc 取消</source>
+    <translation>Drag to select · Enter starts recording · G returns to screenshot · Esc cancels</translation>
+  </text>
+  <text>
+    <source>切回截图</source>
+    <translation>Back to screenshot</translation>
+  </text>
+  <text>
     <source>播放</source>
     <translation>Play</translation>
   </text>

@@ -2,7 +2,7 @@
 
 - `CaptureTargetReader.Snapshot` 在遮罩出现前按窗口层级采集 Win32 窗口/子 HWND，DWM 去掉不可见边框及 cloaked 窗口；`CaptureTargets.At` 按前台遮挡和子区面积筛选。Elements 模式再由 `UiAutomationTargetReader.ElementAt` 从光标所在顶层窗口的 UIA 子树逐层选择包含光标的元素，与 Win32 结果取面积更小者；后台 MTA 线程合并请求、结果回 UI 线程应用，按 120ms 定时/移动 2px 投递；异常或层级过深时回退。Tab 切换窗口/控件，未框选时滚轮选择父子范围。个别自绘元素仍可能只返回其容器。
 - `CaptureProfiles` 在 captures.json 分开保存 20 条去重选区和最多 100 个预设；预设固定尺寸/位置/延时/指针/形状。`CapturePresetWindow` 编辑/复制/删除/交换宽高，`AppController.Capture` 分派直接截图或预填选区。
-- `CaptureWindow` 支持矩形、椭圆、自由轮廓和逐点多边形；Enter/双击结束多边形。Loaded 时强制前台/键盘焦点，未完成选区按 Esc 直接取消。截图工具栏与录屏工具栏同窗切换：摄像头或 Screenshot 上下文 Record（默认 G）进入录屏模式，隐藏冻结截图/参考线、遮罩改为 alpha 1 不可见承接层，选区内 alpha 0 鼠标穿透，边框抓取带仍可调尺寸；CaptureAction.Record 交给 RecordRegion；形状/画笔等分组主区域直接进入组内第一个标注工具，序号/箭头/摄像头为独立按钮。`CaptureMasks.Apply` 将非矩形外部导出为透明像素，长截图仍只接收矩形。非矩形最大包围范围仍按物理像素处理。
+- `CaptureWindow` 支持矩形、椭圆、自由轮廓和逐点多边形；Enter/双击结束多边形。Loaded 时强制前台/键盘焦点，未完成选区按 Esc 直接取消。截图工具栏与录屏工具栏同窗切换：摄像头或 Screenshot 上下文 Record（默认 G）在截图/录屏间双向切换（含就地标注中与未框选时）：进入录屏时提交并携带标记、隐藏冻结截图/参考线；选区前用全屏 alpha 1 背景板压住悬停预览挖空，选区确定后收起遮罩、选区内穿透、边框抓取带可调、框外可直接操作其它窗口；切回截图恢复冻结画面与遮罩，录屏标记转成截图标注；`RecordingEscapeHook` 在其它应用前台时拦截 Esc 取消；CaptureAction.Record 交给 RecordRegion；形状/画笔等分组主区域直接进入组内第一个标注工具，序号/箭头/摄像头为独立按钮。`CaptureMasks.Apply` 将非矩形外部导出为透明像素，长截图仍只接收矩形。非矩形最大包围范围仍按物理像素处理。
 - `AnnotationAppearance` 为不可变填充/线型/透明度/箭头/强度/文本底色及连接/端点、笔迹平滑、换行和序号样式，WithPoints/WithText/WithStyle 都保留样式。`AnnotationCanvas.ChangeAppearance` 接样式编辑并记录快照；折线逐点，Enter/双击结束，画笔 Shift 可选自由直线/45°/水平垂直。
 - `AnnotationRenderer` 包含圆角矩形、多个聚光灯范围、局部放大、模糊、画笔马赛克/遮挡、矩形/画笔橡皮擦与水印。橡皮擦在局部恢复原图，保留后来绘制的标注，可撤销；不会生成背景补全。
 - 绘制缓存按冻结底图与不可变 Annotation 使用弱引用表，避免命中测试重复处理大图。命中遵守绘制组的 ClipGeometry。

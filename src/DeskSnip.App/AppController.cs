@@ -178,8 +178,8 @@ internal sealed partial class AppController : IDisposable
             var accepted = selectionWindow.ShowDialog() == true;
             if (recordingStartedFromSelection) { if (!recording) recordingStartedFromSelection = false; return (null, default, CaptureAction.Record, null, null); }
             if (!accepted) { pendingRecordingPlan = null; pendingRecordingAnnotations = null; return (null, default, CaptureAction.Edit, null, null); }
-            pendingRecordingPlan = recording || selectionWindow.RecordingMode ? selectionWindow.Plan : null;
-            pendingRecordingAnnotations = recording || selectionWindow.RecordingMode ? selectionWindow.RecordingAnnotations : null;
+            pendingRecordingPlan = selectionWindow.RecordingMode ? selectionWindow.Plan : null;
+            pendingRecordingAnnotations = selectionWindow.RecordingMode ? selectionWindow.RecordingAnnotations : null;
             var region = selectionWindow.Selection;
             Profiles.Remember(region, preferences.ScreenshotAreaHistoryLimit);
             var image = selectionWindow.InlineOutput ?? ScreenCapture.Crop(selectionWindow.SelectedDesktop, bounds, region);

@@ -21,7 +21,7 @@ internal sealed partial class CaptureWindow
         if (Keyboard.FocusedElement is TextBox) return;
         if (key == Key.Escape && !inlineEditing) { if (info.IsExpanded) { info.SetExpanded(false); Focus(); } else CancelFromKey(); e.Handled = true; return; }
         if ((key == Key.Enter || key == Key.Space) && Keyboard.FocusedElement is ButtonBase) return;
-        if (action == "Record") { SwitchToRecording(); e.Handled = true; return; }
+        if (action == "Record") { ToggleRecording(); e.Handled = true; return; }
         var output = action switch
         {
             "Copy" => CaptureAction.Copy, "Save" => CaptureAction.Save, "QuickSave" => CaptureAction.QuickSave, "Pin" => CaptureAction.Pin, "Ocr" => CaptureAction.Ocr,

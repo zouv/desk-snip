@@ -40,13 +40,17 @@ internal sealed partial class CaptureWindow : ProductWindow
     private readonly TextBlock shortcutHint = Ui.Text(L.Get("拖动框选 · Enter 复制 · Ctrl+T 钉图 · Ctrl+S 保存 · Space 工具栏 · Esc 取消"), 11, Brushes.White);
     private readonly Canvas surface = new Canvas();
     private readonly System.Windows.Shapes.Path mask = new System.Windows.Shapes.Path { Fill = new SolidColorBrush(Color.FromArgb(125, 0, 0, 0)), IsHitTestVisible = false };
+    private readonly Brush maskBrush;
     private readonly System.Windows.Shapes.Path guides = new System.Windows.Shapes.Path { Stroke = new SolidColorBrush(Color.FromArgb(175, 255, 255, 255)), StrokeThickness = 1, IsHitTestVisible = false };
     /// <summary>截图转录屏后的实时预览：遮罩只保留像素 alpha 1 承接选区外点击，不再压暗屏幕。</summary>
     private static readonly Brush TransparentHitBrush = FreezeHitBrush();
     /// <summary>选区边框内侧的可拖拽抓取带；实时预览时选区内只有这里接受鼠标。</summary>
     private readonly System.Windows.Shapes.Path edgeGrab = new System.Windows.Shapes.Path { Stroke = TransparentHitBrush, StrokeThickness = 12, Visibility = Visibility.Collapsed };
+    /// <summary>录屏选区建立前的全屏输入层：悬停预览会在遮罩上挖空，单靠遮罩会让点击穿透到目标应用。</summary>
+    private readonly System.Windows.Shapes.Path recordingBackdrop = new System.Windows.Shapes.Path { Fill = TransparentHitBrush, Visibility = Visibility.Collapsed };
     private bool liveRecordingScreen;
     private Rectangle? recordingInputPlate;
+    private RecordingEscapeHook? recordingEscapeHook;
     private readonly Rectangle outline = new Rectangle { Stroke = FloatingTools.Blue, StrokeThickness = 1.5, IsHitTestVisible = false };
     private readonly Ellipse[] handles = new Ellipse[8];
     private readonly SelectionInfoBar info;
@@ -132,6 +136,8 @@ internal sealed partial class CaptureWindow : ProductWindow
     internal byte MaskAlpha => ((SolidColorBrush)mask.Fill).Color.A;
     internal bool EdgeGrabVisible => edgeGrab.Visibility == Visibility.Visible;
     internal bool RecordingInputPlateVisible => recordingInputPlate?.Visibility == Visibility.Visible;
+    internal bool RecordingBackdropVisible => recordingBackdrop.Visibility == Visibility.Visible;
+    internal bool MaskVisible => mask.Visibility == Visibility.Visible;
     internal CaptureShape ShapeResult => recordingMode ? CaptureShape.Rectangle : shape;
     internal BitmapSource SelectedDesktop => cursorVisible && desktopWithCursor != null ? desktopWithCursor : desktop;
     internal IReadOnlyList<PixelPoint> ShapePoints => contour.Select(p => new PixelPoint(p.X - Selection.X, p.Y - Selection.Y)).ToArray();
@@ -145,7 +151,8 @@ internal sealed partial class CaptureWindow : ProductWindow
         elements = this.settings.ScreenshotUiDetection == "Elements";
         colorFormats = CapturePreferenceRules.ColorFormats(this.settings.ColorFormatOrder); colorFormat = colorFormats[0];
         var borderColor = (Brush)new BrushConverter().ConvertFromString(this.settings.SelectionBorderFollowsTheme ? this.settings.AccentColor : this.settings.SelectionBorderColor)!;
-        mask.Fill = (Brush)new BrushConverter().ConvertFromString(this.settings.CaptureMaskColor)!;
+        maskBrush = (Brush)new BrushConverter().ConvertFromString(this.settings.CaptureMaskColor)!;
+        mask.Fill = maskBrush;
         outline.Stroke = contourOutline.Stroke = borderColor;
         this.targets = targets ?? Array.Empty<CaptureTarget>(); this.recent = recent ?? Array.Empty<PixelRect>();
         inspector = new PixelInspector(desktop, bounds); cursor = new PixelPoint(bounds.X, bounds.Y);
@@ -156,7 +163,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         AllowsTransparency = true; Background = Brushes.Transparent; Cursor = Cursors.Cross;
         desktopImage = new Image { Source = cursorVisible && desktopWithCursor != null ? desktopWithCursor : desktop, Stretch = Stretch.Fill, IsHitTestVisible = false, Visibility = recordingMode ? Visibility.Collapsed : Visibility.Visible };
         var grid = new Grid(); grid.Children.Add(desktopImage); grid.Children.Add(surface); Content = grid;
-        surface.Background = Brushes.Transparent; surface.Children.Add(mask); surface.Children.Add(guides); surface.Children.Add(outline); surface.Children.Add(contourOutline);
+        surface.Background = Brushes.Transparent; surface.Children.Add(recordingBackdrop); surface.Children.Add(mask); surface.Children.Add(guides); surface.Children.Add(outline); surface.Children.Add(contourOutline);
         for (var i = 0; i < handles.Length; i++)
         {
             handles[i] = new Ellipse { Width = 7, Height = 7, Stroke = Brushes.White, Fill = borderColor, StrokeThickness = 1, IsHitTestVisible = false };
@@ -170,13 +177,10 @@ internal sealed partial class CaptureWindow : ProductWindow
         info.LayoutChanged += Redraw;
         surface.Children.Add(info);
         shape = recordingMode ? CaptureShape.Rectangle : initialShape; Selection = initial.Intersect(bounds);
-        if (!recordingMode)
-        {
-            var menu = FloatingTools.Menu(); var names = new[] { L.Get("矩形选区"), L.Get("椭圆选区"), L.Get("自由形状选区"), L.Get("多边形选区") };
-            for (var i = 0; i < names.Length; i++) { var kind = (CaptureShape)i; menu.Items.Add(FloatingTools.Item(names[i], () => { shape = kind; contour.Clear(); polygonBuilding = false; SetSelection(default); })); }
-            menu.Opened += (_, _) => { for (var i = 0; i < menu.Items.Count; i++) ((MenuItem)menu.Items[i]).IsChecked = (int)shape == i; };
-            shapeButton = FloatingTools.MenuButton(ToolGlyph.Rectangle, L.Get("选区形状"), menu); shapeButton.Width = 32; FloatingTools.SetSelected(shapeButton, true); modes.Items.Children.Add(shapeButton);
-        }
+        var menu = FloatingTools.Menu(); var names = new[] { L.Get("矩形选区"), L.Get("椭圆选区"), L.Get("自由形状选区"), L.Get("多边形选区") };
+        for (var i = 0; i < names.Length; i++) { var kind = (CaptureShape)i; menu.Items.Add(FloatingTools.Item(names[i], () => { shape = kind; contour.Clear(); polygonBuilding = false; SetSelection(default); })); }
+        menu.Opened += (_, _) => { for (var i = 0; i < menu.Items.Count; i++) ((MenuItem)menu.Items[i]).IsChecked = (int)shape == i; };
+        shapeButton = FloatingTools.MenuButton(ToolGlyph.Rectangle, L.Get("选区形状"), menu); shapeButton.Width = 32; FloatingTools.SetSelected(shapeButton, true); modes.Items.Children.Add(shapeButton);
         targetButton = FloatingTools.Button(ToolGlyph.Window, L.Get("切换窗口 / 控件"), () => { elements = !elements; targetIndex = 0; UpdateHover(); Redraw(); }, "Tab"); modes.Items.Children.Add(targetButton);
         targetButton.IsEnabled = this.settings.ScreenshotUiDetection != "None";
         var history = FloatingTools.Menu();
@@ -259,6 +263,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         var exitMarking = FloatingTools.Button(ToolGlyph.Cursor, L.Get("移动选区 / 结束标注"), () => SetRecordingMarking(null)); recordActions.Items.Children.Add(exitMarking); recordToolButtons.Add((exitMarking, new AnnotationKind?[] { null }));
         UpdateRecordToolSelection();
         recordActions.Items.Children.Add(FloatingTools.Divider());
+        recordActions.Items.Children.Add(FloatingTools.Button(ToolGlyph.Crop, L.Get("切回截图"), SwitchToScreenshot, "G"));
         var recordDrag = FloatingTools.Button(ToolGlyph.Grip, L.Get("拖动录制面板"), () => { }); AttachPanelDrag(recordDrag); recordActions.Items.Children.Add(recordDrag);
         recordActions.Items.Children.Add(FloatingTools.Button(ToolGlyph.Close, L.Get("取消"), () => DialogResult = false, "Esc"));
         surface.Children.Add(actions); surface.Children.Add(recordActions);
@@ -269,7 +274,8 @@ internal sealed partial class CaptureWindow : ProductWindow
         if (recordingMode && shapeButton != null) shapeButton.Visibility = Visibility.Collapsed;
         UpdateShortcutHint();
         SourceInitialized += (_, _) => Position();
-        Loaded += (_, _) => { Position(); cursor = inspector.Clamp(CursorPosition()); Activate(); Focus(); Keyboard.Focus(this); ForceForeground(); Redraw(); };
+        Loaded += (_, _) => { Position(); cursor = inspector.Clamp(CursorPosition()); Activate(); Focus(); Keyboard.Focus(this); ForceForeground(); Redraw(); if (recordingMode) EnsureRecordingEscapeHook(); };
+        Activated += (_, _) => EnsureRecordingEscapeHook();
         SizeChanged += (_, _) => Redraw();
         surface.MouseLeftButtonDown += Down; surface.MouseMove += Move; surface.MouseLeftButtonUp += Up;
         surface.LostMouseCapture += (_, _) => { dragging = false; rightDrag.Cancel(); Redraw(); };
@@ -280,7 +286,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         surface.MouseDown += (_, e) => { if (e.ChangedButton == MouseButton.Middle && !inlineEditing && !IsControl(e.OriginalSource as DependencyObject)) { InvokeMouseAction(this.settings.ScreenshotMiddleClickAction); e.Handled = true; } };
         uiAutomationTimer.Tick += (_, _) => { if (!uiAutomationClosed && IsVisible && !inlineEditing && !dragging && Selection.IsEmpty) UpdateHover(); };
         uiAutomationTimer.Start();
-        Closed += (_, _) => StopUiAutomation();
+        Closed += (_, _) => { recordingEscapeHook?.Dispose(); recordingEscapeHook = null; StopUiAutomation(); };
         PreviewKeyDown += KeyDownHandler; PreviewKeyUp += KeyUpHandler;
         PreviewMouseDown += InlinePointerDown;
     }
@@ -344,13 +350,61 @@ internal sealed partial class CaptureWindow : ProductWindow
     }
     internal void SwitchToRecording()
     {
-        if (recordingMode || inlineEditing || dragging) return;
-        if (Selection.IsEmpty) { info.Notice(L.Get("请先框选录制区域。")); return; }
+        if (recordingMode || dragging) return;
+        var carried = new List<Annotation>();
+        if (inlineEditing && inlineCanvas != null)
+        {
+            inlineCanvas.CommitPendingText(); inlineCanvas.Refresh();
+            carried.AddRange(inlineCanvas.Document.Items);
+            RemoveInlineUi();
+        }
         recordingMode = true; liveRecordingScreen = true; shape = CaptureShape.Rectangle; contour.Clear(); polygonBuilding = false; toolsHidden = false;
-        // 收起冻结截图、参考线和压暗效果，露出实时桌面；遮罩换成 alpha 1 的不可见层，选区外仍可重新框选。
+        // 收起冻结截图、参考线和压暗效果，露出实时桌面；遮罩换成 alpha 1 的不可见层。
         desktopImage.Visibility = Visibility.Collapsed; guides.Visibility = Visibility.Collapsed; mask.Fill = TransparentHitBrush;
         if (shapeButton != null) shapeButton.Visibility = Visibility.Collapsed;
+        if (carried.Count > 0 && !Selection.IsEmpty)
+        {
+            SetRecordingMarking(null);
+            if (recordingCanvas != null)
+            {
+                foreach (var item in carried) { try { recordingCanvas.Document.Add(item); } catch (ArgumentException) { } }
+                recordingCanvas.Refresh();
+            }
+        }
+        EnsureRecordingEscapeHook();
         Title = L.Get("DeskSnip · 选择录制区域"); UpdateShortcutHint(); Redraw(); Focus();
+    }
+    private void EnsureRecordingEscapeHook()
+    {
+        if (!recordingMode || recordingEscapeHook != null || new WindowInteropHelper(this).Handle == IntPtr.Zero) return;
+        recordingEscapeHook = new RecordingEscapeHook(Dispatcher, () => { if (IsVisible && recordingMode) CancelFromKey(); });
+    }
+    internal void ToggleRecording()
+    {
+        if (recordingMode) SwitchToScreenshot(); else SwitchToRecording();
+    }
+    /// <summary>录屏选区阶段按 G 回到截图：恢复冻结画面与遮罩，录屏标记转成截图标注继续可编辑。</summary>
+    internal void SwitchToScreenshot()
+    {
+        if (!recordingMode || recordingTransition || dragging) return;
+        var carried = recordingCanvas?.Document.Items.ToArray() ?? Array.Empty<Annotation>();
+        RemoveRecordingLayer(); UpdateRecordToolSelection();
+        recordingMode = false; liveRecordingScreen = false;
+        recordingEscapeHook?.Dispose(); recordingEscapeHook = null;
+        desktopImage.Visibility = Visibility.Visible; guides.Visibility = Visibility.Visible; mask.Fill = maskBrush;
+        if (shapeButton != null) shapeButton.Visibility = Visibility.Visible;
+        Title = L.Get("DeskSnip · 截图选区"); UpdateShortcutHint();
+        if (carried.Length > 0 && !Selection.IsEmpty)
+        {
+            BeginInlineEdit(null);
+            if (inlineCanvas != null)
+            {
+                foreach (var item in carried) { try { inlineCanvas.Document.Add(item); } catch (ArgumentException) { } }
+                inlineCanvas.SetTool(null); inlineCanvas.Refresh();
+            }
+        }
+        Redraw();
+        if (!inlineEditing) { Focus(); Keyboard.Focus(this); }
     }
     private void ForceForeground()
     {
@@ -366,7 +420,7 @@ internal sealed partial class CaptureWindow : ProductWindow
     }
     private void UpdateShortcutHint()
     {
-        shortcutHint.Text = recordingMode ? L.Get("拖动框选 · Enter 开始录制 · Esc 取消") : L.Get("拖动框选 · Enter 复制 · Ctrl+T 钉图 · Ctrl+S 保存 · G 录屏 · Space 工具栏 · Esc 取消");
+        shortcutHint.Text = recordingMode ? L.Get("拖动框选 · Enter 开始录制 · G 截图 · Esc 取消") : L.Get("拖动框选 · Enter 复制 · Ctrl+T 钉图 · Ctrl+S 保存 · G 录屏 · Space 工具栏 · Esc 取消");
     }
     internal static AnnotationKind? AnnotationTool(CaptureAction action) => action switch
     {
@@ -577,6 +631,7 @@ internal sealed partial class CaptureWindow : ProductWindow
             Focus(); BeginInteraction(point); surface.CaptureMouse(); Redraw(); e.Handled = true; return;
         }
         if (IsRecordingInterior(point)) { e.Handled = true; return; }
+        if (IsRecordingOutsideLocked(point)) { e.Handled = true; return; }
         if (ShapeResult == CaptureShape.Polygon)
         {
             if (!polygonBuilding) { contour.Clear(); SetSelection(default); polygonBuilding = true; }
@@ -736,6 +791,16 @@ internal sealed partial class CaptureWindow : ProductWindow
         if (sx <= 0 || sy <= 0) return true;
         return !IsEdgeHandle(SelectionGeometry.HitTest(Selection, point, 6 / sx, 6 / sy));
     }
+    /// <summary>录屏选区已建立后，选区外的点击不再重新框选（只有贴边拖拽仍可调整）。</summary>
+    internal bool IsRecordingOutsideLocked(PixelPoint point)
+    {
+        if (!recordingMode || Selection.IsEmpty) return false;
+        if (point.X >= Selection.X && point.X < Selection.Right && point.Y >= Selection.Y && point.Y < Selection.Bottom) return false;
+        var sx = surface.ActualWidth > 0 ? surface.ActualWidth / bounds.Width : 1;
+        var sy = surface.ActualHeight > 0 ? surface.ActualHeight / bounds.Height : 1;
+        if (sx <= 0 || sy <= 0) return true;
+        return !IsEdgeHandle(SelectionGeometry.HitTest(Selection, point, 8 / sx, 8 / sy));
+    }
     private bool IsInlineCanvas(DependencyObject? source)
     {
         for (var node = source; node != null; node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node))
@@ -822,6 +887,10 @@ internal sealed partial class CaptureWindow : ProductWindow
         outline.StrokeThickness = contourOutline.StrokeThickness = settings.SelectionBorderWidth * Math.Min(sx, sy);
         var shown = Selection.IsEmpty && !dragging ? hover : Selection;
         var rect = new Rect((shown.X - bounds.X) * sx, (shown.Y - bounds.Y) * sy, shown.Width * sx, shown.Height * sy);
+        recordingBackdrop.Visibility = recordingMode && !recordingTransition && Selection.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
+        if (recordingBackdrop.Visibility == Visibility.Visible) recordingBackdrop.Data = new RectangleGeometry(new Rect(0, 0, surface.ActualWidth, surface.ActualHeight));
+        // 录屏选区确定后收起遮罩，选区外恢复实时桌面并允许直接操作其它窗口；正在拖拽调整时保留遮罩反馈。
+        mask.Visibility = recordingMode && !Selection.IsEmpty && !dragging ? Visibility.Collapsed : Visibility.Visible;
         Geometry region = ShapeResult == CaptureShape.Ellipse ? new EllipseGeometry(rect) : new RectangleGeometry(rect);
         if ((ShapeResult == CaptureShape.Freehand || ShapeResult == CaptureShape.Polygon) && contour.Count > 0)
         {
@@ -836,7 +905,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         outline.Visibility = shown.IsEmpty || irregular ? Visibility.Collapsed : Visibility.Visible;
         outline.Width = rect.Width; outline.Height = rect.Height; Canvas.SetLeft(outline, rect.X); Canvas.SetTop(outline, rect.Y);
         // 实时预览时选区内只有贴边抓取带保留 alpha，挡住里的点击都交给下面的目标窗口。
-        edgeGrab.Visibility = liveRecordingScreen && !recordingTransition && !Selection.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
+        edgeGrab.Visibility = recordingMode && !recordingTransition && !Selection.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
         if (edgeGrab.Visibility == Visibility.Visible)
             edgeGrab.Data = new RectangleGeometry(rect);
         var positions = new[] { new Point(rect.Left, rect.Top), new Point(rect.Left + rect.Width / 2, rect.Top), new Point(rect.Right, rect.Top),
@@ -906,14 +975,9 @@ internal sealed partial class CaptureWindow : ProductWindow
         var mx = mouseX + 25 + magnifier.Width < surface.ActualWidth ? mouseX + 25 : mouseX - magnifier.Width - 25;
         var my = mouseY + 25 + magnifier.Height < surface.ActualHeight ? mouseY + 25 : mouseY - magnifier.Height - 25;
         Place(magnifier, mx, my, new Size(magnifier.Width, magnifier.Height));
-        shortcutHint.Visibility = showShortcuts && !inlineEditing && !toolsHidden && !dragging ? Visibility.Visible : Visibility.Collapsed;
+        shortcutHint.Visibility = showShortcuts && !inlineEditing && !toolsHidden && !dragging && !(recordingMode && !Selection.IsEmpty) ? Visibility.Visible : Visibility.Collapsed;
         shortcutHint.MaxWidth = Math.Max(1, surface.ActualWidth - 24); shortcutHint.Measure(new Size(shortcutHint.MaxWidth, double.PositiveInfinity));
-        var hintLeft = (surface.ActualWidth - shortcutHint.DesiredSize.Width) / 2; var hintTop = surface.ActualHeight - shortcutHint.DesiredSize.Height - 10;
-        Place(shortcutHint, hintLeft, hintTop, shortcutHint.DesiredSize);
-        // 实时预览时提示条若落在选区内，它的像素会挡住目标窗口的鼠标操作；此时收起提示。
-        if (shortcutHint.Visibility == Visibility.Visible && liveRecordingScreen && !Selection.IsEmpty &&
-            new Rect(hintLeft, hintTop, shortcutHint.DesiredSize.Width, shortcutHint.DesiredSize.Height).IntersectsWith(rect))
-            shortcutHint.Visibility = Visibility.Collapsed;
+        Place(shortcutHint, (surface.ActualWidth - shortcutHint.DesiredSize.Width) / 2, surface.ActualHeight - shortcutHint.DesiredSize.Height - 10, shortcutHint.DesiredSize);
     }
     private void UpdateHover(bool enqueue = true)
     {
