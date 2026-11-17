@@ -231,6 +231,48 @@ public class CaptureUiTests
         finally { window.Close(); }
     });
 
+    [Fact] public void SwitchingCaptureToRecordingRestoresLiveScreenAndLeavesInteriorClickThrough() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            Assert.True(window.AllowsTransparency); Assert.False(window.LiveScreenPreview);
+            Assert.Equal(Visibility.Visible, window.DesktopSnapshotVisibility); Assert.True(window.MaskAlpha > 8);
+            window.SwitchToRecording(); content.UpdateLayout();
+            Assert.True(window.RecordingMode); Assert.True(window.LiveScreenPreview);
+            Assert.Equal(Visibility.Collapsed, window.DesktopSnapshotVisibility);
+            Assert.Equal(1, window.MaskAlpha); Assert.True(window.EdgeGrabVisible);
+            Assert.True(window.IsRecordingInterior(new PixelPoint(200, 200)));
+            Assert.False(window.IsRecordingInterior(new PixelPoint(40, 200)));
+            Assert.False(window.IsRecordingInterior(new PixelPoint(239, 44)));
+            Assert.False(window.IsRecordingInterior(new PixelPoint(240, 340)));
+            Assert.False(window.IsRecordingInterior(new PixelPoint(20, 20)));
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void RecordingMarkingRestoresSelectionInputOnlyWhileToolIsActive() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            window.SwitchToRecording(); content.UpdateLayout();
+            window.SetRecordingMarking(AnnotationKind.Rectangle); content.UpdateLayout();
+            Assert.True(window.RecordingInputPlateVisible); Assert.False(window.IsRecordingInterior(new PixelPoint(200, 200)));
+            var pixel = new byte[4]; window.RecordingCanvas!.Image.CopyPixels(new Int32Rect(0, 0, 1, 1), pixel, 4, 0);
+            Assert.Equal(0, pixel[3]);
+            window.SetRecordingMarking(null); content.UpdateLayout();
+            Assert.False(window.RecordingInputPlateVisible); Assert.True(window.IsRecordingInterior(new PixelPoint(200, 200)));
+            window.SetSelection(new PixelRect(80, 60, 200, 100)); content.UpdateLayout();
+            Assert.Null(window.RecordingCanvas); Assert.False(window.RecordingInputPlateVisible);
+        }
+        finally { window.Close(); }
+    });
+
     private static bool actionsRectIsRightOf(Rect inline, Rect actions) => actions.Left >= inline.Right - 1 && actions.Left <= inline.Right + 8;
 
     [Fact] public void CaptureToolbarWithoutMarkupToolAlignsToSelectionLeft() => ImagingTests.Sta(() =>

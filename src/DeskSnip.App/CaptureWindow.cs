@@ -41,6 +41,12 @@ internal sealed partial class CaptureWindow : ProductWindow
     private readonly Canvas surface = new Canvas();
     private readonly System.Windows.Shapes.Path mask = new System.Windows.Shapes.Path { Fill = new SolidColorBrush(Color.FromArgb(125, 0, 0, 0)), IsHitTestVisible = false };
     private readonly System.Windows.Shapes.Path guides = new System.Windows.Shapes.Path { Stroke = new SolidColorBrush(Color.FromArgb(175, 255, 255, 255)), StrokeThickness = 1, IsHitTestVisible = false };
+    /// <summary>截图转录屏后的实时预览：遮罩只保留像素 alpha 1 承接选区外点击，不再压暗屏幕。</summary>
+    private static readonly Brush TransparentHitBrush = FreezeHitBrush();
+    /// <summary>选区边框内侧的可拖拽抓取带；实时预览时选区内只有这里接受鼠标。</summary>
+    private readonly System.Windows.Shapes.Path edgeGrab = new System.Windows.Shapes.Path { Stroke = TransparentHitBrush, StrokeThickness = 12, Visibility = Visibility.Collapsed };
+    private bool liveRecordingScreen;
+    private Rectangle? recordingInputPlate;
     private readonly Rectangle outline = new Rectangle { Stroke = FloatingTools.Blue, StrokeThickness = 1.5, IsHitTestVisible = false };
     private readonly Ellipse[] handles = new Ellipse[8];
     private readonly SelectionInfoBar info;
@@ -121,6 +127,11 @@ internal sealed partial class CaptureWindow : ProductWindow
     internal CaptureAction ActionResult { get; private set; } = CaptureAction.Edit;
     internal RecordingPlan Plan { get; }
     internal bool RecordingMode => recordingMode;
+    internal bool LiveScreenPreview => liveRecordingScreen;
+    internal Visibility DesktopSnapshotVisibility => desktopImage.Visibility;
+    internal byte MaskAlpha => ((SolidColorBrush)mask.Fill).Color.A;
+    internal bool EdgeGrabVisible => edgeGrab.Visibility == Visibility.Visible;
+    internal bool RecordingInputPlateVisible => recordingInputPlate?.Visibility == Visibility.Visible;
     internal CaptureShape ShapeResult => recordingMode ? CaptureShape.Rectangle : shape;
     internal BitmapSource SelectedDesktop => cursorVisible && desktopWithCursor != null ? desktopWithCursor : desktop;
     internal IReadOnlyList<PixelPoint> ShapePoints => contour.Select(p => new PixelPoint(p.X - Selection.X, p.Y - Selection.Y)).ToArray();
@@ -141,8 +152,8 @@ internal sealed partial class CaptureWindow : ProductWindow
         Title = recordingMode ? L.Get("DeskSnip · 选择录制区域") : L.Get("DeskSnip · 截图选区");
         WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false; Topmost = true;
         Left = bounds.X; Top = bounds.Y; Width = bounds.Width; Height = bounds.Height;
-        Background = Brushes.Black; Cursor = Cursors.Cross;
-        if (recordingMode) { AllowsTransparency = true; Background = Brushes.Transparent; }
+        // 截图窗口也必须是逐像素 alpha 的分层窗口：转录屏后隐藏快照，选区内 alpha 0 才能让鼠标穿透到目标。
+        AllowsTransparency = true; Background = Brushes.Transparent; Cursor = Cursors.Cross;
         desktopImage = new Image { Source = cursorVisible && desktopWithCursor != null ? desktopWithCursor : desktop, Stretch = Stretch.Fill, IsHitTestVisible = false, Visibility = recordingMode ? Visibility.Collapsed : Visibility.Visible };
         var grid = new Grid(); grid.Children.Add(desktopImage); grid.Children.Add(surface); Content = grid;
         surface.Background = Brushes.Transparent; surface.Children.Add(mask); surface.Children.Add(guides); surface.Children.Add(outline); surface.Children.Add(contourOutline);
@@ -151,6 +162,7 @@ internal sealed partial class CaptureWindow : ProductWindow
             handles[i] = new Ellipse { Width = 7, Height = 7, Stroke = Brushes.White, Fill = borderColor, StrokeThickness = 1, IsHitTestVisible = false };
             surface.Children.Add(handles[i]);
         }
+        surface.Children.Add(edgeGrab);
         info = new SelectionInfoBar(bounds, SetSelection, value =>
         {
             ratioLocked = value; lockedRatio = value && !Selection.IsEmpty ? Selection.Width / (double)Selection.Height : (double?)null;
@@ -294,32 +306,49 @@ internal sealed partial class CaptureWindow : ProductWindow
     {
         if (!recordingMode || Selection.IsEmpty) return;
         if (recordingCanvas != null && (recordingCanvas.Image.PixelWidth != Selection.Width || recordingCanvas.Image.PixelHeight != Selection.Height))
-        { surface.Children.Remove(recordingCanvas); recordingCanvas = null; recordingMarkingKind = null; }
+            RemoveRecordingLayer();
         if (recordingCanvas == null)
         {
             var canvas = new AnnotationCanvas(TransparentLayer(Selection.Width, Selection.Height), settings) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, HideEditorChrome = true, ExcludeTextPopupFromCapture = true, IsHitTestVisible = false };
-            recordingCanvas = canvas; canvas.ToolChanged += () => recordingMarkingKind = canvas.LastTool; surface.Children.Insert(0, canvas);
+            recordingCanvas = canvas; canvas.ToolChanged += () => recordingMarkingKind = canvas.LastTool;
+            // 画布底图 alpha 0 保证未选工具时鼠标穿透；输入板只在画布下方提供 alpha 1，选定工具后才显示。
+            recordingInputPlate = new Rectangle { Width = Selection.Width, Height = Selection.Height, Fill = TransparentHitBrush, Visibility = Visibility.Collapsed };
+            surface.Children.Insert(0, recordingInputPlate); surface.Children.Insert(1, canvas);
         }
         var activeCanvas = recordingCanvas;
         activeCanvas.SetTool(kind); recordingMarkingKind = kind; activeCanvas.IsHitTestVisible = kind.HasValue;
+        if (recordingInputPlate != null) recordingInputPlate.Visibility = kind.HasValue ? Visibility.Visible : Visibility.Collapsed;
         if (kind.HasValue) { activeCanvas.Focus(); Keyboard.Focus(activeCanvas); }
         else { Focus(); Keyboard.Focus(this); }
         UpdateRecordToolSelection(); Redraw();
+    }
+    private void RemoveRecordingLayer()
+    {
+        if (recordingCanvas != null) { surface.Children.Remove(recordingCanvas); recordingCanvas = null; }
+        if (recordingInputPlate != null) { surface.Children.Remove(recordingInputPlate); recordingInputPlate = null; }
+        recordingMarkingKind = null;
     }
     private void UpdateRecordToolSelection()
     {
         foreach (var pair in recordToolButtons) FloatingTools.SetSelected(pair.Button, pair.Kinds.Contains(recordingMarkingKind));
     }
+    /// <summary>录屏标注底图保持 alpha 0；可见的标注仍会渲染，鼠标输入由录制输入板按需提供。</summary>
     private static BitmapSource TransparentLayer(int width, int height)
     {
-        var pixels = new byte[width * height * 4]; for (var index = 3; index < pixels.Length; index += 4) pixels[index] = 1;
+        var pixels = new byte[width * height * 4];
         var image = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, width * 4); image.Freeze(); return image;
     }
-    private void SwitchToRecording()
+    private static Brush FreezeHitBrush()
+    {
+        var brush = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)); brush.Freeze(); return brush;
+    }
+    internal void SwitchToRecording()
     {
         if (recordingMode || inlineEditing || dragging) return;
         if (Selection.IsEmpty) { info.Notice(L.Get("请先框选录制区域。")); return; }
-        recordingMode = true; shape = CaptureShape.Rectangle; contour.Clear(); polygonBuilding = false; toolsHidden = false;
+        recordingMode = true; liveRecordingScreen = true; shape = CaptureShape.Rectangle; contour.Clear(); polygonBuilding = false; toolsHidden = false;
+        // 收起冻结截图、参考线和压暗效果，露出实时桌面；遮罩换成 alpha 1 的不可见层，选区外仍可重新框选。
+        desktopImage.Visibility = Visibility.Collapsed; guides.Visibility = Visibility.Collapsed; mask.Fill = TransparentHitBrush;
         if (shapeButton != null) shapeButton.Visibility = Visibility.Collapsed;
         Title = L.Get("DeskSnip · 选择录制区域"); UpdateShortcutHint(); Redraw(); Focus();
     }
@@ -461,7 +490,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         if (inlineEditing && !selection.Equals(Selection)) return;
         var old = Selection;
         Selection = selection.IsEmpty ? default : selection.Intersect(bounds);
-        if (recordingCanvas != null && !Selection.Equals(old)) { surface.Children.Remove(recordingCanvas); recordingCanvas = null; recordingMarkingKind = null; UpdateRecordToolSelection(); }
+        if (recordingCanvas != null && !Selection.Equals(old)) { RemoveRecordingLayer(); UpdateRecordToolSelection(); }
         if (!old.IsEmpty && !Selection.IsEmpty && !Selection.Equals(old) && !dragging && !polygonBuilding && (ShapeResult == CaptureShape.Freehand || ShapeResult == CaptureShape.Polygon))
             for (var i = 0; i < contour.Count; i++) contour[i] = new PixelPoint(Selection.X + (contour[i].X - old.X) * Selection.Width / old.Width, Selection.Y + (contour[i].Y - old.Y) * Selection.Height / old.Height);
         if (ratioLocked && !Selection.IsEmpty && !lockedRatio.HasValue) lockedRatio = Selection.Width / (double)Selection.Height;
@@ -517,6 +546,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         var source = e.OriginalSource as DependencyObject;
         var annotationInput = IsInlineCanvas(source) || IsRecordingCanvas(source);
         if (IsControl(source) && !annotationInput) return;
+        if (IsRecordingInterior(CursorPosition())) { e.Handled = true; return; }
         if (!BeginRightDrag(CursorPosition(), !IsControl(source)))
         {
             if (!IsControl(source)) DialogResult = false;
@@ -546,6 +576,7 @@ internal sealed partial class CaptureWindow : ProductWindow
             if (annotationList != null) annotationList.Visibility = Visibility.Collapsed;
             Focus(); BeginInteraction(point); surface.CaptureMouse(); Redraw(); e.Handled = true; return;
         }
+        if (IsRecordingInterior(point)) { e.Handled = true; return; }
         if (ShapeResult == CaptureShape.Polygon)
         {
             if (!polygonBuilding) { contour.Clear(); SetSelection(default); polygonBuilding = true; }
@@ -572,6 +603,8 @@ internal sealed partial class CaptureWindow : ProductWindow
             return;
         }
         var current = CursorPosition(); cursor = inspector.Clamp(current);
+        // 选区内没有标注工具时点击本应穿透到目标应用；只有标注笔迹残留的像素事件会到达这里，不再改选区或光标。
+        if (!dragging && IsRecordingInterior(current)) { Cursor = Cursors.Arrow; return; }
         if (dragging && ShapeResult == CaptureShape.Freehand) { contour.Add(current); UpdateContourBounds(); }
         else if (dragging) UpdateDrag(current);
         else if (Selection.IsEmpty) UpdateHover();
@@ -693,6 +726,16 @@ internal sealed partial class CaptureWindow : ProductWindow
         Focus(); BeginInteraction(CursorPosition()); surface.CaptureMouse(); Redraw(); e.Handled = true;
     }
     internal static bool IsEdgeHandle(SelectionHandle handle) => handle != SelectionHandle.None && handle != SelectionHandle.Move;
+    /// <summary>录屏准备态选区内、未选中标注工具时应把鼠标交给下方目标窗口；贴边仍归选区调整。</summary>
+    internal bool IsRecordingInterior(PixelPoint point)
+    {
+        if (!recordingMode || recordingMarkingKind.HasValue || Selection.IsEmpty) return false;
+        if (point.X < Selection.X || point.X >= Selection.Right || point.Y < Selection.Y || point.Y >= Selection.Bottom) return false;
+        var sx = surface.ActualWidth > 0 ? surface.ActualWidth / bounds.Width : 1;
+        var sy = surface.ActualHeight > 0 ? surface.ActualHeight / bounds.Height : 1;
+        if (sx <= 0 || sy <= 0) return true;
+        return !IsEdgeHandle(SelectionGeometry.HitTest(Selection, point, 6 / sx, 6 / sy));
+    }
     private bool IsInlineCanvas(DependencyObject? source)
     {
         for (var node = source; node != null; node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node))
@@ -770,6 +813,11 @@ internal sealed partial class CaptureWindow : ProductWindow
         {
             recordingCanvas.LayoutTransform = new ScaleTransform(sx, sy);
             Canvas.SetLeft(recordingCanvas, (Selection.X - bounds.X) * sx); Canvas.SetTop(recordingCanvas, (Selection.Y - bounds.Y) * sy);
+            if (recordingInputPlate != null)
+            {
+                recordingInputPlate.LayoutTransform = new ScaleTransform(sx, sy);
+                Canvas.SetLeft(recordingInputPlate, (Selection.X - bounds.X) * sx); Canvas.SetTop(recordingInputPlate, (Selection.Y - bounds.Y) * sy);
+            }
         }
         outline.StrokeThickness = contourOutline.StrokeThickness = settings.SelectionBorderWidth * Math.Min(sx, sy);
         var shown = Selection.IsEmpty && !dragging ? hover : Selection;
@@ -787,6 +835,10 @@ internal sealed partial class CaptureWindow : ProductWindow
         contourOutline.Data = region; contourOutline.Visibility = irregular && (!shown.IsEmpty || contour.Count > 0) ? Visibility.Visible : Visibility.Collapsed;
         outline.Visibility = shown.IsEmpty || irregular ? Visibility.Collapsed : Visibility.Visible;
         outline.Width = rect.Width; outline.Height = rect.Height; Canvas.SetLeft(outline, rect.X); Canvas.SetTop(outline, rect.Y);
+        // 实时预览时选区内只有贴边抓取带保留 alpha，挡住里的点击都交给下面的目标窗口。
+        edgeGrab.Visibility = liveRecordingScreen && !recordingTransition && !Selection.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
+        if (edgeGrab.Visibility == Visibility.Visible)
+            edgeGrab.Data = new RectangleGeometry(rect);
         var positions = new[] { new Point(rect.Left, rect.Top), new Point(rect.Left + rect.Width / 2, rect.Top), new Point(rect.Right, rect.Top),
             new Point(rect.Left, rect.Top + rect.Height / 2), new Point(rect.Right, rect.Top + rect.Height / 2),
             new Point(rect.Left, rect.Bottom), new Point(rect.Left + rect.Width / 2, rect.Bottom), new Point(rect.Right, rect.Bottom) };
@@ -856,7 +908,12 @@ internal sealed partial class CaptureWindow : ProductWindow
         Place(magnifier, mx, my, new Size(magnifier.Width, magnifier.Height));
         shortcutHint.Visibility = showShortcuts && !inlineEditing && !toolsHidden && !dragging ? Visibility.Visible : Visibility.Collapsed;
         shortcutHint.MaxWidth = Math.Max(1, surface.ActualWidth - 24); shortcutHint.Measure(new Size(shortcutHint.MaxWidth, double.PositiveInfinity));
-        Place(shortcutHint, (surface.ActualWidth - shortcutHint.DesiredSize.Width) / 2, surface.ActualHeight - shortcutHint.DesiredSize.Height - 10, shortcutHint.DesiredSize);
+        var hintLeft = (surface.ActualWidth - shortcutHint.DesiredSize.Width) / 2; var hintTop = surface.ActualHeight - shortcutHint.DesiredSize.Height - 10;
+        Place(shortcutHint, hintLeft, hintTop, shortcutHint.DesiredSize);
+        // 实时预览时提示条若落在选区内，它的像素会挡住目标窗口的鼠标操作；此时收起提示。
+        if (shortcutHint.Visibility == Visibility.Visible && liveRecordingScreen && !Selection.IsEmpty &&
+            new Rect(hintLeft, hintTop, shortcutHint.DesiredSize.Width, shortcutHint.DesiredSize.Height).IntersectsWith(rect))
+            shortcutHint.Visibility = Visibility.Collapsed;
     }
     private void UpdateHover(bool enqueue = true)
     {
