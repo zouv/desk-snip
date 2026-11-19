@@ -62,17 +62,17 @@ sh manager.sh package  # 出包到 dist/dev 与 dist/release
 
 | 脚本 | 作用 |
 |---|---|
-| `dev.bat` | 构建 Debug 并启动窗口 |
+| `dev.bat` | 构建 Debug 并启动窗口；若应用正在运行会先强制关闭 |
 | `run.bat [dev\|release]` | 启动已构建的应用（默认 Debug；release 用 Release） |
 | `stop.bat` | 请求应用正常退出（等待最多 30 秒，不强杀） |
 | `build.bat` | 构建解决方案 |
 | `test.bat` | 跑全部测试 |
 | `verify.bat` | 交付前总检（test + 严格编译 + check-docs） |
 | `ci.bat` | clean → verify → package 一键流水线 |
-| `package.bat` | 出包到 `dist/dev` 与 `dist/release` |
+| `package.bat` | 出包到 `dist/dev` 与 `dist/release`；若应用正在运行会先询问是否强制关闭 |
 | `clean.bat` | 清理构建产物 |
 
-设置环境变量 `DESK_SNIP_NO_PAUSE=1` 可跳过失败时的暂停（自动化 / CI 用）。
+设置环境变量 `DESK_SNIP_NO_PAUSE=1` 可跳过失败时的暂停（自动化 / CI 用）；非交互环境需要确认强制关闭运行中的实例时用 `DESK_SNIP_FORCE_CLOSE=1`。
 
 ## 依赖与前置条件
 

@@ -3,6 +3,9 @@ param()
 . (Join-Path $PSScriptRoot '_common.ps1')
 . (Join-Path $PSScriptRoot 'PackageTransaction.ps1')
 
+# A running instance can lock the build output; list it and ask before force-closing.
+Request-CloseRunningAppForPackage
+
 $runtime = 'win-x64'
 $version = Get-AppVersion
 $dist = Assert-ManagedPath (Join-Path $Root 'dist')

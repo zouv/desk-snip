@@ -100,6 +100,68 @@ function Save-RunRecord($Process, [string]$Exe, [string]$Configuration) {
     Write-Utf8File $RunRecord ($record | ConvertTo-Json)
 }
 
+# ---- running app guard: dev force-closes it, package asks first ----
+function Get-RunningAppProcesses {
+    return @(Get-Process -Name $AppName -ErrorAction SilentlyContinue)
+}
+
+function Write-RunningAppProcesses($Processes) {
+    Write-Warn "$AppName is running:"
+    foreach ($process in $Processes) {
+        $path = $null
+        try { $path = [string]$process.Path } catch { }
+        if ([string]::IsNullOrWhiteSpace($path)) { $path = '(path unavailable)' }
+        Write-Host ("       PID {0}  {1}" -f $process.Id, $path)
+    }
+}
+
+function Stop-RunningAppProcesses($Processes) {
+    foreach ($process in $Processes) {
+        try { $process.Kill(); [void]$process.WaitForExit(5000) } catch { }
+        finally { $process.Dispose() }
+    }
+    Start-Sleep -Milliseconds 300
+    $remaining = @(Get-RunningAppProcesses)
+    if ($remaining.Count -gt 0) {
+        $details = ($remaining | ForEach-Object { "$($_.ProcessName)($($_.Id))" }) -join ', '
+        foreach ($process in $remaining) { $process.Dispose() }
+        throw "Could not close $AppName ($details). Close it manually and retry."
+    }
+    Remove-Item -LiteralPath $RunRecord -Force -ErrorAction SilentlyContinue
+}
+
+# dev: close a running instance outright, then continue with the rebuild.
+function Close-RunningAppForDev {
+    $processes = @(Get-RunningAppProcesses)
+    if ($processes.Count -eq 0) { return }
+    Write-RunningAppProcesses $processes
+    Write-Warn 'Force-closing discards any unsaved state in the running app.'
+    Write-Info "Force-closing $AppName before rebuilding."
+    Stop-RunningAppProcesses $processes
+    Write-Ok "Closed the running $AppName instance(s); continuing."
+}
+
+# package: list the running instance and only close it after an explicit Y.
+function Request-CloseRunningAppForPackage {
+    $processes = @(Get-RunningAppProcesses)
+    if ($processes.Count -eq 0) { return }
+    Write-RunningAppProcesses $processes
+    Write-Warn 'Force-closing discards any unsaved state in the running app.'
+    $forceClose = [Environment]::GetEnvironmentVariable($EnvPrefix + 'FORCE_CLOSE')
+    if ($forceClose -ne '1') {
+        if ([Console]::IsInputRedirected) {
+            throw "$AppName is running. Close it first, or set $($EnvPrefix)FORCE_CLOSE=1 to confirm force-closing it."
+        }
+        $answer = Read-Host "Force-close $AppName and continue packaging? Enter Y to confirm; anything else cancels"
+        if ($answer -notmatch '^\s*[Yy]([Ee][Ss])?\s*$') {
+            Write-Info 'Packaging cancelled; the running app was left alone.'
+            exit 2
+        }
+    }
+    Stop-RunningAppProcesses $processes
+    Write-Ok "Closed the running $AppName instance(s); continuing."
+}
+
 function Get-GitSha {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) { return 'unknown (git not found)' }
     $previous = $ErrorActionPreference
