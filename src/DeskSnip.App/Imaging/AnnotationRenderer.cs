@@ -52,7 +52,7 @@ public static class AnnotationRenderer
                 var bounds = drawing.Bounds;
                 if (!bounds.IsEmpty) { bounds.Inflate(tolerance, tolerance); if (bounds.Contains(new Point(point.X, point.Y))) return i; }
             }
-            else if (Contains(drawing, new Point(point.X, point.Y), tolerance, item.Kind == AnnotationKind.Rectangle || item.Kind == AnnotationKind.Ellipse || item.Kind == AnnotationKind.RoundedRectangle || item.Kind == AnnotationKind.Spotlight)) return i;
+            else if (Contains(drawing, new Point(point.X, point.Y), tolerance, false)) return i;
         }
         return -1;
     }

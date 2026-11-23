@@ -22,6 +22,7 @@ internal sealed class RecordingAnnotationOverlay : Window
         Title = L.Get("DeskSnip · 录屏标注"); WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; AllowsTransparency = true; Background = Brushes.Transparent;
         Topmost = true; ShowInTaskbar = false; ShowActivated = false; WindowStartupLocation = WindowStartupLocation.Manual;
         canvas = new AnnotationCanvas(Transparent(region.Width, region.Height)) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, HideEditorChrome = true, ExcludeTextPopupFromCapture = true };
+        canvas.SetTool(null); canvas.IsHitTestVisible = false;
         if (annotations != null) foreach (var annotation in annotations) { try { canvas.Document.Add(annotation); } catch (ArgumentException) { } }
         Content = canvas;
         Width = region.Width; Height = region.Height;

@@ -85,7 +85,7 @@ internal sealed partial class EditorWindow : ProductWindow
         thickness.SelectionChanged += (_, _) => { if (!synchronizingStyle && thickness.SelectedItem is string value) canvas.ChangeStyle(thickness: double.Parse(value, CultureInfo.InvariantCulture)); }; tools.Children.Add(thickness);
         fonts = new ComboBox { Width = 150, Margin = new Thickness(10, 3, 3, 3), IsEditable = true, ItemsSource = Fonts.SystemFontFamilies.Select(f => f.Source).OrderBy(f => f).ToArray(), Text = canvas.FontFamily };
         fonts.LostKeyboardFocus += (_, _) => ApplyFont(); fonts.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { ApplyFont(); e.Handled = true; } }; tools.Children.Add(fonts);
-        sizes = new ComboBox { Width = 60, Margin = new Thickness(3), IsEditable = true, ItemsSource = new[] { "14", "18", "24", "28", "36", "48", "72" }, Text = canvas.FontSize.ToString(CultureInfo.InvariantCulture) };
+        sizes = new ComboBox { Width = 76, Margin = new Thickness(3), IsEditable = true, ItemsSource = new[] { "14", "18", "24", "28", "36", "48", "72" }, Text = canvas.FontSize.ToString(CultureInfo.InvariantCulture) };
         sizes.LostKeyboardFocus += (_, _) => ApplyFont(); sizes.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { ApplyFont(); e.Handled = true; } }; tools.Children.Add(sizes);
         fill = new CheckBox { Content = L.Get("填充"), Margin = new Thickness(8), VerticalAlignment = VerticalAlignment.Center }; tools.Children.Add(fill);
         textBackground = new CheckBox { Content = L.Get("文字底色"), Margin = new Thickness(8), VerticalAlignment = VerticalAlignment.Center }; tools.Children.Add(textBackground);
@@ -416,6 +416,26 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         var delta = ClampObjectDelta(new PixelPoint(dx, dy), AnnotationRenderer.Bounds(Image, Selected));
         Document.Move(selectedIndex, delta); Select(selectedIndex);
     }
+    /// <summary>按左上角固定缩放选中形状；宽高输入与边控制点共用同一套几何换算。</summary>
+    internal bool ResizeSelected(double width, double height)
+    {
+        var item = Selected;
+        if (item == null || !IsResizable(item.Kind)) return false;
+        var bounds = AnnotationRenderer.Bounds(Image, item);
+        if (bounds.IsEmpty || bounds.Width < .01 || bounds.Height < .01) return false;
+        var minX = item.Points.Min(p => p.X); var minY = item.Points.Min(p => p.Y);
+        var pointBounds = new Rect(minX, minY, Math.Max(1, item.Points.Max(p => p.X) - minX), Math.Max(1, item.Points.Max(p => p.Y) - minY));
+        var maxWidth = Math.Max(2, Width - bounds.X); var maxHeight = Math.Max(2, Height - bounds.Y);
+        width = Math.Max(2, Math.Min(maxWidth, width)); height = Math.Max(2, Math.Min(maxHeight, height));
+        if (Math.Abs(width - bounds.Width) < .01 && Math.Abs(height - bounds.Height) < .01) return false;
+        // 宽高按可见外框计算；描边粗细不随缩放变化，因此先从目标尺寸中扣除描边占用。
+        var pointWidth = Math.Max(1, Math.Min(Width - pointBounds.X, width - Math.Max(0, bounds.Width - pointBounds.Width)));
+        var pointHeight = Math.Max(1, Math.Min(Height - pointBounds.Y, height - Math.Max(0, bounds.Height - pointBounds.Height)));
+        var sx = pointWidth / pointBounds.Width; var sy = pointHeight / pointBounds.Height;
+        var points = item.Points.Select(p => new PixelPoint((int)Math.Round(pointBounds.X + (p.X - pointBounds.X) * sx), (int)Math.Round(pointBounds.Y + (p.Y - pointBounds.Y) * sy))).ToArray();
+        if (points.SequenceEqual(item.Points)) return false;
+        Document.Replace(selectedIndex, item.WithPoints(points)); Select(selectedIndex); return true;
+    }
     internal void ChangeStyle(uint? argb = null, double? thickness = null, string? fontFamily = null, double? fontSize = null, bool? bold = null, bool? italic = null, AnnotationAppearance? appearance = null)
     {
         var item = Selected;
@@ -555,6 +575,8 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
         var bounds = AnnotationRenderer.Bounds(Image, Selected);
         var corners = new[] { bounds.TopLeft, bounds.BottomRight, bounds.BottomLeft, bounds.TopRight };
         for (var i = 0; i < corners.Length; i++) if (Distance(point, corners[i]) <= tolerance) { handleIndex = i; handleBounds = bounds; draggingHandle = true; return true; }
+        var edges = new[] { new Point(bounds.Left, bounds.Top + bounds.Height / 2), new Point(bounds.Left + bounds.Width / 2, bounds.Top), new Point(bounds.Right, bounds.Top + bounds.Height / 2), new Point(bounds.Left + bounds.Width / 2, bounds.Bottom) };
+        for (var i = 0; i < edges.Length; i++) if (Distance(point, edges[i]) <= tolerance) { handleIndex = 4 + i; handleBounds = bounds; draggingHandle = true; return true; }
         return false;
     }
     private static bool IsResizable(AnnotationKind kind)
@@ -570,8 +592,23 @@ internal sealed partial class AnnotationCanvas : FrameworkElement
             var points = Selected.Points.ToArray(); points[handleIndex] = point; preview = Selected.WithPoints(points); return;
         }
         var anchor = handleIndex switch { 0 => handleBounds.BottomRight, 1 => handleBounds.TopLeft, 2 => handleBounds.TopRight, _ => handleBounds.BottomLeft };
-        var left = Math.Max(0, Math.Min(anchor.X, point.X)); var top = Math.Max(0, Math.Min(anchor.Y, point.Y));
-        var right = Math.Min(Width, Math.Max(anchor.X, point.X)); var bottom = Math.Min(Height, Math.Max(anchor.Y, point.Y));
+        double left, top, right, bottom;
+        if (handleIndex >= 4)
+        {
+            left = handleBounds.Left; top = handleBounds.Top; right = handleBounds.Right; bottom = handleBounds.Bottom;
+            switch (handleIndex)
+            {
+                case 4: left = Math.Max(0, Math.Min(right - 2, point.X)); break;
+                case 5: top = Math.Max(0, Math.Min(bottom - 2, point.Y)); break;
+                case 6: right = Math.Min(Width, Math.Max(left + 2, point.X)); break;
+                default: bottom = Math.Min(Height, Math.Max(top + 2, point.Y)); break;
+            }
+        }
+        else
+        {
+            left = Math.Max(0, Math.Min(anchor.X, point.X)); top = Math.Max(0, Math.Min(anchor.Y, point.Y));
+            right = Math.Min(Width, Math.Max(anchor.X, point.X)); bottom = Math.Min(Height, Math.Max(anchor.Y, point.Y));
+        }
         if (right - left < 2 || bottom - top < 2) return;
         var sx = (right - left) / Math.Max(1, handleBounds.Width); var sy = (bottom - top) / Math.Max(1, handleBounds.Height);
         var scaled = Selected.Points.Select(p => new PixelPoint((int)Math.Round(left + (p.X - handleBounds.X) * sx), (int)Math.Round(top + (p.Y - handleBounds.Y) * sy))).ToArray();

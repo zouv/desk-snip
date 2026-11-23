@@ -68,6 +68,12 @@ public class RecordingUiTests
         }
         finally { if (bar != null) { bar.Finishing = true; bar.Close(); } await session.StopAsync(); Directory.Delete(directory, true); }
     });
+    [Fact] public void RecordingOverlayStartsInSelectMode() => ImagingTests.Sta(() =>
+    {
+        var overlay = new RecordingAnnotationOverlay(new PixelRect(0, 0, 120, 80));
+        try { Assert.Null(overlay.Canvas.Kind); Assert.False(overlay.Canvas.IsHitTestVisible); }
+        finally { overlay.Close(); }
+    });
     [Fact] public void RecordingSceneUsesRealFrameAndToolbarViews() => ImagingTests.Sta(() =>
     {
         var region = new PixelRect(36, 46, 1120, 590); var session = new RecordingSession(Path.Combine(Path.GetTempPath(), "desksnip-ui-preview.gif"), region, "GIF", 16, false);

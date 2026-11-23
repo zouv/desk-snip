@@ -173,6 +173,29 @@ public class CaptureUiTests
         finally { window.Close(); }
     });
 
+    [Fact] public void InlineEditingStartsInSelectModeUnlessToolIsRemembered() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            window.BeginInlineEdit(null);
+            Assert.Null(window.InlineCanvas!.Kind); Assert.Null(window.LastInlineTool);
+            var select = Descendants(content).OfType<InlineAnnotationBar>().Single().Items.Children.OfType<Button>().Single(button => AutomationProperties.GetName(button) == "选择");
+            Assert.Same(FloatingTools.Selected, select.Background);
+        }
+        finally { window.Close(); }
+        var remembered = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false, settings: new AppSettings { MarkRememberScreenshotTool = true, MarkLastScreenshotTool = "Ellipse" });
+        try
+        {
+            remembered.SetSelection(new PixelRect(40, 40, 400, 300));
+            remembered.BeginInlineEdit(null);
+            Assert.Equal(AnnotationKind.Ellipse, remembered.InlineCanvas!.Kind);
+        }
+        finally { remembered.Close(); }
+    });
+
     [Fact] public void InlineAnnotationToolbarSitsAtSelectionBottomLeftWithCaptureToolbarRight() => ImagingTests.Sta(() =>
     {
         var window = new CaptureWindow(Image(1200, 800), new PixelRect(0, 0, 1200, 800), false);

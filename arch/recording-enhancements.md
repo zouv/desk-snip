@@ -1,6 +1,7 @@
 # 录屏增强链路
 
 - `RecordingSetup` 为旧对话框，当前录制流程不再打开；两路 WASAPI 设备、帧率/倒计时/画质和 FFmpeg 路径由设置页与 CaptureWindow.Plan 提供。设备检测无结果时阻止选中的声音录制。`RecordingOptions` 非空启用增强模式，缺 FFmpeg 时仍可基础 MP4/GIF。
+- `RecordingAnnotationOverlay` 用透明画布覆盖录制区，初始为“选择”工具并点击穿透、不抢焦点；选定标记工具后才接收绘制，录制中控制条通过 `SetTool` 切换同一画布，标注命中遵循 `AnnotationRenderer` 的空心描边/填充规则。
 - `RecordingToolbarDisplayMode` 的 Ask/Always/Hidden 控制设置窗口的工具栏选择；隐藏托盘时强制显示工具栏。托盘提供显示/停止入口，录制中改为隐藏托盘也显示工具栏。
 - `AppController.QuickRecordingPath(format, region)` 只用于快速模式的 MP4 规则（独立目录/模板/覆盖及实际区域尺寸）；普通模式写入 `LocalStore.NewPendingRecordingPath` 的内部待确认目录。AfterRecordingSaved 统一保存/另存/转换/剪辑/恢复成功后的文件或路径复制与音效；普通录制在用户点保存后才回调，PlaybackWindow/RecordingRecoveryWindow 通过 outputSaved 接线。RecordingCloseAfterExport 控制返回主窗/自动成片及回放导出后关闭。
 - `RecordingSession.RunEnhanced` 用 MF 编码，每约 2 秒收尾成独立片段；`RecordingJournal` 在专用 `recording-drafts/<id>` 目录原子登记已完成片段。失败保留素材，最后尚未收尾的片段可能丢失。

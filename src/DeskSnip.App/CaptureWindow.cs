@@ -450,12 +450,12 @@ internal sealed partial class CaptureWindow : ProductWindow
             surface.Children.Add(inlineBar);
             inlineCanvas.Changed += Redraw;
         }
-        inlineEditing = true; inlineCanvas.SetTool(tool ?? RememberedScreenshotTool()); LastInlineTool = inlineCanvas.LastTool;
+        inlineEditing = true; inlineCanvas.SetTool(tool ?? RememberedScreenshotTool()); LastInlineTool = inlineCanvas.Kind.HasValue ? inlineCanvas.LastTool : null;
         foreach (var item in captureToolItems) item.Visibility = Visibility.Collapsed;
         inlineCanvas.Focus(); Redraw();
     }
-    private AnnotationKind RememberedScreenshotTool()
-        => settings.MarkRememberScreenshotTool && Enum.TryParse(settings.MarkLastScreenshotTool, out AnnotationKind remembered) ? remembered : AnnotationKind.Arrow;
+    private AnnotationKind? RememberedScreenshotTool()
+        => settings.MarkRememberScreenshotTool && Enum.TryParse(settings.MarkLastScreenshotTool, out AnnotationKind remembered) ? remembered : (AnnotationKind?)null;
     /// <summary>边框拖动结束后按新选区重建标注画布：标记按屏幕位置平移，越界部分由画布裁剪。</summary>
     private void RebuildInlineForSelection(PixelRect oldSelection)
     {
@@ -463,7 +463,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         var oldCanvas = inlineCanvas;
         oldCanvas.CommitPendingText();
         var items = oldCanvas.Document.Items.ToArray();
-        var tool = oldCanvas.LastTool;
+        var tool = oldCanvas.Kind;
         var argb = oldCanvas.Argb; var thickness = oldCanvas.Thickness; var family = oldCanvas.FontFamily; var size = oldCanvas.FontSize;
         var bold = oldCanvas.Bold; var italic = oldCanvas.Italic; var appearance = oldCanvas.Appearance;
         RemoveInlineUi();

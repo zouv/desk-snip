@@ -94,9 +94,20 @@ internal sealed partial class AnnotationCanvas
     }
     private void DrawControlPoints(DrawingContext dc, Annotation selected, Rect bounds)
     {
-        if (selected.Kind == AnnotationKind.Arrow && preferences.MarkHideArrowControls) return;
-        if (selected.Kind == AnnotationKind.Arrow) foreach (var point in selected.Points) dc.DrawEllipse(Brushes.White, new Pen(Ui.Accent, 1), new Point(point.X, point.Y), 3, 3);
-        if (selected.Kind != AnnotationKind.RoundedRectangle || preferences.MarkRoundedControls == "Never" || preferences.MarkRoundedControls == "Hover" && !IsMouseOver) return;
-        foreach (var point in new[] { bounds.TopLeft, bounds.TopRight, bounds.BottomLeft, bounds.BottomRight }) dc.DrawEllipse(Brushes.White, new Pen(Ui.Accent, 1), point, 3, 3);
+        if (selected.Kind == AnnotationKind.Arrow)
+        {
+            if (preferences.MarkHideArrowControls) return;
+            foreach (var point in selected.Points) dc.DrawEllipse(Brushes.White, new Pen(Ui.Accent, 1), new Point(point.X, point.Y), 3, 3);
+            return;
+        }
+        if (!IsResizable(selected.Kind)) return;
+        if (selected.Kind == AnnotationKind.RoundedRectangle && (preferences.MarkRoundedControls == "Never" || preferences.MarkRoundedControls == "Hover" && !IsMouseOver)) return;
+        var controls = new[]
+        {
+            bounds.TopLeft, bounds.TopRight, bounds.BottomLeft, bounds.BottomRight,
+            new Point(bounds.Left, bounds.Top + bounds.Height / 2), new Point(bounds.Left + bounds.Width / 2, bounds.Top),
+            new Point(bounds.Right, bounds.Top + bounds.Height / 2), new Point(bounds.Left + bounds.Width / 2, bounds.Bottom)
+        };
+        foreach (var point in controls) dc.DrawEllipse(Brushes.White, new Pen(Ui.Accent, 1), point, 3, 3);
     }
 }

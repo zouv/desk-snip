@@ -4937,6 +4937,10 @@ Right-click to manage · Drag to move</translation>
     <translation>Selection height</translation>
   </text>
   <text>
+    <source>选择</source>
+    <translation>Select</translation>
+  </text>
+  <text>
     <source>选择 / 移动</source>
     <translation>Select / move</translation>
   </text>

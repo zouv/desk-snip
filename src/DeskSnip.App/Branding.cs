@@ -64,18 +64,28 @@ internal static class Branding
         IntPtr IconFor(int baseSize)
         {
             var size = Math.Max(16, (int)Math.Ceiling(baseSize * dpi / 96d));
-            if (!nativeIcons.TryGetValue(size, out var icon))
+            lock (nativeIcons)
             {
-                using (var stream = new MemoryStream(data.Value, false))
-                using (var source = new Icon(stream, size, size)) icon = (Icon)source.Clone();
-                nativeIcons.Add(size, icon);
+                if (!nativeIcons.TryGetValue(size, out var icon))
+                {
+                    using (var stream = new MemoryStream(data.Value, false))
+                    using (var source = new Icon(stream, size, size)) icon = (Icon)source.Clone();
+                    nativeIcons.Add(size, icon);
+                }
+                return icon.Handle;
             }
-            return icon.Handle;
         }
         SendMessage(handle, 0x0080, new IntPtr(0), IconFor(16));
         SendMessage(handle, 0x0080, new IntPtr(1), IconFor(32));
     }
-    internal static void DisposeNativeIcons() { foreach (var icon in nativeIcons.Values) icon.Dispose(); nativeIcons.Clear(); }
+    internal static void DisposeNativeIcons()
+    {
+        lock (nativeIcons)
+        {
+            foreach (var icon in nativeIcons.Values) icon.Dispose();
+            nativeIcons.Clear();
+        }
+    }
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
     [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);

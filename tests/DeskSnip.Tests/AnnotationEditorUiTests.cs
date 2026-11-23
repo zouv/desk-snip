@@ -30,9 +30,12 @@ public class AnnotationEditorUiTests
         var image = Image(); var arrow = Shape(AnnotationKind.Arrow); var rectangle = Shape(AnnotationKind.Rectangle);
         Assert.Equal(-1, AnnotationRenderer.HitTest(image, new[] { arrow }, new PixelPoint(20, 80)));
         Assert.Equal(0, AnnotationRenderer.HitTest(image, new[] { arrow }, new PixelPoint(50, 50)));
-        Assert.Equal(0, AnnotationRenderer.HitTest(image, new[] { rectangle }, new PixelPoint(50, 50)));
+        Assert.Equal(-1, AnnotationRenderer.HitTest(image, new[] { rectangle }, new PixelPoint(50, 50)));
+        Assert.Equal(0, AnnotationRenderer.HitTest(image, new[] { rectangle }, new PixelPoint(20, 50)));
+        var filled = new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(20, 20), new PixelPoint(80, 80) }, 0xffff0000, 3, appearance: new AnnotationAppearance(fill: true));
+        Assert.Equal(0, AnnotationRenderer.HitTest(image, new[] { filled }, new PixelPoint(50, 50)));
         Assert.Equal(-1, AnnotationRenderer.HitTest(image, new[] { Shape(AnnotationKind.Ellipse) }, new PixelPoint(20, 20), tolerance: 0));
-        Assert.Equal(1, AnnotationRenderer.HitTest(image, new[] { arrow, rectangle }, new PixelPoint(50, 50)));
+        Assert.Equal(0, AnnotationRenderer.HitTest(image, new[] { arrow, rectangle }, new PixelPoint(50, 50)));
         Assert.Equal(0, AnnotationRenderer.HitTest(image, new[] { arrow, rectangle }, new PixelPoint(50, 50), AnnotationKind.Arrow));
     });
 
@@ -58,14 +61,14 @@ public class AnnotationEditorUiTests
     [Fact] public void ObjectDragCommitsOnceAndCopyLeavesOriginal() => ImagingTests.Sta(() =>
     {
         var canvas = new AnnotationCanvas(Image()); var original = Shape(AnnotationKind.Rectangle); canvas.Document.Add(original); canvas.SetTool(null);
-        Assert.True(canvas.SelectAt(new PixelPoint(50, 50))); var revision = canvas.Revision;
-        canvas.BeginObjectDrag(new PixelPoint(50, 50), false);
+        Assert.True(canvas.SelectAt(new PixelPoint(50, 20))); var revision = canvas.Revision;
+        canvas.BeginObjectDrag(new PixelPoint(50, 20), false);
         for (var x = 1; x <= 20; x++) canvas.UpdateObjectDrag(new PixelPoint(50 + x, 55), false);
         Assert.Equal(revision, canvas.Revision); canvas.EndObjectDrag(); Assert.Equal(revision + 1, canvas.Revision);
         Assert.Equal(40, canvas.Document.Items[0].Points[0].X);
         canvas.Document.Undo(); canvas.Refresh(); Assert.Same(original, canvas.Document.Items[0]);
-        canvas.SelectAt(new PixelPoint(50, 50)); canvas.BeginObjectDrag(new PixelPoint(50, 50), true);
-        canvas.UpdateObjectDrag(new PixelPoint(80, 60), true); canvas.EndObjectDrag();
+        canvas.SelectAt(new PixelPoint(50, 20)); canvas.BeginObjectDrag(new PixelPoint(50, 20), true);
+        canvas.UpdateObjectDrag(new PixelPoint(80, 30), true); canvas.EndObjectDrag();
         Assert.Equal(2, canvas.Document.Items.Count); Assert.Same(original, canvas.Document.Items[0]);
         Assert.Equal(50, canvas.Document.Items[1].Points[0].X); Assert.Equal(20, canvas.Document.Items[1].Points[0].Y);
         canvas.Document.Undo(); canvas.Refresh(); Assert.Single(canvas.Document.Items);
@@ -158,7 +161,7 @@ public class AnnotationEditorUiTests
         var canvas = new AnnotationCanvas(Image());
         canvas.Document.Add(Shape(AnnotationKind.Ellipse)); canvas.Document.Add(Shape(AnnotationKind.Rectangle));
         canvas.SetTool(AnnotationKind.Ellipse);
-        Assert.True(canvas.SelectAt(new PixelPoint(50, 50))); Assert.Equal(AnnotationKind.Rectangle, canvas.Selected!.Kind);
+        Assert.True(canvas.SelectAt(new PixelPoint(50, 20))); Assert.Equal(AnnotationKind.Rectangle, canvas.Selected!.Kind);
         canvas.ChangeCorner(true); Assert.Equal(AnnotationKind.RoundedRectangle, canvas.Selected!.Kind);
         canvas.ChangeCorner(false); Assert.Equal(AnnotationKind.Rectangle, canvas.Selected!.Kind);
     });
@@ -171,12 +174,30 @@ public class AnnotationEditorUiTests
         canvas.UpdateHandleDrag(new PixelPoint(40, 30)); canvas.EndHandleDrag();
         Assert.Equal(new PixelPoint(40, 30), canvas.Selected!.Points[0]);
         canvas.Document.Add(Shape(AnnotationKind.Rectangle));
-        Assert.True(canvas.SelectAt(new PixelPoint(50, 50)));
+        Assert.True(canvas.SelectAt(new PixelPoint(20, 50)));
         var bounds = AnnotationRenderer.Bounds(canvas.Image, canvas.Selected!);
         var before = canvas.Selected!.Points[1];
         Assert.True(canvas.TryBeginHandleDrag(new PixelPoint((int)bounds.Right, (int)bounds.Bottom)));
         canvas.UpdateHandleDrag(new PixelPoint((int)bounds.Right + 20, (int)bounds.Bottom + 20)); canvas.EndHandleDrag();
         Assert.NotEqual(before, canvas.Selected!.Points[1]);
+    });
+
+    [Fact] public void ShapeEdgeHandlesAndNumericSizeAdjustWidthAndHeightIndependently() => ImagingTests.Sta(() =>
+    {
+        var canvas = new AnnotationCanvas(Image());
+        canvas.Document.Add(Shape(AnnotationKind.Rectangle)); canvas.SetTool(AnnotationKind.Rectangle);
+        Assert.True(canvas.SelectAt(new PixelPoint(20, 50)));
+        var original = AnnotationRenderer.Bounds(canvas.Image, canvas.Selected!);
+        var right = new PixelPoint((int)Math.Round(original.Right), (int)Math.Round(original.Top + original.Height / 2));
+        Assert.True(canvas.TryBeginHandleDrag(right));
+        canvas.UpdateHandleDrag(new PixelPoint(right.X + 20, right.Y)); canvas.EndHandleDrag();
+        var widened = AnnotationRenderer.Bounds(canvas.Image, canvas.Selected!);
+        Assert.InRange(widened.Width, original.Width + 19, original.Width + 21); Assert.InRange(widened.Height, original.Height - 1, original.Height + 1);
+        var left = widened.Left; var top = widened.Top;
+        Assert.True(canvas.ResizeSelected(40, 30));
+        var sized = AnnotationRenderer.Bounds(canvas.Image, canvas.Selected!);
+        Assert.InRange(sized.Width, 39, 41); Assert.InRange(sized.Height, 29, 31);
+        Assert.InRange(sized.Left, left - 1, left + 1); Assert.InRange(sized.Top, top - 1, top + 1);
     });
 
     [Fact] public void EditorStylePanelReflectsSavedToolStyleWithoutSelection() => ImagingTests.Sta(() =>
@@ -230,7 +251,7 @@ public class AnnotationEditorUiTests
     {
         var canvas = new AnnotationCanvas(Image());
         canvas.Document.Add(new Annotation(AnnotationKind.RoundedRectangle, new[] { new PixelPoint(20, 20), new PixelPoint(80, 80) }, 0xffff0000, 3, appearance: new AnnotationAppearance(cornerRadius: 18)));
-        canvas.SetTool(null); Assert.True(canvas.SelectAt(new PixelPoint(50, 50)));
+        canvas.SetTool(null); Assert.True(canvas.SelectAt(new PixelPoint(20, 50)));
         canvas.ChangeCorner(false); Assert.Equal(AnnotationKind.Rectangle, canvas.Selected!.Kind); Assert.Equal(0, canvas.Selected.Appearance.CornerRadius);
     });
 
@@ -242,7 +263,7 @@ public class AnnotationEditorUiTests
         Assert.True(Pixel(output, 55, 55)[2] > 240);
     });
 
-    [Fact] public void InlineToolbarHasNoSelectToolAndShowsContextOptions() => ImagingTests.Sta(() =>
+    [Fact] public void InlineToolbarExposesSelectToolAndContextOptions() => ImagingTests.Sta(() =>
     {
         AnnotationToolDefaults.Load("");
         try
@@ -250,7 +271,9 @@ public class AnnotationEditorUiTests
             var canvas = new AnnotationCanvas(Image());
             var bar = new InlineAnnotationBar(canvas, new AppSettings(), withFinish: true, showShortcuts: false);
             bar.Measure(new Size(1200, 400)); bar.Arrange(new Rect(0, 0, 1200, 400)); bar.UpdateLayout();
-            Assert.DoesNotContain(bar.Items.Children.OfType<Button>(), button => AutomationProperties.GetName(button) == "选择 / 移动");
+            var select = bar.Items.Children.OfType<Button>().Single(button => AutomationProperties.GetName(button) == "选择");
+            select.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Null(canvas.Kind); Assert.Same(FloatingTools.Selected, select.Background);
             canvas.SetTool(AnnotationKind.Rectangle);
             Assert.Equal(Visibility.Visible, bar.Options.Visibility);
             var previewDirectory = Environment.GetEnvironmentVariable("DESK_SNIP_TEST_PREVIEW_DIR");
@@ -260,6 +283,17 @@ public class AnnotationEditorUiTests
             fillBox.IsChecked = true; fillBox.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
             Assert.True(canvas.Appearance.Fill);
             Assert.Contains(options.OfType<ComboBox>(), box => AutomationProperties.GetName(box) == "圆角半径");
+            var sizeBoxes = options.OfType<ComboBox>().Where(box => AutomationProperties.GetName(box) == "宽" || AutomationProperties.GetName(box) == "高").ToArray();
+            Assert.Equal(2, sizeBoxes.Length); Assert.All(sizeBoxes, box => Assert.False(box.IsEnabled));
+            canvas.Document.Add(Shape(AnnotationKind.Rectangle));
+            Assert.True(canvas.SelectAt(new PixelPoint(20, 50)));
+            Assert.All(sizeBoxes, box => Assert.True(box.IsEnabled));
+            var widthBox = sizeBoxes.Single(box => AutomationProperties.GetName(box) == "宽");
+            var heightBox = sizeBoxes.Single(box => AutomationProperties.GetName(box) == "高");
+            widthBox.Text = "40"; heightBox.Text = "30";
+            heightBox.RaiseEvent(new System.Windows.Input.KeyboardFocusChangedEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, 0, heightBox, null) { RoutedEvent = System.Windows.Input.Keyboard.LostKeyboardFocusEvent });
+            var resized = AnnotationRenderer.Bounds(canvas.Image, canvas.Selected!);
+            Assert.InRange(resized.Width, 39, 41); Assert.InRange(resized.Height, 29, 31);
             var swatches = options.OfType<Border>().Where(border => border.ToolTip is string tip && tip.StartsWith("#", StringComparison.Ordinal)).ToArray();
             Assert.NotEmpty(swatches);
             var swatch = swatches.First(); var expected = 0xff000000u | uint.Parse(((string)swatch.ToolTip!).Substring(1), System.Globalization.NumberStyles.HexNumber);
@@ -274,6 +308,7 @@ public class AnnotationEditorUiTests
             Preview(bar, previewDirectory, "inline-toolbar-text.png");
             Assert.Contains(textOptions.OfType<ComboBox>(), box => AutomationProperties.GetName(box) == "字体");
             Assert.Contains(textOptions.OfType<ComboBox>(), box => AutomationProperties.GetName(box) == "字号");
+            Assert.True(textOptions.OfType<ComboBox>().Single(box => AutomationProperties.GetName(box) == "字号").Width >= 68);
             Assert.DoesNotContain(textOptions.OfType<CheckBox>(), box => Equals(box.Content, "填充"));
             canvas.SetTool(AnnotationKind.Blur);
             Assert.DoesNotContain(Descendants(bar.Options).OfType<Border>(), border => border.ToolTip is string tip && tip.StartsWith("#", StringComparison.Ordinal));

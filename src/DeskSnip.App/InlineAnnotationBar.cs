@@ -31,6 +31,8 @@ internal sealed class InlineAnnotationBar : StackPanel
         Name = "InlineAnnotationTools"; Orientation = Orientation.Vertical; HorizontalAlignment = HorizontalAlignment.Left;
         toolbar = new FloatingToolbar { Name = "InlineAnnotationToolsMain", HorizontalAlignment = HorizontalAlignment.Left };
         Children.Add(toolbar);
+        var select = FloatingTools.Button(ToolGlyph.Select, L.Get("选择"), () => SelectTool(null));
+        Items.Children.Add(select); toolButtons.Add((select, new AnnotationKind?[] { null }));
         AddGroup(ToolGlyph.Rectangle, L.Get("形状工具"), "Rectangle");
         AddGroup(ToolGlyph.Arrow, L.Get("箭头与线条"), "Arrow");
         AddGroup(ToolGlyph.Brush, L.Get("画笔与高亮"), "Pen");
