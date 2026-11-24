@@ -2,13 +2,13 @@
 
 ## 状态快照
 
-- 最近更新：2026-11-24。当前版本 0.5.0，main、v0.5.0 标签与 GitHub Release 均已发布；Release 页面：https://github.com/zouv/desk-snip/releases/tag/v0.5.0。应用图标生产版为毛玻璃版；生产 XAML、Assets 与免安装包均已更新。录屏复制进度反馈、复制卡顿/剪贴板失效修复、录制前后工具栏样式/位置修复，以及录屏后回放布局/首帧/视频内进度条切换均已交付并重新打包；无进行中任务。
+- 最近更新：2026-11-24。当前版本 0.5.1，main、v0.5.1 标签与 GitHub Release 均已发布；Release 页面：https://github.com/zouv/desk-snip/releases/tag/v0.5.1。应用图标生产版为毛玻璃版；生产 XAML、Assets 与免安装包均已更新。录屏复制进度反馈、复制卡顿/剪贴板失效修复、录制前后工具栏样式/位置修复，以及录屏后回放布局/首帧/视频内进度条切换均已交付并重新打包；无进行中任务。
 - 远程 origin 已关联 https://github.com/zouv/desk-snip，本地 main 按用户要求推送并跟踪该远端。
-- 最后验证：2026-11-24 `sh manager.sh verify` 通过：完整 357 项测试、严格编译 0 警告、check-docs 全部通过（毛玻璃图标、复制进度、剪贴板、工具栏样式/位置与回放布局/首帧（MediaElement）/视频内进度条接入后）。注意 `FfmpegTests.EnhancedRecordingKeepsRecoverableSourceAndExports` 运行时偶发计时失败，单独复跑与完整复跑均通过，疑似时序抖动。0.5.0 发布日志为 `.runtime/release-0.5.0-verify.log`、`.runtime/release-0.5.0-package.log`。真实桌面输入与截图仍未完成，不能写成实机验收通过。
-- 最新包：dist/release/DeskSnip_0.5.0_win-x64-unpack.zip 与 dist/dev/DeskSnip_0.5.0_win-x64-unpack-debug.zip；毛玻璃图标、复制进度、剪贴板、工具栏样式/位置与回放布局/首帧（MediaElement）/视频内进度条均已重新打包，SHA256SUMS.txt 已生成。
+- 最后验证：2026-11-24 `sh manager.sh verify` 通过：完整 357 项测试、严格编译 0 警告、check-docs 全部通过（毛玻璃图标、复制进度、剪贴板、工具栏样式/位置与回放布局/首帧（MediaElement）/视频内进度条接入后）。注意 `FfmpegTests.EnhancedRecordingKeepsRecoverableSourceAndExports` 运行时偶发计时失败，单独复跑与完整复跑均通过，疑似时序抖动。0.5.1 发布日志为 `.runtime/release-0.5.1-verify.log`、`.runtime/release-0.5.1-package.log`。真实桌面输入与截图仍未完成，不能写成实机验收通过。
+- 最新包：dist/release/DeskSnip_0.5.1_win-x64-unpack.zip 与 dist/dev/DeskSnip_0.5.1_win-x64-unpack-debug.zip；毛玻璃图标、复制进度、剪贴板、工具栏样式/位置与回放布局/首帧（MediaElement）/视频内进度条均已重新打包，SHA256SUMS.txt 已生成。
 - 用户已确认中英文切换；旧版任务栏图标正常。毛玻璃版图标的程序/窗口/托盘/任务栏效果待实机查看。0.3.0 发布轮完成版本与发布文档更新，并实机验证钉图交互；截图选区验收仍待人工操作。
 - PixPin 实机对照仍未完成。此前桌面操作被物理 Escape 中止，未更改 PixPin 配置；继续时重新选择窗口。上次独立测试窗口信息见 .runtime/blue-visual-run.json。
-- 本轮验证记录：.runtime/release-0.5.0-verify.log、release-0.5.0-package.log；较早轮次见 release-0.4.x 同名日志。日志与测试截图均不入库。
+- 本轮验证记录：.runtime/release-0.5.1-verify.log、release-0.5.1-package.log；较早轮次见 release-0.4.x 同名日志。日志与测试截图均不入库。
 
 ## 后续 · PixPin 实机对照待继续
 
