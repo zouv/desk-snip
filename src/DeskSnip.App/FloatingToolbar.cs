@@ -33,6 +33,11 @@ internal static class FloatingTools
     internal static readonly Brush Hover = Frozen("#F0F3F7");
     internal static readonly Brush Selected = Frozen("#E8F2FF");
     internal static readonly Brush Edge = Frozen("#E2E6EC");
+    internal const double RecordDotSize = 8;
+    internal const double RecordTimeFontSize = 12;
+    internal const double RecordTimeMinWidth = 40;
+    internal const double RecordFpsFontSize = 11;
+    internal static readonly Thickness RecordFpsMargin = new Thickness(6, 0, 8, 0);
     [ThreadStatic] private static Style? buttonStyle;
     private static readonly DependencyProperty shortcutProperty = DependencyProperty.RegisterAttached("OriginalShortcut", typeof(string), typeof(FloatingTools), new PropertyMetadata(""));
     private static readonly DependencyProperty widthProperty = DependencyProperty.RegisterAttached("OriginalWidth", typeof(double), typeof(FloatingTools), new PropertyMetadata(double.NaN));
@@ -59,6 +64,18 @@ internal static class FloatingTools
     {
         var button = new Button { Style = buttonStyle ?? (buttonStyle = CreateButtonStyle()), Width = 32, Height = 32, MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Margin = new Thickness(1), Background = primary ? Selected : Brushes.Transparent, Foreground = primary ? Blue : Ink, Cursor = Cursors.Hand };
         SetIcon(button, glyph, name, shortcut); button.Click += (_, _) => action(); return button;
+    }
+    internal static Ellipse RecordDot()
+        => new Ellipse { Width = RecordDotSize, Height = RecordDotSize, Fill = Red, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+    internal static TextBlock RecordTime()
+        => new TextBlock { Text = "00:00", FontFamily = new FontFamily("Consolas"), FontSize = RecordTimeFontSize, Foreground = Ink, MinWidth = RecordTimeMinWidth, TextAlignment = TextAlignment.Left, TextWrapping = TextWrapping.NoWrap, VerticalAlignment = VerticalAlignment.Center };
+    internal static TextBlock RecordFps(string text)
+        => new TextBlock { Text = text, FontSize = RecordFpsFontSize, Foreground = MutedInk, Margin = RecordFpsMargin, TextWrapping = TextWrapping.NoWrap, VerticalAlignment = VerticalAlignment.Center };
+    internal static Button RecordButton(string name, Action action, string shortcut = "")
+    {
+        var button = Button(ToolGlyph.Record, name, action, shortcut, true);
+        button.Content = RecordDot();
+        return button;
     }
     internal static void SetIcon(Button button, ToolGlyph glyph, string name, string shortcut = "")
     {
@@ -106,7 +123,7 @@ internal static class FloatingTools
         content.Children.Add(new ToolIcon(ToolGlyph.Chevron) { Width = 9, Height = 12, Margin = new Thickness(4, 0, 0, 0), Color = MutedInk });
         Button button = null!;
         button = Button(ToolGlyph.More, name, () => Open(menu, button));
-        button.Content = content; button.Width = width > 0 ? width : double.NaN; button.Height = 28; button.ContextMenu = menu;
+        button.Content = content; button.Width = width > 0 ? width : double.NaN; button.Height = 28; button.VerticalAlignment = VerticalAlignment.Center; button.ContextMenu = menu;
         return button;
     }
     internal static Button SplitMenuButton(ToolGlyph glyph, string name, Action primary, ContextMenu menu)

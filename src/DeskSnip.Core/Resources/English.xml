@@ -1991,6 +1991,10 @@ Select, annotate, then copy or pin it to your desktop.</translation>
     <translation>Closed-pin limit</translation>
   </text>
   <text>
+    <source>已取消复制。</source>
+    <translation>Copy canceled.</translation>
+  </text>
+  <text>
     <source>已取消导出，原文件和素材保留。</source>
     <translation>Export canceled. Original files and media are kept.</translation>
   </text>
@@ -3601,6 +3605,18 @@ Select, annotate, then copy or pin it to your desktop.</translation>
   <text>
     <source>正在完成录制，请稍候</source>
     <translation>Finishing recording, please wait.</translation>
+  </text>
+  <text>
+    <source>正在准备复制…</source>
+    <translation>Preparing to copy…</translation>
+  </text>
+  <text>
+    <source>正在准备导出…</source>
+    <translation>Preparing export…</translation>
+  </text>
+  <text>
+    <source>正在复制 {0:0}%…</source>
+    <translation>Copying {0:0}%…</translation>
   </text>
   <text>
     <source>正在停止预览和导出，原文件保留…</source>

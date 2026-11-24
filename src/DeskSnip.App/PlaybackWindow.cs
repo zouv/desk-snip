@@ -27,10 +27,11 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
     private readonly string configured;
     private readonly string kind;
     private readonly RecordingJournal? journal;
-    private readonly MediaElement player = new MediaElement { LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Close };
+    private readonly MediaElement player = new MediaElement { LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Close, ScrubbingEnabled = true };
     private readonly MediaElement systemPlayer = new MediaElement { LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Close, Width = 0, Height = 0 };
     private readonly MediaElement microphonePlayer = new MediaElement { LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Close, Width = 0, Height = 0 };
     private readonly TextBlock status = Ui.Text(L.Get("正在读取视频信息…"), 12, Ui.Subtle);
+    private readonly ProgressBar transfer = new ProgressBar { Height = 4, Minimum = 0, Maximum = 100, Visibility = Visibility.Collapsed, Margin = new Thickness(4, 2, 4, 0), Foreground = Ui.Accent, Background = Brushes.Transparent, BorderThickness = new Thickness(0) };
     private readonly Slider seek = new Slider { Minimum = 0, Maximum = 1, Margin = new Thickness(8) };
     private readonly TextBox start = Input("0");
     private readonly TextBox end = Input("0");
@@ -40,6 +41,7 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
     private readonly TextBlock time = new TextBlock { Text = "00:00", FontFamily = new FontFamily("Consolas"), Foreground = FloatingTools.Ink, VerticalAlignment = VerticalAlignment.Center, Width = 48, TextAlignment = TextAlignment.Center };
     private Button? playButton;
     private Button? topmostButton;
+    private Button? copyButton;
     private Popup? advancedPopup;
     private readonly string saveDirectory;
     private readonly ComboBox encoder = new ComboBox { Width = 120, ItemsSource = new[] { L.Get("软件"), L.Get("自动硬件"), "NVIDIA", "Intel", "AMD" }, SelectedIndex = 0, Margin = new Thickness(4) };
@@ -50,6 +52,8 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
     private CancellationTokenSource? cancellation;
     private MediaInfo? info;
     private bool updatingSeek;
+    private bool seekDragging;
+    private bool resumeAfterSeek;
     private bool playing;
     private bool closeRequested;
     private bool closed;
@@ -57,9 +61,14 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
     private Task? loading;
     private Task? closeTask;
     private Task? export;
+    private Task? copyTask;
     private string? previewFile;
     private GifBitmapDecoder? gif;
     private Image? gifImage;
+    private readonly Image firstFrame = new Image { Stretch = Stretch.Uniform, IsHitTestVisible = false, Visibility = Visibility.Collapsed };
+    private bool firstFrameDismissed;
+    private Border? inlineVideo;
+    private Border? inlineToolbar;
     private double[] gifTimes = Array.Empty<double>();
     private double gifPosition;
     private readonly bool closeAfterExport;
@@ -70,7 +79,7 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
     private readonly Action? discardPending;
     private readonly bool sourceRequiresExport;
     internal PlaybackWindow(string path, string kind, string configured = "", RecordingJournal? journal = null, bool closeAfterExport = false, Action<string>? outputSaved = null, PixelRect inlineRegion = default, string? outputDirectory = null,
-        bool pending = false, string? defaultSaveFormat = null, Action? discardPending = null, bool sourceRequiresExport = false)
+        bool pending = false, string? defaultSaveFormat = null, Action? discardPending = null, bool sourceRequiresExport = false, AppSettings? settings = null)
     {
         this.closeAfterExport = closeAfterExport; this.outputSaved = outputSaved; this.inlineRegion = inlineRegion;
         this.path = path; this.configured = configured; this.journal = journal; saveDirectory = outputDirectory ?? ""; this.kind = kind;
@@ -78,13 +87,23 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         Title = L.Get("DeskSnip · 回放与剪辑"); Width = 1020; Height = 780; MinWidth = 820; MinHeight = 560; WindowStartupLocation = WindowStartupLocation.CenterScreen;
         if (!inlineRegion.IsEmpty)
         {
-            WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; Topmost = false; ShowInTaskbar = true; WindowStartupLocation = WindowStartupLocation.Manual; Background = Brushes.Black;
+            WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; Topmost = false; ShowInTaskbar = true; WindowStartupLocation = WindowStartupLocation.Manual;
+            AllowsTransparency = true; Background = Brushes.Transparent; MinWidth = 0; MinHeight = 0; Width = Math.Max(1, inlineRegion.Width + 4); Height = Math.Max(1, inlineRegion.Height + 160);
         }
-        var root = new DockPanel { Margin = inlineRegion.IsEmpty ? new Thickness(16) : new Thickness(0) };
-        Content = inlineRegion.IsEmpty ? (UIElement)root : new Border { BorderBrush = Ui.Accent, BorderThickness = new Thickness(1), Child = root };
         if (!inlineRegion.IsEmpty) saveFormat.SelectedItem = this.defaultSaveFormat;
-        var content = new Grid(); content.Children.Add(player); content.Children.Add(systemPlayer); content.Children.Add(microphonePlayer);
-        if (inlineRegion.IsEmpty) BuildFullUi(root, content); else BuildInlineUi(root, content);
+        var content = new Grid(); content.Children.Add(player); content.Children.Add(systemPlayer); content.Children.Add(microphonePlayer); content.Children.Add(firstFrame);
+        if (inlineRegion.IsEmpty)
+        {
+            var root = new DockPanel { Margin = new Thickness(16) };
+            Content = root;
+            BuildFullUi(root, content);
+        }
+        else
+        {
+            var outer = new StackPanel { Orientation = Orientation.Vertical, Background = Brushes.Transparent };
+            Content = outer;
+            BuildInlineUi(outer, content, settings);
+        }
         if (kind == "GIF")
         {
             using (var stream = File.OpenRead(path)) gif = new GifBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
@@ -97,7 +116,17 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             }
             gifImage = new Image { Source = gif.Frames[0] }; content.Children.Add(gifImage); player.Visibility = Visibility.Collapsed;
         }
-        player.MediaOpened += (_, _) => { if (info == null && player.NaturalDuration.HasTimeSpan) SetInfo(new MediaInfo { Width = player.NaturalVideoWidth, Height = player.NaturalVideoHeight, Duration = player.NaturalDuration.TimeSpan.TotalSeconds }); };
+        if (!inlineRegion.IsEmpty && kind != "GIF") _ = LoadFirstFrameAsync();
+        player.MediaOpened += (_, _) =>
+        {
+            if (info == null && player.NaturalDuration.HasTimeSpan) SetInfo(new MediaInfo { Width = player.NaturalVideoWidth, Height = player.NaturalVideoHeight, Duration = player.NaturalDuration.TimeSpan.TotalSeconds });
+            if (!inlineRegion.IsEmpty && !firstFrameDismissed && !playing)
+            {
+                firstFrameDismissed = true; firstFrame.Visibility = Visibility.Collapsed; player.Visibility = Visibility.Visible;
+                var muted = player.IsMuted; player.Position = TimeSpan.Zero;
+                try { player.IsMuted = true; player.Play(); player.Pause(); } finally { player.IsMuted = muted; }
+            }
+        };
         player.MediaEnded += (_, _) => { playing = false; UpdatePlayButton(); };
         player.MediaFailed += (_, _) => status.Text = L.Get("系统播放器无法解码，仍可尝试通过 FFmpeg 导出。");
         seek.ValueChanged += (_, _) => { if (!updatingSeek) Position(seek.Value); };
@@ -114,7 +143,7 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         timer.Tick += (_, _) =>
         {
             if (gif != null && playing) { gifPosition += .1 * SpeedValue; if (gifPosition >= gifTimes.Last()) gifPosition = 0; SetGifFrame(); }
-            updatingSeek = true; seek.Value = CurrentPosition(); updatingSeek = false;
+            if (!seekDragging) { updatingSeek = true; seek.Value = CurrentPosition(); updatingSeek = false; }
             if (!inlineRegion.IsEmpty) { time.Text = Clock(CurrentPosition()); status.ToolTip = status.Text; }
         }; timer.Start();
         Closing += (_, e) => { if (closed) return; e.Cancel = true; _ = CloseSafelyAsync(); };
@@ -126,12 +155,30 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             if (pending) { try { discardPending?.Invoke(); } catch (Exception) { } }
         };
     }
+    private async Task LoadFirstFrameAsync()
+    {
+        try
+        {
+            var bitmap = await Task.Run(() =>
+            {
+                using var reader = new VideoReader(path);
+                var frame = reader.ReadFrame();
+                if (frame == null) return null;
+                var image = BitmapSource.Create(reader.Width, reader.Height, 96, 96, PixelFormats.Bgr32, null, frame.Pixels, reader.Width * 4);
+                image.Freeze();
+                return image;
+            });
+            if (bitmap == null || closed || firstFrameDismissed) return;
+            await Dispatcher.InvokeAsync(() => { if (!closed && !firstFrameDismissed) { firstFrame.Source = bitmap; firstFrame.Visibility = Visibility.Visible; } });
+        }
+        catch { }
+    }
     private void BuildFullUi(DockPanel root, Grid content)
     {
         var top = new WrapPanel(); DockPanel.SetDock(top, Dock.Top); root.Children.Add(top);
         top.Children.Add(Ui.Button(L.Get("播放 / 暂停"), Toggle)); top.Children.Add(Ui.Button(L.Get("从头播放"), () => { Position(0); Play(); })); top.Children.Add(speed);
         top.Children.Add(Ui.Button(L.Get("导出 MP4"), () => { _ = Export("MP4"); }, true)); top.Children.Add(Ui.Button(L.Get("导出 GIF"), () => { _ = Export("GIF"); })); top.Children.Add(Ui.Button(L.Get("导出 WebP"), () => { _ = Export("WebP"); }));
-        top.Children.Add(Ui.Button(L.Get("复制录制文件"), () => { _ = CopyFile(); })); top.Children.Add(Ui.Button(L.Get("取消导出"), () => cancellation?.Cancel()));
+        copyButton = Ui.Button(L.Get("复制录制文件"), () => { _ = CopyFile(); }); top.Children.Add(copyButton); top.Children.Add(Ui.Button(L.Get("取消导出"), () => cancellation?.Cancel()));
         var bottom = new StackPanel(); DockPanel.SetDock(bottom, Dock.Bottom); root.Children.Add(bottom); bottom.Children.Add(seek);
         var trims = new WrapPanel(); bottom.Children.Add(trims); trims.Children.Add(Ui.Text(L.Get("开始 / 结束秒"))); trims.Children.Add(start); trims.Children.Add(end);
         trims.Children.Add(Ui.Button(L.Get("以当前位置为开始"), () => start.Text = CurrentPosition().ToString("0.###", CultureInfo.InvariantCulture)));
@@ -140,21 +187,25 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         options.Children.Add(Ui.Text(L.Get("画质"))); options.Children.Add(quality); options.Children.Add(encoder);
         var audio = new WrapPanel(); bottom.Children.Add(audio); audio.Children.Add(Ui.Text(L.Get("系统声"))); audio.Children.Add(systemVolume); audio.Children.Add(Ui.Text(L.Get("麦克风"))); audio.Children.Add(microphoneVolume); audio.Children.Add(Ui.Text(L.Get("0 为静音；GIF/WebP 没有声音。"), 12, Ui.Subtle));
         bottom.Children.Add(status);
+        bottom.Children.Add(transfer);
         root.Children.Add(content);
     }
-    private void BuildInlineUi(DockPanel root, Grid content)
+    private void BuildInlineUi(Panel root, Grid content, AppSettings? settings)
     {
         content.Background = Brushes.Black;
-        var bottom = new Border
+        inlineVideo = new Border
         {
-            Background = Brushes.White, BorderBrush = FloatingTools.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(8, 6, 8, 6), Margin = new Thickness(4, 4, 4, 4),
-            Effect = new DropShadowEffect { Color = Colors.Black, BlurRadius = 10, ShadowDepth = 2, Opacity = .18 }
+            BorderBrush = FloatingTools.Blue, BorderThickness = new Thickness(2), Background = Brushes.Black, Child = content,
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+            Width = Math.Max(1, inlineRegion.Width + 4), Height = Math.Max(1, inlineRegion.Height + 4)
         };
-        DockPanel.SetDock(bottom, Dock.Bottom); root.Children.Add(bottom);
-        bottom.PreviewMouseLeftButtonDown += (_, e) => { if (e.ChangedButton == MouseButton.Left && !IsInteractive(e.OriginalSource as DependencyObject)) { DragMove(); e.Handled = true; } };
-        var stack = new StackPanel();
-        seek.Height = 18; seek.Margin = new Thickness(2, 0, 2, 4); seek.IsMoveToPointEnabled = true; stack.Children.Add(seek);
+        root.Children.Add(inlineVideo);
+        seek.Height = 18; seek.Margin = new Thickness(4, 0, 4, 2); seek.IsMoveToPointEnabled = true; seek.VerticalAlignment = VerticalAlignment.Bottom;
+        Panel.SetZIndex(seek, 10); content.Children.Add(seek);
+        seek.PreviewMouseLeftButtonDown += (_, e) => BeginSeek(e);
+        seek.PreviewMouseMove += (_, e) => { if (seekDragging && e.LeftButton == MouseButtonState.Pressed) { UpdateSeek(e.GetPosition(seek).X); e.Handled = true; } };
+        seek.PreviewMouseLeftButtonUp += (_, e) => { EndSeek(); e.Handled = true; };
+        seek.LostMouseCapture += (_, _) => EndSeek();
         var bar = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
         var grip = new Border { Width = 20, Height = 28, Cursor = Cursors.SizeAll, Background = Brushes.Transparent, ToolTip = L.Get("拖动回放窗口"), Child = new ToolIcon(ToolGlyph.Grip) { Width = 12, Height = 18, Color = FloatingTools.MutedInk } };
         grip.MouseLeftButtonDown += (_, e) => { if (e.ButtonState == MouseButtonState.Pressed) DragMove(); e.Handled = true; };
@@ -183,15 +234,23 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         bar.Children.Add(grip);
         bar.Children.Add(FloatingTools.Button(ToolGlyph.Close, L.Get("关闭"), () => { _ = CloseSafelyAsync(); }));
         bar.Children.Add(FloatingTools.Button(ToolGlyph.Save, L.Get("保存录屏"), () => { _ = SaveRecording(); }, "", true));
-        bar.Children.Add(FloatingTools.Button(ToolGlyph.Copy, L.Get("复制录制文件"), () => { _ = CopyFile(); }));
+        copyButton = FloatingTools.Button(ToolGlyph.Copy, L.Get("复制录制文件"), () => { _ = CopyFile(); }); bar.Children.Add(copyButton);
         bar.Children.Add(FloatingTools.Button(ToolGlyph.Restart, L.Get("从头播放"), () => { Position(0); Play(); }));
-        stack.Children.Add(bar);
-        status.FontSize = 11; status.Margin = new Thickness(4, 2, 4, 0); status.TextWrapping = TextWrapping.NoWrap; status.TextTrimming = TextTrimming.CharacterEllipsis; status.Foreground = FloatingTools.MutedInk; stack.Children.Add(status);
-        bottom.Child = stack;
+        inlineToolbar = new Border
+        {
+            Background = Brushes.White, BorderBrush = FloatingTools.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(7),
+            Padding = new Thickness(4), Margin = new Thickness(2, 6, 2, 0),
+            Effect = new DropShadowEffect { Color = Colors.Black, BlurRadius = 10, ShadowDepth = 2, Opacity = .14 },
+            Child = bar, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top
+        };
+        inlineToolbar.PreviewMouseLeftButtonDown += (_, e) => { if (e.ChangedButton == MouseButton.Left && !IsInteractive(e.OriginalSource as DependencyObject)) { DragMove(); e.Handled = true; } };
+        root.Children.Add(inlineToolbar);
+        status.FontSize = 11; status.Margin = new Thickness(4, 2, 4, 0); status.TextWrapping = TextWrapping.NoWrap; status.TextTrimming = TextTrimming.CharacterEllipsis; status.Foreground = FloatingTools.MutedInk; status.HorizontalAlignment = HorizontalAlignment.Left; root.Children.Add(status);
+        root.Children.Add(transfer);
+        FloatingTools.Configure(bar, settings?.ToolbarIconSize ?? "Medium", settings?.ScreenshotShowShortcuts ?? true);
         advancedPopup = BuildAdvancedPopup(advanced);
         PreviewMouseDown += (_, _) => { if (advancedPopup?.IsOpen == true && !advanced.IsMouseOver) advancedPopup.IsOpen = false; };
         Deactivated += (_, _) => { if (advancedPopup != null) advancedPopup.IsOpen = false; };
-        root.Children.Add(content);
     }
     private Popup BuildAdvancedPopup(FrameworkElement target)
     {
@@ -217,13 +276,19 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         if (inlineRegion.IsEmpty) return;
         var handle = new WindowInteropHelper(this).Handle; if (handle == IntPtr.Zero) return;
         var dpi = VisualTreeHelper.GetDpi(this);
-        var screen = System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point(inlineRegion.X + inlineRegion.Width / 2, inlineRegion.Y + inlineRegion.Height / 2));
-        var work = screen.WorkingArea;
-        var width = Math.Min(work.Width, Math.Max(inlineRegion.Width, (int)Math.Ceiling(820 * dpi.DpiScaleX)));
-        var height = Math.Min(work.Height, Math.Max(inlineRegion.Height, (int)Math.Ceiling(560 * dpi.DpiScaleY)));
-        var x = Math.Max(work.Left, Math.Min(inlineRegion.X + (inlineRegion.Width - width) / 2, work.Right - width));
-        var y = Math.Max(work.Top, Math.Min(inlineRegion.Y + (inlineRegion.Height - height) / 2, work.Bottom - height));
-        Native.SetWindowPos(handle, Topmost ? Native.Topmost : IntPtr.Zero, x, y, width, height, 0x0040);
+        if (inlineVideo != null)
+        {
+            inlineVideo.Width = Math.Max(1, (inlineRegion.Width + 4) / dpi.DpiScaleX);
+            inlineVideo.Height = Math.Max(1, (inlineRegion.Height + 4) / dpi.DpiScaleY);
+            inlineVideo.BorderThickness = new Thickness(2 / dpi.DpiScaleX, 2 / dpi.DpiScaleY, 2 / dpi.DpiScaleX, 2 / dpi.DpiScaleY);
+        }
+        if (inlineToolbar != null) inlineToolbar.Margin = new Thickness(2 / dpi.DpiScaleX, 6 / dpi.DpiScaleY, 2 / dpi.DpiScaleX, 0);
+        var outer = Content as FrameworkElement; if (outer == null) return;
+        outer.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var width = Math.Max(inlineVideo?.Width ?? 1, outer.DesiredSize.Width);
+        var height = outer.DesiredSize.Height;
+        Width = width; Height = height;
+        Native.SetWindowPos(handle, Topmost ? Native.Topmost : IntPtr.Zero, inlineRegion.X - 2, inlineRegion.Y - 2, (int)Math.Ceiling(width * dpi.DpiScaleX), (int)Math.Ceiling(height * dpi.DpiScaleY), 0x0040);
     }
     private static TextBox Input(string value) => new TextBox { Text = value, Width = 70, Margin = new Thickness(4), Padding = new Thickness(4), VerticalContentAlignment = VerticalAlignment.Center };
     private async Task Load(string kind)
@@ -251,7 +316,7 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         }
         if (inlineRegion.IsEmpty) Play(); else UpdatePlayButton();
     }
-    private void SetInfo(MediaInfo media) { info = media; seek.Maximum = media.Duration; end.Text = media.Duration.ToString("0.###", CultureInfo.InvariantCulture); crop[2].Text = media.Width.ToString(); crop[3].Text = media.Height.ToString(); status.Text = L.Format("{0} × {1} · {2:0.0} 秒；设置导出范围、倍速、裁剪及音量。",media.Width,media.Height,media.Duration); }
+    private void SetInfo(MediaInfo media) { info = media; seek.Maximum = media.Duration; end.Text = media.Duration.ToString("0.###", CultureInfo.InvariantCulture); crop[2].Text = media.Width.ToString(); crop[3].Text = media.Height.ToString(); status.Text = L.Format("{0} × {1} · {2:0.0} 秒；设置导出范围、倍速、裁剪及音量。",media.Width,media.Height,media.Duration); if (!inlineRegion.IsEmpty) PositionOverlay(); }
     private double CurrentPosition() => gif != null ? gifPosition : player.Position.TotalSeconds;
     private double SpeedValue => speed.SelectedItem is string value && double.TryParse(value.TrimEnd('X'), NumberStyles.Float, CultureInfo.InvariantCulture, out var rate) ? rate : 1;
     private static string Clock(double seconds)
@@ -277,21 +342,44 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             if (node is Button || node is ComboBox || node is TextBox || node is Slider || node is ScrollBar) return true;
         return false;
     }
-    private void Position(double seconds) { if (gif != null) { gifPosition = seconds; SetGifFrame(); } else player.Position = TimeSpan.FromSeconds(seconds); systemPlayer.Position = microphonePlayer.Position = TimeSpan.FromSeconds(seconds); }
+    private void Position(double seconds) { firstFrameDismissed = true; firstFrame.Visibility = Visibility.Collapsed; player.Visibility = Visibility.Visible; if (gif != null) { gifPosition = seconds; SetGifFrame(); } else player.Position = TimeSpan.FromSeconds(seconds); systemPlayer.Position = microphonePlayer.Position = TimeSpan.FromSeconds(seconds); }
     private void SetGifFrame() { if (gif == null || gifImage == null) return; var index = Array.FindLastIndex(gifTimes, t => t <= gifPosition); gifImage.Source = gif.Frames[Math.Max(0, Math.Min(gif.Frames.Count - 1, index))]; }
-    private void Play() { playing = true; player.Play(); if (systemPlayer.Source != null) systemPlayer.Play(); if (microphonePlayer.Source != null) microphonePlayer.Play(); UpdatePlayButton(); }
+    private void BeginSeek(MouseButtonEventArgs e)
+    {
+        if (seekDragging) return;
+        seekDragging = true;
+        resumeAfterSeek = playing;
+        if (playing) Toggle();
+        seek.CaptureMouse();
+        UpdateSeek(e.GetPosition(seek).X);
+        e.Handled = true;
+    }
+    private void UpdateSeek(double x)
+    {
+        if (seek.ActualWidth <= 0) return;
+        seek.Value = seek.Minimum + (seek.Maximum - seek.Minimum) * Math.Max(0, Math.Min(1, x / seek.ActualWidth));
+    }
+    private void EndSeek()
+    {
+        if (!seekDragging) return;
+        seekDragging = false;
+        if (seek.IsMouseCaptured) seek.ReleaseMouseCapture();
+        if (resumeAfterSeek) { resumeAfterSeek = false; Play(); }
+    }
+    private void Play() { firstFrameDismissed = true; firstFrame.Visibility = Visibility.Collapsed; player.Visibility = Visibility.Visible; playing = true; player.Play(); if (systemPlayer.Source != null) systemPlayer.Play(); if (microphonePlayer.Source != null) microphonePlayer.Play(); UpdatePlayButton(); }
     private void Toggle() { if (!playing) Play(); else { playing = false; player.Pause(); systemPlayer.Pause(); microphonePlayer.Pause(); UpdatePlayButton(); } }
     private VideoEditOptions FullOptions() => new VideoEditOptions { EndSeconds = info!.Duration, Crop = new PixelRect(0, 0, info.Width, info.Height), Quality = 80, FramesPerSecond = 24 };
     private async Task Export(string format)
     {
-        if (export != null || info == null || closeRequested) return;
+        if (export != null || copyTask != null || info == null || closeRequested) return;
         var dialog = new SaveFileDialog { Filter = format + "|*." + format.ToLowerInvariant(), FileName = "DeskSnip-edit." + format.ToLowerInvariant(), AddExtension = true };
         if (dialog.ShowDialog(this) != true) return;
         await ExportTo(format, dialog.FileName);
     }
-    private async Task<bool> ExportTo(string format, string destination, bool notify = true)
+    private async Task<bool> ExportTo(string format, string destination, bool notify = true, string? progressFormat = null)
     {
         if (export != null || info == null || closeRequested) return false;
+        var copyMode = copyTask != null;
         try
         {
             double Parse(TextBox input) => double.TryParse(input.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : throw new ArgumentException(L.Get("时间与裁剪请输入有效数字。"));
@@ -301,22 +389,30 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             options.Validate(info.Duration, info.Width, info.Height);
             var source = journal != null && File.Exists(journal.FilePath("source.mp4")) ? journal.FilePath("source.mp4") : path;
             var system = journal?.Snapshot.SystemAudio; var mic = journal?.Snapshot.MicrophoneAudio;
+            if (!copyMode) BeginTransfer(L.Get("正在准备导出…"), indeterminate: true);
             cancellation = new CancellationTokenSource(); var token = cancellation.Token;
-            var progress = new Progress<double>(percent => { if (!closed) status.Text = L.Format("正在导出 {0:0}%…",percent); });
-            export = Task.Run(() => Ffmpeg.Export(source, destination, options, configured, string.IsNullOrEmpty(system) ? null : journal!.FilePath(system!), string.IsNullOrEmpty(mic) ? null : journal!.FilePath(mic!), token, value => ((IProgress<double>)progress).Report(value)));
+            var lastPercent = -1;
+            var progress = new Progress<double>(percent => { if (!closed) ReportTransfer(percent, progressFormat ?? "正在导出 {0:0}%…"); });
+            export = Task.Run(() => Ffmpeg.Export(source, destination, options, configured, string.IsNullOrEmpty(system) ? null : journal!.FilePath(system!), string.IsNullOrEmpty(mic) ? null : journal!.FilePath(mic!), token, value =>
+            {
+                var whole = (int)Math.Max(0, Math.Min(100, value));
+                if (whole == lastPercent) return;
+                lastPercent = whole;
+                ((IProgress<double>)progress).Report(whole);
+            }));
             await export;
             if (notify) { outputSaved?.Invoke(destination); }
-            if (!closeRequested) { status.Text = L.Get("导出完成。"); if (notify && closeAfterExport) _ = Dispatcher.BeginInvoke(new Action(() => { _ = CloseSafelyAsync(); })); }
+            if (!closeRequested) { if (!copyMode) status.Text = L.Get("导出完成。"); if (notify && closeAfterExport) _ = Dispatcher.BeginInvoke(new Action(() => { _ = CloseSafelyAsync(); })); }
             return true;
         }
-        catch (OperationCanceledException) { status.Text = L.Get("已取消导出，原文件和素材保留。"); return false; }
+        catch (OperationCanceledException) { status.Text = L.Get(copyMode ? "已取消复制。" : "已取消导出，原文件和素材保留。"); return false; }
         catch (InvalidOperationException error) { status.Text = error.Message; return false; }
         catch (Exception error) { if (!closeRequested) Ui.Error(this, error, L.Get("剪辑导出")); return false; }
-        finally { export = null; cancellation?.Dispose(); cancellation = null; }
+        finally { export = null; cancellation?.Dispose(); cancellation = null; if (!copyMode) EndTransfer(); }
     }
     private async Task SaveRecording()
     {
-        if (export != null || closeRequested) return;
+        if (export != null || copyTask != null || closeRequested) return;
         var format = saveFormat.SelectedItem as string ?? defaultSaveFormat;
         using var dialog = new System.Windows.Forms.FolderBrowserDialog { Description = L.Get("选择保存录屏的文件夹"), ShowNewFolderButton = true, SelectedPath = InitialSaveDirectory() };
         if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
@@ -366,28 +462,120 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
     {
         await Task.Yield();
         if (loading != null) { try { await loading; } catch (Exception) { } }
+        if (copyTask != null) { try { await copyTask; } catch (Exception) { } }
         if (export != null) { try { await export; } catch (Exception) { } }
         closed = true; Close();
     }
+    private void BeginTransfer(string message, bool indeterminate = true, double percent = 0)
+    {
+        if (closed || closeRequested) return;
+        transfer.Visibility = Visibility.Visible;
+        transfer.IsIndeterminate = indeterminate;
+        transfer.Value = indeterminate ? 0 : Math.Max(0, Math.Min(100, percent));
+        status.Text = message;
+        if (copyButton != null) copyButton.IsEnabled = false;
+        Mouse.OverrideCursor = Cursors.Wait;
+        if (!inlineRegion.IsEmpty) PositionOverlay();
+    }
+    private void ReportTransfer(double percent, string format)
+    {
+        if (closed || closeRequested) return;
+        var whole = (int)Math.Max(0, Math.Min(100, percent));
+        if (transfer.Visibility == Visibility.Visible && !transfer.IsIndeterminate && (int)transfer.Value == whole) return;
+        transfer.Visibility = Visibility.Visible;
+        transfer.IsIndeterminate = false;
+        transfer.Value = whole;
+        status.Text = L.Format(format, whole);
+    }
+    private void EndTransfer()
+    {
+        Mouse.OverrideCursor = null;
+        if (closed) return;
+        transfer.Visibility = Visibility.Collapsed;
+        transfer.IsIndeterminate = false;
+        transfer.Value = 0;
+        if (copyButton != null) copyButton.IsEnabled = true;
+        if (!inlineRegion.IsEmpty) PositionOverlay();
+    }
     private async Task CopyFile()
     {
+        if (copyTask != null || export != null || closeRequested) return;
+        copyTask = CopyFileCore();
+        try { await copyTask; }
+        catch (OperationCanceledException) { if (!closed) status.Text = L.Get("已取消复制。"); }
+        catch (TimeoutException) { if (!closed) status.Text = L.Get("剪贴板暂时不可用，请稍后重试。"); }
+        catch (System.Runtime.InteropServices.ExternalException) { if (!closed) status.Text = L.Get("剪贴板暂时不可用，请稍后重试。"); }
+        catch (Exception error) { if (!closed) Ui.Error(this, error, L.Get("复制录制文件")); }
+        finally { copyTask = null; EndTransfer(); }
+    }
+    private async Task CopyFileCore()
+    {
+        if (!pending)
+        {
+            await SetClipboardFileAsync(path);
+            return;
+        }
+        var format = saveFormat.SelectedItem as string ?? defaultSaveFormat;
+        var temp = Path.Combine(Path.GetTempPath(), "DeskSnip-recording-" + Guid.NewGuid().ToString("N") + "." + format.ToLowerInvariant());
+        var prepared = false;
         try
         {
-            if (!pending)
+            BeginTransfer(L.Get("正在准备复制…"), indeterminate: true);
+            if (format == kind && !sourceRequiresExport && SpeedValue == 1 && NoEdits())
             {
-                ClipboardRetry.SetFileDropList(new StringCollection { path });
-                status.Text = L.Get("录制文件已复制，可粘贴到文件夹或支持文件的应用。");
-                return;
+                ReportTransfer(0, "正在复制 {0:0}%…");
+                var progress = new Progress<double>(percent => ReportTransfer(percent, "正在复制 {0:0}%…"));
+                await CopyFileWithProgressAsync(path, temp, lifetime.Token, progress);
             }
-            var format = saveFormat.SelectedItem as string ?? defaultSaveFormat;
-            var temp = Path.Combine(Path.GetTempPath(), "DeskSnip-recording-" + Guid.NewGuid().ToString("N") + "." + format.ToLowerInvariant());
-            if (format == kind && !sourceRequiresExport && SpeedValue == 1 && NoEdits()) File.Copy(path, temp, true);
-            else if (!await ExportTo(format, temp, notify: false)) return;
-            if (!File.Exists(temp)) return;
-            ClipboardRetry.SetFileDropList(new StringCollection { temp });
-            status.Text = L.Get("录制文件已复制，可粘贴到文件夹或支持文件的应用。");
+            else if (!await ExportTo(format, temp, notify: false, progressFormat: "正在复制 {0:0}%…")) return;
+            if (!File.Exists(temp) || closeRequested) return;
+            prepared = true;
+            await SetClipboardFileAsync(temp);
         }
-        catch (System.Runtime.InteropServices.ExternalException) { status.Text = L.Get("剪贴板暂时不可用，请稍后重试。"); }
-        catch (Exception error) { Ui.Error(this, error, L.Get("复制录制文件")); }
+        finally
+        {
+            if (!prepared) { try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { } }
+        }
+    }
+    private async Task SetClipboardFileAsync(string file)
+    {
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _ = completion.Task.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        var thread = new Thread(() =>
+        {
+            try { ClipboardRetry.SetFileDropList(new StringCollection { file }); completion.TrySetResult(true); }
+            catch (Exception error) { completion.TrySetException(error); }
+        }) { IsBackground = true };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        if (await Task.WhenAny(completion.Task, Task.Delay(5000)) != completion.Task) throw new TimeoutException();
+        await completion.Task;
+        void Apply() => status.Text = L.Get("录制文件已复制，可粘贴到文件夹或支持文件的应用。");
+        if (Dispatcher.CheckAccess()) Apply();
+        else await Dispatcher.InvokeAsync(Apply);
+    }
+    private static async Task CopyFileWithProgressAsync(string source, string destination, CancellationToken token, IProgress<double> progress)
+    {
+        const int bufferSize = 1024 * 1024;
+        using var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        using var output = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.Asynchronous);
+        var total = input.Length;
+        var buffer = new byte[bufferSize];
+        long copied = 0;
+        var lastPercent = -1;
+        int read;
+        while ((read = await input.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
+        {
+            await output.WriteAsync(buffer, 0, read, token).ConfigureAwait(false);
+            copied += read;
+            if (total <= 0) continue;
+            var percent = Math.Min(100d, copied * 100d / total);
+            var whole = (int)percent;
+            if (whole == lastPercent) continue;
+            lastPercent = whole;
+            progress.Report(percent);
+        }
+        await output.FlushAsync(token).ConfigureAwait(false);
+        if (lastPercent < 100) progress.Report(100);
     }
 }

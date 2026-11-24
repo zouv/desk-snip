@@ -169,6 +169,14 @@ public class CaptureUiTests
             var recordBar = Descendants(content).OfType<FloatingToolbar>().Single(toolbar => toolbar.Name == "CaptureRecordActions");
             var start = recordBar.Items.Children.OfType<Button>().Single(button => AutomationProperties.GetName(button) == "开始录制");
             Assert.InRange(recordBar.Items.Children.IndexOf(start), 0, 1);
+            var dot = Assert.IsType<System.Windows.Shapes.Ellipse>(start.Content);
+            Assert.Equal(FloatingTools.RecordDotSize, dot.Width); Assert.Equal(FloatingTools.RecordDotSize, dot.Height);
+            var time = Descendants(recordBar).OfType<TextBlock>().Single(text => text.Text == "00:00");
+            Assert.Equal(FloatingTools.RecordTimeFontSize, time.FontSize); Assert.Equal(FloatingTools.RecordTimeMinWidth, time.MinWidth); Assert.True(double.IsNaN(time.Width));
+            var fpsText = Descendants(recordBar).OfType<TextBlock>().Single(text => text.Text.EndsWith(" FPS"));
+            Assert.Equal(FloatingTools.RecordFpsFontSize, fpsText.FontSize); Assert.Same(FloatingTools.MutedInk, fpsText.Foreground);
+            var fpsButton = recordBar.Items.Children.OfType<Button>().Single(button => AutomationProperties.GetName(button) == "录制帧率");
+            Assert.True(double.IsNaN(fpsButton.Width));
         }
         finally { window.Close(); }
     });

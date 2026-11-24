@@ -210,10 +210,11 @@ internal sealed partial class CaptureWindow : ProductWindow
         actions.Items.Children.Add(FloatingTools.Button(ToolGlyph.Copy, L.Get("复制截图"), () => Complete(CaptureAction.Copy), "Enter / Ctrl+C", true));
         var recordingPlan = Plan;
         var defaultRecordingFormat = this.settings.RecordingFormat;
-        var recordStart = FloatingTools.Button(ToolGlyph.Record, L.Get("开始录制"), () => Complete(CaptureAction.Record), "Enter", true); recordStart.Foreground = FloatingTools.Red; recordActions.Items.Children.Add(recordStart);
-        var recordTime = Ui.Text("00:00", 12, FloatingTools.Ink); recordTime.FontFamily = new FontFamily("Consolas"); recordTime.Width = 58; recordTime.TextWrapping = TextWrapping.NoWrap; recordTime.VerticalAlignment = VerticalAlignment.Center; recordTime.ToolTip = L.Get("录制时长"); recordActions.Items.Children.Add(recordTime);
+        var recordStart = FloatingTools.RecordButton(L.Get("开始录制"), () => Complete(CaptureAction.Record), "Enter"); recordActions.Items.Children.Add(recordStart);
+        var recordTime = FloatingTools.RecordTime(); recordTime.ToolTip = L.Get("录制时长"); recordActions.Items.Children.Add(recordTime);
         var fpsMenu = FloatingTools.Menu();
-        var recordFps = FloatingTools.TextMenuButton(recordingPlan.Fps + " FPS", L.Get("录制帧率"), fpsMenu, out var recordFpsText, 70);
+        var recordFps = FloatingTools.TextMenuButton(recordingPlan.Fps + " FPS", L.Get("录制帧率"), fpsMenu, out var recordFpsText);
+        recordFpsText.Foreground = FloatingTools.MutedInk; recordFpsText.Margin = new Thickness(0);
         void SetFps(int value) { recordingPlan.Fps = value; recordFpsText.Text = value + " FPS"; }
         foreach (var value in new[] { recordingPlan.Fps, 5, 16, 24, 30, 60 }.Distinct().OrderBy(value => value))
         {

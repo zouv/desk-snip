@@ -259,7 +259,7 @@ internal sealed partial class AppController : IDisposable
             if (entry.Kind == "Image") Edit(ImageFiles.Load(Store.HistoryPath(entry)));
             else
             {
-                var playback = new PlaybackWindow(Store.HistoryPath(entry), entry.Kind, Store.Settings.FfmpegPath, FindRecordingJournal(entry), Store.Settings.RecordingCloseAfterExport, AfterRecordingSaved, inlineRegion, Store.Settings.OutputDirectory);
+                var playback = new PlaybackWindow(Store.HistoryPath(entry), entry.Kind, Store.Settings.FfmpegPath, FindRecordingJournal(entry), Store.Settings.RecordingCloseAfterExport, AfterRecordingSaved, inlineRegion, Store.Settings.OutputDirectory, settings: Store.Settings);
                 if (inlineRegion.IsEmpty) playback.Owner = Window.IsVisible ? Window : null;
                 playback.Show();
             }
@@ -556,9 +556,11 @@ internal sealed partial class AppController : IDisposable
             if (committed) return;
             try { recording.Journal?.Discard(); } catch (Exception) { }
         }
+        recordingBar?.Hide();
+        CloseRecordingOverlay();
         var playback = new PlaybackWindow(recording.PlaybackPath, sourceRequiresExport ? "MP4" : recording.Format, Store.Settings.FfmpegPath, recording.Journal,
             Store.Settings.RecordingCloseAfterExport, Commit, recording.Region, Store.Settings.OutputDirectory,
-            pending: true, defaultSaveFormat: recording.Format, discardPending: Discard, sourceRequiresExport: sourceRequiresExport);
+            pending: true, defaultSaveFormat: recording.Format, discardPending: Discard, sourceRequiresExport: sourceRequiresExport, settings: Store.Settings);
         playback.Show();
     }
     private static void CleanupPendingRecording(RecordingSession recording, bool committed)

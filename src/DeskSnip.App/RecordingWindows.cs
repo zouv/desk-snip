@@ -116,6 +116,7 @@ internal sealed class CountdownWindow : ProductWindow
 
 internal sealed class RecordingBar : ProductWindow
 {
+    private const double ShadowMargin = 6;
     private readonly RecordingSession session;
     private readonly Action stop;
     private readonly Button pause;
@@ -136,13 +137,13 @@ internal sealed class RecordingBar : ProductWindow
         this.session = session; this.stop = stop;
         pauseHotkey = settings?.ScreenshotShowShortcuts == false ? "" : settings?.RecordHotkey ?? "Ctrl+Alt+R";
         Title = L.Get("DeskSnip · 录制中"); WindowStyle = WindowStyle.None; AllowsTransparency = true; Background = Brushes.Transparent; ResizeMode = ResizeMode.NoResize; Topmost = true; ShowInTaskbar = false; ShowActivated = false;
-        var root = new FloatingToolbar { Name = "RecordingControls", Margin = new Thickness(6) }; Content = root;
-        var state = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(3, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center };
-        indicator = new System.Windows.Shapes.Ellipse { Width = 7, Height = 7, Fill = FloatingTools.Red, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) }; state.Children.Add(indicator);
-        label = Ui.Text("00:00", 12, FloatingTools.Ink); label.Width = 78; label.FontFamily = new FontFamily("Consolas"); label.TextWrapping = TextWrapping.NoWrap; label.VerticalAlignment = VerticalAlignment.Center; state.Children.Add(label); root.Items.Children.Add(state);
-        var fps = Ui.Text(session.FramesPerSecond + " FPS", 11, FloatingTools.MutedInk); fps.Margin = new Thickness(0, 0, 8, 0); fps.VerticalAlignment = VerticalAlignment.Center; root.Items.Children.Add(fps);
+        var root = new FloatingToolbar { Name = "RecordingControls", Margin = new Thickness(ShadowMargin) }; Content = root;
+        var state = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(13, 0, 1, 0), VerticalAlignment = VerticalAlignment.Center };
+        indicator = FloatingTools.RecordDot(); indicator.Margin = new Thickness(0, 0, 12, 0); state.Children.Add(indicator);
+        label = FloatingTools.RecordTime(); label.ToolTip = L.Get("录制时长"); state.Children.Add(label); root.Items.Children.Add(state);
+        var fps = FloatingTools.RecordFps(session.FramesPerSecond + " FPS"); root.Items.Children.Add(fps);
         var details = FloatingTools.Menu(); details.Items.Add(new MenuItem { Header = L.Join(session.Format,L.Get(" · 区域录制")), IsEnabled = false }); details.Items.Add(new MenuItem { Header = $"{session.Region.Width} × {session.Region.Height} px", IsEnabled = false }); details.Items.Add(new MenuItem { Header = session.CursorIncluded ? L.Get("包含鼠标指针") : L.Get("不包含鼠标指针"), IsEnabled = false });
-        var format = FloatingTools.MenuButton(ToolGlyph.Window, L.Get("查看录制参数"), details); var formatContent = new StackPanel { Orientation = Orientation.Horizontal }; formatContent.Children.Add(Ui.Text(session.Format, 11, FloatingTools.Ink)); formatContent.Children.Add(new ToolIcon(ToolGlyph.Chevron) { Width = 10, Height = 12, Margin = new Thickness(5, 0, 0, 0), Color = FloatingTools.MutedInk }); format.Content = formatContent; format.Width = 62; root.Items.Children.Add(format);
+        var format = FloatingTools.TextMenuButton(session.Format, L.Get("查看录制参数"), details, out _, 68); root.Items.Children.Add(format);
         root.Items.Children.Add(FloatingTools.Divider());
         stopButton = FloatingTools.Button(ToolGlyph.Stop, L.Get("停止录制"), RequestStop); stopButton.Foreground = FloatingTools.Red; root.Items.Children.Add(stopButton);
         pause = FloatingTools.Button(ToolGlyph.Pause, L.Get("暂停录制"), TogglePause, pauseHotkey); root.Items.Children.Add(pause);
@@ -194,9 +195,19 @@ internal sealed class RecordingBar : ProductWindow
     private void Position()
     {
         var region = session.Region; var monitor = ScreenCapture.MonitorBounds(new PixelPoint(region.X + region.Width / 2, region.Y + region.Height / 2)); var dpi = VisualTreeHelper.GetDpi(this);
-        var width = (int)Math.Ceiling(toolbarSize.Width * dpi.DpiScaleX); var height = (int)Math.Ceiling(toolbarSize.Height * dpi.DpiScaleY);
-        var placed = FloatingLayout.Actions(new Rect(monitor.X, monitor.Y, monitor.Width, monitor.Height), new Rect(region.X, region.Y, region.Width, region.Height), new Size(width, height));
-        Native.SetWindowPos(new WindowInteropHelper(this).Handle, Native.Topmost, (int)placed.X, (int)placed.Y, width, height, 0x0040);
+        var placed = Placement(new Rect(monitor.X, monitor.Y, monitor.Width, monitor.Height), new Rect(region.X, region.Y, region.Width, region.Height), toolbarSize, dpi);
+        Native.SetWindowPos(new WindowInteropHelper(this).Handle, Native.Topmost, (int)placed.X, (int)placed.Y, (int)placed.Width, (int)placed.Height, 0x0040);
+    }
+    internal static Rect Placement(Rect monitor, Rect region, Size toolbarSize, DpiScale dpi)
+    {
+        var monitorDip = new Rect(monitor.X / dpi.DpiScaleX, monitor.Y / dpi.DpiScaleY, monitor.Width / dpi.DpiScaleX, monitor.Height / dpi.DpiScaleY);
+        var regionDip = new Rect(region.X / dpi.DpiScaleX, region.Y / dpi.DpiScaleY, region.Width / dpi.DpiScaleX, region.Height / dpi.DpiScaleY);
+        var visible = new Size(Math.Max(1, toolbarSize.Width - 2 * ShadowMargin), Math.Max(1, toolbarSize.Height - 2 * ShadowMargin));
+        var placedDip = FloatingLayout.Actions(monitorDip, regionDip, visible);
+        var marginX = Math.Ceiling(ShadowMargin * dpi.DpiScaleX);
+        var marginY = Math.Ceiling(ShadowMargin * dpi.DpiScaleY);
+        return new Rect(Math.Round(placedDip.X * dpi.DpiScaleX) - marginX, Math.Round(placedDip.Y * dpi.DpiScaleY) - marginY,
+            Math.Ceiling(toolbarSize.Width * dpi.DpiScaleX), Math.Ceiling(toolbarSize.Height * dpi.DpiScaleY));
     }
     private void RequestStop()
     {

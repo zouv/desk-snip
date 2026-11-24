@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="desksnip-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E6F2FF"/>
+      <stop offset="0.58" stop-color="#CEE5FF"/>
+      <stop offset="1" stop-color="#C2DCFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="52" fill="url(#desksnip-bg)"/>
+  <path d="M97 57H62Q57 57 57 62V97M159 57H194Q199 57 199 62V97M199 159V194Q199 199 194 199H159M97 199H62Q57 199 57 194V159"
+        fill="none" stroke="#2A7BF0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="rotate(-28 128 128)">
+    <g transform="translate(128 128) scale(1.04) translate(-128 -128)">
+      <path d="M105 78Q101 78 101 83V92Q101 96 107 96H111L109 120L95 135Q91 140 98 143H122L125 175Q128 184 131 175L134 143H158Q165 140 161 135L147 120L145 96H149Q155 96 155 92V83Q155 78 151 78Z"
+            fill="#2A7BF0"/>
+      <path d="M112 83H145Q149 83 149 87V90H107V87Q107 83 112 83Z" fill="#C7E6FF"/>
+    </g>
+  </g>
+</svg>

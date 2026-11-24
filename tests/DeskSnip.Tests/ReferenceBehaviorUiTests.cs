@@ -45,6 +45,9 @@ public class ReferenceBehaviorUiTests
         bar.Close();
         var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 200, 200));
         Assert.Equal(WindowStyle.None, overlay.WindowStyle); Assert.False(overlay.Topmost); Assert.True(overlay.ShowInTaskbar); Assert.Equal(WindowStartupLocation.Manual, overlay.WindowStartupLocation);
+        Assert.Equal(204, overlay.Width); Assert.True(overlay.Height >= 204); Assert.Equal(0, overlay.MinWidth); Assert.Equal(0, overlay.MinHeight);
+        var outer = Assert.IsType<StackPanel>(overlay.Content); var frame = Assert.IsType<Border>(outer.Children[0]);
+        Assert.Same(FloatingTools.Blue, frame.BorderBrush); Assert.Equal(new Thickness(2), frame.BorderThickness); Assert.Equal(204, frame.Width); Assert.Equal(204, frame.Height);
         var normal = new PlaybackWindow("missing.mp4", "MP4");
         Assert.NotEqual(WindowStyle.None, normal.WindowStyle); Assert.False(normal.Topmost);
     });
@@ -52,7 +55,7 @@ public class ReferenceBehaviorUiTests
     [Fact] public void InlinePlaybackEditorUsesCompactToolbarAndSaveFormat() => ImagingTests.Sta(() =>
     {
         var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 400, 300));
-        var root = (DockPanel)((Border)overlay.Content).Child;
+        var root = (Panel)overlay.Content;
         var buttons = Descendants(root).OfType<Button>().ToArray();
         Assert.Contains(buttons, button => AutomationProperties.GetName(button) == "播放");
         Assert.Contains(buttons, button => AutomationProperties.GetName(button) == "保存录屏");
@@ -74,10 +77,65 @@ public class ReferenceBehaviorUiTests
     {
         var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 400, 300),
             pending: true, defaultSaveFormat: "GIF", sourceRequiresExport: true);
-        var root = (DockPanel)((Border)overlay.Content).Child;
+        var root = (Panel)overlay.Content;
         var format = Descendants(root).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "保存格式");
         Assert.Equal("GIF", Descendants(format).OfType<TextBlock>().First().Text);
     });
+
+    [Fact] public void PlaybackCopyShowsTransferProgressAndDisablesCopy() => ImagingTests.Sta(() =>
+    {
+        var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 400, 300));
+        var root = (Panel)overlay.Content;
+        var copy = Descendants(root).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "复制录制文件");
+        var bar = Descendants(root).OfType<ProgressBar>().Single();
+        Assert.Equal(Visibility.Collapsed, bar.Visibility);
+        var begin = typeof(PlaybackWindow).GetMethod("BeginTransfer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var report = typeof(PlaybackWindow).GetMethod("ReportTransfer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var end = typeof(PlaybackWindow).GetMethod("EndTransfer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        try
+        {
+            begin.Invoke(overlay, new object[] { "正在准备复制…", true, 0d });
+            Assert.Equal(Visibility.Visible, bar.Visibility);
+            Assert.True(bar.IsIndeterminate);
+            Assert.False(copy.IsEnabled);
+            report.Invoke(overlay, new object[] { 42d, "正在复制 {0:0}%…" });
+            Assert.False(bar.IsIndeterminate);
+            Assert.Equal(42d, bar.Value, 3);
+            Assert.False(copy.IsEnabled);
+            Preview((FrameworkElement)overlay.Content, 820, 560, "playback-copy-progress.png");
+        }
+        finally { end.Invoke(overlay, null); }
+        Assert.Equal(Visibility.Collapsed, bar.Visibility);
+        Assert.True(copy.IsEnabled);
+    });
+
+    [Fact] public void PlaybackCopyStreamCopiesFileAndReportsProgress() => ImagingTests.Sta(() =>
+    {
+        var source = Path.Combine(Path.GetTempPath(), "DeskSnip-copy-" + Guid.NewGuid().ToString("N") + ".bin");
+        var destination = source + ".copy";
+        try
+        {
+            File.WriteAllBytes(source, new byte[3 * 1024 * 1024 + 17]);
+            var progress = new CollectProgress();
+            var method = typeof(PlaybackWindow).GetMethod("CopyFileWithProgressAsync", BindingFlags.Static | BindingFlags.NonPublic)!;
+            var task = (Task)method.Invoke(null, new object[] { source, destination, CancellationToken.None, progress })!;
+            task.GetAwaiter().GetResult();
+            Assert.Equal(new FileInfo(source).Length, new FileInfo(destination).Length);
+            Assert.Equal(File.ReadAllBytes(source), File.ReadAllBytes(destination));
+            lock (progress.Values) Assert.Contains(progress.Values, value => value >= 100);
+        }
+        finally
+        {
+            if (File.Exists(source)) File.Delete(source);
+            if (File.Exists(destination)) File.Delete(destination);
+        }
+    });
+
+    private sealed class CollectProgress : IProgress<double>
+    {
+        internal readonly List<double> Values = new List<double>();
+        public void Report(double value) { lock (Values) Values.Add(value); }
+    }
 
     [Fact] public void PinCopyCloseAndEscapeBypassCloseConfirmation() => ImagingTests.Sta(() =>
     {
@@ -114,7 +172,7 @@ public class ReferenceBehaviorUiTests
         var window = new CaptureWindow(clean, new PixelRect(-800, 0, 800, 600), false, settings: settings, desktopWithCursor: cursor); var root = (Grid)window.Content;
         root.Measure(new Size(800, 600)); root.Arrange(new Rect(0, 0, 800, 600)); window.SetSelection(new PixelRect(-700, 100, 400, 200)); root.UpdateLayout();
         Assert.Same(cursor, window.SelectedDesktop); Assert.Equal(Visibility.Collapsed, Descendants(root).OfType<SelectionInfoBar>().Single().Visibility); Assert.Equal(Visibility.Collapsed, Descendants(root).OfType<PixelMagnifier>().Single().Visibility);
-        Assert.Equal(4, Descendants(root).OfType<System.Windows.Shapes.Ellipse>().Count(handle => handle.Visibility == Visibility.Visible));
+        Assert.Equal(4, Descendants(root).OfType<System.Windows.Shapes.Ellipse>().Count(handle => handle.Visibility == Visibility.Visible && handle.Width == 7 && handle.Height == 7));
         var outline = Descendants(root).OfType<System.Windows.Shapes.Rectangle>().Single(); Assert.Equal(4, outline.StrokeThickness); Assert.Equal(Color.FromRgb(240, 128, 32), ((SolidColorBrush)outline.Stroke).Color);
         var bar = Descendants(root).OfType<FloatingToolbar>().Single(toolbar => toolbar.Name == "CaptureActions"); Assert.DoesNotContain(bar.Items.Children.OfType<Button>(), button => AutomationProperties.GetName(button) == "联网识别"); Assert.Equal(38, bar.Items.Children.OfType<Button>().Last().Height);
         Assert.Equal(CaptureAction.QuickSave, CaptureWindow.MouseCaptureAction("QuickSave")); Assert.Null(CaptureWindow.MouseCaptureAction("None")); window.Close();

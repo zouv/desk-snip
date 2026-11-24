@@ -43,6 +43,26 @@ public class RecordingUiTests
         if (below) Assert.True(placed.Top >= selection.Bottom);
         else if (selection.Top > monitor.Top + 64) Assert.True(placed.Bottom <= selection.Top);
     }
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(1.25)]
+    [InlineData(1.5)]
+    public void RecordingBarPlacementAlignsVisibleToolbarWithSelection(double scale)
+    {
+        var dpi = new DpiScale(scale, scale);
+        var monitor = new Rect(0, 0, 1920, 1080);
+        var region = new Rect(100, 80, 800, 500);
+        var toolbarSize = new Size(478, 56); // Includes the 6 DIP shadow margin on each side.
+        var window = RecordingBar.Placement(monitor, region, toolbarSize, dpi);
+        var margin = Math.Ceiling(6 * scale);
+        var visible = new Rect((window.X + margin) / scale, (window.Y + margin) / scale, (window.Width - 2 * margin) / scale, (window.Height - 2 * margin) / scale);
+        var expected = FloatingLayout.Actions(new Rect(monitor.X / scale, monitor.Y / scale, monitor.Width / scale, monitor.Height / scale),
+            new Rect(region.X / scale, region.Y / scale, region.Width / scale, region.Height / scale), new Size(toolbarSize.Width - 12, toolbarSize.Height - 12));
+        Assert.InRange(visible.X, expected.X - 1, expected.X + 1);
+        Assert.InRange(visible.Y, expected.Y - 1, expected.Y + 1);
+        Assert.InRange(visible.Width, expected.Width - 1, expected.Width + 1);
+        Assert.InRange(visible.Height, expected.Height - 1, expected.Height + 1);
+    }
     [Fact] public void CompactControlBarTracksPauseAndDisablesActionsWhileSaving() => RecognitionServiceUiTests.StaAsync(async () =>
     {
         var directory = Path.Combine(Path.GetTempPath(), "DeskSnip-recording-ui-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
@@ -59,6 +79,14 @@ public class RecordingUiTests
             Assert.InRange(root.ActualHeight, 40, 60); Assert.True(root.ActualWidth < 520); Assert.Equal(WindowStyle.None, bar.WindowStyle);
             var buttons = Descendants(root).OfType<Button>().ToArray(); Assert.All(buttons, button => Assert.False(string.IsNullOrWhiteSpace(AutomationProperties.GetName(button))));
             Assert.Contains(Descendants(root).OfType<TextBlock>(), text => text.Text == "15 FPS");
+            var indicator = (System.Windows.Shapes.Ellipse)typeof(RecordingBar).GetField("indicator", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bar)!;
+            var label = (TextBlock)typeof(RecordingBar).GetField("label", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bar)!;
+            Assert.Equal(FloatingTools.RecordDotSize, indicator.Width); Assert.Equal(FloatingTools.RecordDotSize, indicator.Height);
+            Assert.Equal(FloatingTools.RecordTimeFontSize, label.FontSize); Assert.Equal(FloatingTools.RecordTimeMinWidth, label.MinWidth); Assert.True(double.IsNaN(label.Width));
+            var fpsText = Descendants(root).OfType<TextBlock>().Single(text => text.Text == session.FramesPerSecond + " FPS");
+            Assert.Equal(FloatingTools.RecordFpsFontSize, fpsText.FontSize); Assert.Same(FloatingTools.MutedInk, fpsText.Foreground);
+            var formatButton = buttons.Single(button => AutomationProperties.GetName(button) == "查看录制参数");
+            Assert.Equal(68, formatButton.Width); Assert.Equal(28, formatButton.Height);
             var pause = buttons.Single(button => AutomationProperties.GetName(button) == "暂停录制"); pause.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.Equal(RecordingState.Paused, session.State); Assert.Equal("继续录制", AutomationProperties.GetName(pause)); Assert.Equal(ToolGlyph.Play, ((ToolIcon)pause.Content).Glyph);
             var paused = session.Elapsed; await Task.Delay(100); Assert.Equal(paused, session.Elapsed); Preview(root, "recording-paused");
             pause.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.Equal(RecordingState.Recording, session.State); Preview(root, "recording-controls");
