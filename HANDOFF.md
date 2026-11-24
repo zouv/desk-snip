@@ -2,13 +2,13 @@
 
 ## 状态快照
 
-- 最近更新：2026-11-24。当前版本 0.5.1，main、v0.5.1 标签与 GitHub Release 均已发布；Release 页面：https://github.com/zouv/desk-snip/releases/tag/v0.5.1。应用图标生产版为毛玻璃版；生产 XAML、Assets 与免安装包均已更新。本轮回放首帧黑屏与进度条按下/直接拖动/画面刷新修复已完成，等待用户实机验收；无进行中任务。
+- 最近更新：2026-11-24。当前版本 0.5.2，main、v0.5.2 标签与 GitHub Release 均已发布；Release 页面：https://github.com/zouv/desk-snip/releases/tag/v0.5.2。回放首帧黑屏与进度条按下/直接拖动/画面刷新修复已交付并重新打包，等待用户实机验收；无进行中任务。
 - 远程 origin 已关联 https://github.com/zouv/desk-snip，本地 main 按用户要求推送并跟踪该远端。
-- 最后验证：2026-11-24 `sh manager.sh verify` 通过：完整 360 项测试、严格编译 0 警告、check-docs 全部通过。真实 `MediaElement` + 合成 6 秒视频 + 真实鼠标冒烟通过：首帧非黑屏、任意位置按下定位并直接拖动、暂停时刷新对应帧、播放中拖动暂停且松开恢复；截图见 `.runtime/playback-smoke-*.png`。用户实际录屏路径仍待人工验收，不能写成完整实机验收通过。
-- 最新包：dist/release/DeskSnip_0.5.1_win-x64-unpack.zip 与 dist/dev/DeskSnip_0.5.1_win-x64-unpack-debug.zip；毛玻璃图标、复制进度、剪贴板、工具栏样式/位置与回放布局/首帧（MediaElement）/视频内进度条均已重新打包，SHA256SUMS.txt 已生成。
+- 最后验证：2026-11-24 0.5.2 发布 `sh manager.sh verify` 通过：完整 360 项测试、严格编译 0 警告、check-docs 全部通过；`sh manager.sh package` 通过，两个 zip 的 SHA256 与远端资产一致。真实 `MediaElement` + 合成 6 秒视频 + 真实鼠标冒烟通过：首帧非黑屏、任意位置按下定位并直接拖动、暂停时刷新对应帧、播放中拖动暂停且松开恢复；截图见 `.runtime/playback-smoke-*.png`。用户实际录屏路径仍待人工验收，不能写成完整实机验收通过。
+- 最新包：dist/release/DeskSnip_0.5.2_win-x64-unpack.zip 与 dist/dev/DeskSnip_0.5.2_win-x64-unpack-debug.zip；回放首帧与进度条修复均已打包，SHA256SUMS.txt 已生成并上传。
 - 用户已确认中英文切换；旧版任务栏图标正常。毛玻璃版图标的程序/窗口/托盘/任务栏效果待实机查看。0.3.0 发布轮完成版本与发布文档更新，并实机验证钉图交互；截图选区验收仍待人工操作。
 - PixPin 实机对照仍未完成。此前桌面操作被物理 Escape 中止，未更改 PixPin 配置；继续时重新选择窗口。上次独立测试窗口信息见 .runtime/blue-visual-run.json。
-- 本轮验证记录：.runtime/release-0.5.1-verify.log、release-0.5.1-package.log；较早轮次见 release-0.4.x 同名日志。日志与测试截图均不入库。
+- 本轮验证记录：.runtime/release-0.5.2-verify.log、release-0.5.2-package.log；较早轮次见 release-0.4.x / 0.5.x 同名日志。日志与测试截图均不入库。
 
 ## 后续 · PixPin 实机对照待继续
 
