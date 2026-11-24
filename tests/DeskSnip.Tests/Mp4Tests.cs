@@ -62,6 +62,32 @@ public class Mp4Tests
         }
         finally { if (File.Exists(path)) File.Delete(path); }
     }
+    [Fact] public async Task NativeDecoderAcceptsInitialFormatNegotiation()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "DeskSnip-video-format-" + Guid.NewGuid().ToString("N") + ".mp4");
+        try
+        {
+            await Task.Run(() =>
+            {
+                const int width = 640, height = 360;
+                using (var writer = new Mp4Writer(path, width, height, 10))
+                {
+                    var frame = new byte[width * height * 4];
+                    for (var i = 0; i < frame.Length; i += 4) { frame[i + 1] = 255; frame[i + 3] = 255; }
+                    writer.WriteFrame(frame, 0, TimeSpan.TicksPerSecond / 10);
+                    for (var i = 0; i < frame.Length; i += 4) { frame[i + 1] = 0; frame[i + 2] = 255; }
+                    writer.WriteFrame(frame, TimeSpan.TicksPerSecond / 10, TimeSpan.TicksPerSecond / 10);
+                    writer.Complete();
+                }
+                using (var reader = new VideoReader(path))
+                {
+                    var first = reader.ReadFrame(); Assert.NotNull(first); Assert.True(first!.Pixels[1] > 220);
+                    var second = reader.ReadFrame(); Assert.NotNull(second); Assert.True(second!.Pixels[2] > 220);
+                }
+            });
+        }
+        finally { if (File.Exists(path)) File.Delete(path); }
+    }
     [Fact] public void OddEncodingDimensionsAreRejected() => Assert.Throws<ArgumentException>(() => new Mp4Writer("unused.mp4", 31, 31, 15));
     private static uint ReadBe(byte[] bytes, int offset) => (uint)bytes[offset] << 24 | (uint)bytes[offset + 1] << 16 | (uint)bytes[offset + 2] << 8 | bytes[offset + 3];
     private static int Find(byte[] bytes, byte[] pattern)

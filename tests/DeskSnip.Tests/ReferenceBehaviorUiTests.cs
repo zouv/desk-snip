@@ -82,6 +82,47 @@ public class ReferenceBehaviorUiTests
         Assert.Equal("GIF", Descendants(format).OfType<TextBlock>().First().Text);
     });
 
+    [Fact] public void InlinePlaybackKeepsFirstFrameUntilPlaybackOrSeek() => ImagingTests.Sta(() =>
+    {
+        var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 400, 300));
+        var frame = (Image)typeof(PlaybackWindow).GetField("firstFrame", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(overlay)!;
+        frame.Source = Image(); frame.Visibility = Visibility.Visible;
+        typeof(PlaybackWindow).GetMethod("PrepareFirstFrame", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(overlay, null);
+        Assert.Equal(Visibility.Visible, frame.Visibility);
+        Assert.NotNull(frame.Source);
+        var seek = Descendants((Panel)overlay.Content).OfType<Slider>().Single();
+        seek.Maximum = 10; seek.Measure(new Size(400, 18)); seek.Arrange(new Rect(0, 0, 400, 18));
+        typeof(PlaybackWindow).GetMethod("UpdateSeek", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(overlay, new object[] { seek.ActualWidth / 2 });
+        Assert.Equal(Visibility.Collapsed, frame.Visibility);
+        Assert.Equal(5d, seek.Value, 3);
+    });
+
+    [Fact] public void InlineSeekStartsDraggingImmediatelyAndRestoresOnlyPreviousPlayback() => ImagingTests.Sta(() =>
+    {
+        var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 400, 300));
+        var seek = Descendants((Panel)overlay.Content).OfType<Slider>().Single();
+        seek.Maximum = 10; seek.Measure(new Size(400, 18)); seek.Arrange(new Rect(0, 0, 400, 18));
+        var playing = typeof(PlaybackWindow).GetField("playing", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var dragging = typeof(PlaybackWindow).GetField("seekDragging", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var resume = typeof(PlaybackWindow).GetField("resumeAfterSeek", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var begin = typeof(PlaybackWindow).GetMethod("BeginSeek", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var update = typeof(PlaybackWindow).GetMethod("UpdateSeek", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var end = typeof(PlaybackWindow).GetMethod("EndSeek", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        playing.SetValue(overlay, true);
+        begin.Invoke(overlay, new object[] { seek.ActualWidth / 2 });
+        Assert.True((bool)dragging.GetValue(overlay)!); Assert.True((bool)resume.GetValue(overlay)!); Assert.False((bool)playing.GetValue(overlay)!);
+        Assert.Equal(5d, seek.Value, 3);
+        update.Invoke(overlay, new object[] { seek.ActualWidth * .75 });
+        Assert.Equal(7.5d, seek.Value, 3);
+        end.Invoke(overlay, null);
+        Assert.False((bool)dragging.GetValue(overlay)!); Assert.True((bool)playing.GetValue(overlay)!);
+        typeof(PlaybackWindow).GetMethod("Toggle", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(overlay, null);
+        begin.Invoke(overlay, new object[] { seek.ActualWidth * .25 });
+        Assert.False((bool)resume.GetValue(overlay)!); Assert.Equal(2.5d, seek.Value, 3);
+        end.Invoke(overlay, null);
+        Assert.False((bool)playing.GetValue(overlay)!);
+    });
+
     [Fact] public void PlaybackCopyShowsTransferProgressAndDisablesCopy() => ImagingTests.Sta(() =>
     {
         var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 400, 300));

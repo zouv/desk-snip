@@ -19,6 +19,7 @@ public sealed class VideoReader : IDisposable
     private IntPtr reader;
     private bool started;
     private bool comInitialized;
+    private bool decodedFrame;
     private readonly int stride;
     public int Width { get; }
     public int Height { get; }
@@ -64,7 +65,13 @@ public sealed class VideoReader : IDisposable
             {
                 Mf.Check(Mf.Method<Mf.ReadSample>(reader, 9)(reader, VideoStream, 0, out _, out var flags, out var time, out sample));
                 if ((flags & 1) != 0) throw new InvalidOperationException(L.Get("视频解码失败。"));
-                if ((flags & 0x30) != 0) throw new ArgumentException(L.Get("不支持录制中途改变尺寸的视频。"));
+                if ((flags & 0x30) != 0)
+                {
+                    // 解码器常在首帧前报告一次格式协商；核对输出尺寸后接受，真正中途变尺寸仍拒绝。
+                    if (decodedFrame) throw new ArgumentException(L.Get("不支持录制中途改变尺寸的视频。"));
+                    if (sample == IntPtr.Zero) continue;
+                    ValidateInitialFormatChange();
+                }
                 if (sample == IntPtr.Zero) { if ((flags & 2) != 0) return null; continue; }
                 var durationResult = Mf.Method<Mf.GetLong>(sample, 37)(sample, out var duration);
                 Mf.Check(Mf.Method<Mf.GetPointer>(sample, 41)(sample, out buffer));
@@ -93,10 +100,26 @@ public sealed class VideoReader : IDisposable
                     finally { Mf.Check(Mf.Method<Mf.Simple>(buffer, 4)(buffer)); }
                 }
                 for (var i = 3; i < pixels.Length; i += 4) pixels[i] = 255;
+                decodedFrame = true;
                 return new VideoFrame(pixels, time, durationResult >= 0 && duration > 0 ? duration : FrameDuration);
             }
             finally { Mf.Release(ref imageBuffer); Mf.Release(ref buffer); Mf.Release(ref sample); }
         }
+    }
+    private void ValidateInitialFormatChange()
+    {
+        var current = IntPtr.Zero;
+        try
+        {
+            Mf.Check(Mf.Method<Mf.GetMediaType>(reader, 6)(reader, VideoStream, out current));
+            var sizeKey = new Guid("1652c33d-d6b2-4012-b834-72030849a37d");
+            Mf.Check(Mf.Method<Mf.GetUlong>(current, 8)(current, ref sizeKey, out var dimensions));
+            var currentWidth = (int)(dimensions >> 32); var currentHeight = (int)(dimensions & 0xffffffff);
+            var alignedWidth = (Width + 15) & ~15; var alignedHeight = (Height + 15) & ~15;
+            if ((currentWidth != Width && currentWidth != alignedWidth) || (currentHeight != Height && currentHeight != alignedHeight))
+                throw new ArgumentException(L.Get("不支持录制中途改变尺寸的视频。"));
+        }
+        finally { Mf.Release(ref current); }
     }
     public void Dispose()
     {

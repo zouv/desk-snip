@@ -120,12 +120,7 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         player.MediaOpened += (_, _) =>
         {
             if (info == null && player.NaturalDuration.HasTimeSpan) SetInfo(new MediaInfo { Width = player.NaturalVideoWidth, Height = player.NaturalVideoHeight, Duration = player.NaturalDuration.TimeSpan.TotalSeconds });
-            if (!inlineRegion.IsEmpty && !firstFrameDismissed && !playing)
-            {
-                firstFrameDismissed = true; firstFrame.Visibility = Visibility.Collapsed; player.Visibility = Visibility.Visible;
-                var muted = player.IsMuted; player.Position = TimeSpan.Zero;
-                try { player.IsMuted = true; player.Play(); player.Pause(); } finally { player.IsMuted = muted; }
-            }
+            if (!inlineRegion.IsEmpty && !firstFrameDismissed && !playing) PrepareFirstFrame();
         };
         player.MediaEnded += (_, _) => { playing = false; UpdatePlayButton(); };
         player.MediaFailed += (_, _) => status.Text = L.Get("系统播放器无法解码，仍可尝试通过 FFmpeg 导出。");
@@ -200,9 +195,9 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             Width = Math.Max(1, inlineRegion.Width + 4), Height = Math.Max(1, inlineRegion.Height + 4)
         };
         root.Children.Add(inlineVideo);
-        seek.Height = 18; seek.Margin = new Thickness(4, 0, 4, 2); seek.IsMoveToPointEnabled = true; seek.VerticalAlignment = VerticalAlignment.Bottom;
+        seek.Height = 18; seek.Margin = new Thickness(4, 0, 4, 2); seek.IsMoveToPointEnabled = false; seek.VerticalAlignment = VerticalAlignment.Bottom;
         Panel.SetZIndex(seek, 10); content.Children.Add(seek);
-        seek.PreviewMouseLeftButtonDown += (_, e) => BeginSeek(e);
+        seek.PreviewMouseLeftButtonDown += (_, e) => { BeginSeek(e.GetPosition(seek).X); e.Handled = true; };
         seek.PreviewMouseMove += (_, e) => { if (seekDragging && e.LeftButton == MouseButtonState.Pressed) { UpdateSeek(e.GetPosition(seek).X); e.Handled = true; } };
         seek.PreviewMouseLeftButtonUp += (_, e) => { EndSeek(); e.Handled = true; };
         seek.LostMouseCapture += (_, _) => EndSeek();
@@ -342,22 +337,48 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             if (node is Button || node is ComboBox || node is TextBox || node is Slider || node is ScrollBar) return true;
         return false;
     }
-    private void Position(double seconds) { firstFrameDismissed = true; firstFrame.Visibility = Visibility.Collapsed; player.Visibility = Visibility.Visible; if (gif != null) { gifPosition = seconds; SetGifFrame(); } else player.Position = TimeSpan.FromSeconds(seconds); systemPlayer.Position = microphonePlayer.Position = TimeSpan.FromSeconds(seconds); }
+    private void Position(double seconds)
+    {
+        firstFrameDismissed = true; firstFrame.Visibility = Visibility.Collapsed; player.Visibility = Visibility.Visible;
+        if (gif != null) { gifPosition = seconds; SetGifFrame(); return; }
+        if (player.Source != null) player.Position = TimeSpan.FromSeconds(seconds);
+        if (systemPlayer.Source != null) systemPlayer.Position = TimeSpan.FromSeconds(seconds);
+        if (microphonePlayer.Source != null) microphonePlayer.Position = TimeSpan.FromSeconds(seconds);
+        if (!playing) RenderPausedFrame();
+    }
+    private void PrepareFirstFrame()
+    {
+        if (player.Source == null) return;
+        player.Position = TimeSpan.Zero;
+        RenderPausedFrame();
+        // 保留 BGRA 首帧直到用户播放或定位；Play/Pause 的解码渲染是异步的，不能在这里提前撤掉。
+    }
+    private void RenderPausedFrame()
+    {
+        if (playing || player.Source == null) return;
+        var muted = player.IsMuted;
+        try { player.IsMuted = true; player.Play(); player.Pause(); }
+        finally { player.IsMuted = muted; }
+    }
     private void SetGifFrame() { if (gif == null || gifImage == null) return; var index = Array.FindLastIndex(gifTimes, t => t <= gifPosition); gifImage.Source = gif.Frames[Math.Max(0, Math.Min(gif.Frames.Count - 1, index))]; }
-    private void BeginSeek(MouseButtonEventArgs e)
+    private void BeginSeek(double x)
     {
         if (seekDragging) return;
         seekDragging = true;
         resumeAfterSeek = playing;
         if (playing) Toggle();
         seek.CaptureMouse();
-        UpdateSeek(e.GetPosition(seek).X);
-        e.Handled = true;
+        UpdateSeek(x);
     }
     private void UpdateSeek(double x)
     {
         if (seek.ActualWidth <= 0) return;
-        seek.Value = seek.Minimum + (seek.Maximum - seek.Minimum) * Math.Max(0, Math.Min(1, x / seek.ActualWidth));
+        var value = seek.Minimum + (seek.Maximum - seek.Minimum) * Math.Max(0, Math.Min(1, x / seek.ActualWidth));
+        updatingSeek = true;
+        try { seek.Value = value; }
+        finally { updatingSeek = false; }
+        // 不依赖 ValueChanged：同值点击也要刷新，拖动时直接驱动 MediaElement 解码新位置。
+        Position(value);
     }
     private void EndSeek()
     {
