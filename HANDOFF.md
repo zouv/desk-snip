@@ -2,13 +2,13 @@
 
 ## 状态快照
 
-- 最近更新：2026-11-25。当前版本 0.5.2；录屏回放修复及长截图连续采集、局部滚动、全图预览和退出恢复重构已完成，等待实际页面验收；无进行中任务。
+- 最近更新：2026-11-25。当前版本 0.5.3，`v0.5.3` 与 GitHub Release 已发布；录屏回放修复及长截图连续采集、局部滚动、全图预览和退出恢复重构已完成，等待实际页面验收；无进行中任务。
 - 远程 origin 已关联 https://github.com/zouv/desk-snip，本地 main 按用户要求推送并跟踪该远端。
 - 最后验证：2026-11-25 `sh manager.sh verify` 通过：完整 380 项测试、严格编译 0 警告、check-docs 全部通过。长截图完成/退出崩溃已通过真实 ShowDialog 回归；面板在长状态和大图标换行后自动增高并保持工作区内，Back 返回与 X 回调独立；纵横及正反方向黑色重叠区均不会覆盖旧图。固定标题局部滚动、输出像素及无 ScrollViewer 已验证；真实业务页面与最新打包版仍待人工验收。
-- 0.5.2 最新包：dist/release/DeskSnip_0.5.2_win-x64-unpack.zip 与 dist/dev/DeskSnip_0.5.2_win-x64-unpack-debug.zip；本轮新修复尚未打包或发布。
+- 0.5.3 最新包：dist/release/DeskSnip_0.5.3_win-x64-unpack.zip 与 dist/dev/DeskSnip_0.5.3_win-x64-unpack-debug.zip；Release：https://github.com/zouv/desk-snip/releases/tag/v0.5.3。
 - 用户已确认中英文切换；旧版任务栏图标正常。毛玻璃版图标的程序/窗口/托盘/任务栏效果待实机查看。0.3.0 发布轮完成版本与发布文档更新，并实机验证钉图交互；截图选区验收仍待人工操作。
 - PixPin 实机对照仍未完成。此前桌面操作被物理 Escape 中止，未更改 PixPin 配置；继续时重新选择窗口。上次独立测试窗口信息见 .runtime/blue-visual-run.json。
-- 本轮验证记录：.runtime/release-0.5.2-verify.log、release-0.5.2-package.log；较早轮次见 release-0.4.x / 0.5.x 同名日志。日志与测试截图均不入库。
+- 本轮验证记录：.runtime/release-0.5.3-verify.log、release-0.5.3-package.log；较早轮次见 release-0.4.x / 0.5.x 同名日志。日志与测试截图均不入库。
 
 ## 后续 · PixPin 实机对照待继续
 
