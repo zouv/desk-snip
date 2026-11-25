@@ -16,7 +16,7 @@ internal enum ToolGlyph
 {
     Rectangle, Ellipse, Polygon, Brush, Highlight, Line, Arrow, Text, Number, Mosaic, Cover, Eraser,
     Spotlight, Zoom, Select, Window, History, Restart, Copy, Save, Pin, Ocr, Cloud, Scroll,
-    Close, Check, More, Undo, Redo, Styles, Chevron, Grip, Stop, Pause, Play, Sound, Muted, Microphone, Camera, Cursor, Qr,
+    Close, Check, More, Undo, Redo, Back, Styles, Chevron, Grip, Stop, Pause, Play, Sound, Muted, Microphone, Camera, Cursor, Qr,
     Palette, Keyboard, Transfer, Info, Mouse, GlobalMouse,
     LineSolid, LineDash, LineDot, Width, CornerRadius, Opacity,
     RotateClockwise, FlipHorizontal, FlipVertical, Grayscale, Invert, BrightnessUp, BrightnessDown,
@@ -106,7 +106,7 @@ internal static class FloatingTools
         => new ContextMenu { Background = Brushes.White, Foreground = Ink, BorderBrush = Edge, BorderThickness = new Thickness(1), Padding = new Thickness(4), FontFamily = new FontFamily("Microsoft YaHei UI"), FontSize = 12 };
     internal static MenuItem Item(string name, Action action, string shortcut = "")
     {
-        var item = new MenuItem { Header = name, InputGestureText = shortcut, Foreground = Ink, Padding = new Thickness(8, 6, 8, 6) };
+        var item = new MenuItem { Header = name, InputGestureText = shortcut, Foreground = Ink, Padding = new Thickness(8, 6, 8, 6), HorizontalContentAlignment = HorizontalAlignment.Left };
         item.SetValue(shortcutProperty, shortcut);
         AutomationProperties.SetName(item, name); item.Click += (_, _) => action(); return item;
     }
@@ -223,6 +223,7 @@ internal sealed class ToolIcon : FrameworkElement
             case ToolGlyph.More: Circle(5, 12, 1, true); Circle(12, 12, 1, true); Circle(19, 12, 1, true); break;
             case ToolGlyph.Undo: Path("M 9,6 L 3,11 9,16 M 3,11 L 14,11 C 24,11 22,21 14,21"); break;
             case ToolGlyph.Redo: Path("M 15,6 L 21,11 15,16 M 21,11 L 10,11 C 0,11 2,21 10,21"); break;
+            case ToolGlyph.Back: Path("M 20,12 L 4,12 M 10,6 L 4,12 L 10,18"); break;
             case ToolGlyph.Styles: Path("M 3,7 L 21,7 M 3,17 L 21,17 M 8,4 L 8,10 M 16,14 L 16,20"); break;
             case ToolGlyph.Chevron: Path("M 6,9 L 12,15 18,9"); break;
             case ToolGlyph.Grip: for (var y = 6; y <= 18; y += 6) { Circle(9, y, .6, true); Circle(15, y, .6, true); } break;

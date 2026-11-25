@@ -7,8 +7,10 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Interop;
 using DeskSnip.App;
 using DeskSnip.App.Imaging;
+using DeskSnip.App.Windows;
 using DeskSnip.Core;
 using Xunit;
 
@@ -419,6 +421,51 @@ public class CaptureUiTests
             Assert.Equal(CaptureAction.Record, window.ActionResult);
         }
         finally { window.Close(); }
+    });
+
+    [Fact] public void LongScreenshotStartHandsOffWithoutClosingOrRebuildingAnnotations() => ImagingTests.Sta(() =>
+    {
+        var window = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        CaptureWindow? handedOff = null;
+        try
+        {
+            var content = (Grid)window.Content; content.Measure(new Size(800, 500)); content.Arrange(new Rect(0, 0, 800, 500)); content.UpdateLayout();
+            window.SetSelection(new PixelRect(40, 40, 400, 300)); content.UpdateLayout();
+            window.BeginInlineEdit(AnnotationKind.Rectangle);
+            window.InlineCanvas!.Document.Add(new Annotation(AnnotationKind.Rectangle, new[] { new PixelPoint(10, 10), new PixelPoint(40, 40) }, 0xff0000ff, 3));
+            var document = window.InlineDocument;
+            window.LongScreenshotTransitionRequested = value => handedOff = value;
+            var start = Descendants(content).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "长截图");
+            start.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Same(window, handedOff); Assert.Equal(CaptureAction.LongScreenshot, window.ActionResult); Assert.Same(document, window.InlineDocument);
+            window.Show(); window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Loaded);
+            var handle = new WindowInteropHelper(window).Handle;
+            window.HideForLongScreenshotTransition(); Assert.True(window.IsVisible); Assert.False(Native.IsWindowVisible(handle));
+            window.ResumeFromLongScreenshot(); Assert.True(window.IsVisible); Assert.True(Native.IsWindowVisible(handle)); Assert.Same(document, window.InlineDocument);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact] public void LongScreenshotNativeHidingKeepsModalCompletionAndCancellationValid() => ImagingTests.Sta(() =>
+    {
+        var completed = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        completed.Loaded += (_, _) =>
+        {
+            var handle = new WindowInteropHelper(completed).Handle;
+            completed.HideForLongScreenshotTransition();
+            Assert.True(completed.IsVisible); Assert.False(Native.IsWindowVisible(handle));
+            completed.FinishLongScreenshotTransition();
+        };
+        Assert.True(completed.ShowDialog());
+        var cancelled = new CaptureWindow(Image(800, 500), new PixelRect(0, 0, 800, 500), false);
+        cancelled.Loaded += (_, _) =>
+        {
+            var handle = new WindowInteropHelper(cancelled).Handle;
+            cancelled.HideForLongScreenshotTransition(); cancelled.ResumeFromLongScreenshot();
+            Assert.True(cancelled.IsVisible); Assert.True(Native.IsWindowVisible(handle));
+            cancelled.CancelLongScreenshotTransition();
+        };
+        Assert.False(cancelled.ShowDialog());
     });
 
     [Fact] public void AnnotationListMovesLeftAndMarksOverflowWithoutScrollbar() => ImagingTests.Sta(() =>

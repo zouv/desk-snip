@@ -38,6 +38,7 @@ internal sealed partial class AppController : IDisposable
     private RecordingAnnotationOverlay? recordingOverlay;
     private bool recordingQuick;
     private bool recordingStartedFromSelection;
+    private bool longScreenshotStartedFromSelection;
     private Task? finishing;
     private Task? exporting;
     private CancellationTokenSource? exportCancellation;
@@ -174,8 +175,15 @@ internal sealed partial class AppController : IDisposable
             var recent = preferences.ScreenshotAreaHistoryLimit == 0 ? Array.Empty<PixelRect>() : Profiles.Snapshot.Recent.Take(preferences.ScreenshotAreaHistoryLimit).Select(r => r.Bounds).ToArray();
             selectionWindow = new CaptureWindow(frames.Image, bounds, recording, targets, recent, initial, initialShape, preferences, frames.WithCursor);
             selectionWindow.RecordTransitionRequested = BeginRecordingFromSelection;
+            selectionWindow.LongScreenshotTransitionRequested = BeginLongScreenshotFromSelection;
             if (!recording) PlaySound(preferences.SoundCaptureStart);
             var accepted = selectionWindow.ShowDialog() == true;
+            if (longScreenshotStartedFromSelection)
+            {
+                longScreenshotStartedFromSelection = false;
+                Profiles.Remember(selectionWindow.Selection, preferences.ScreenshotAreaHistoryLimit);
+                return (null, default, CaptureAction.LongScreenshot, null, null);
+            }
             if (recordingStartedFromSelection) { if (!recording) recordingStartedFromSelection = false; return (null, default, CaptureAction.Record, null, null); }
             if (!accepted) { pendingRecordingPlan = null; pendingRecordingAnnotations = null; return (null, default, CaptureAction.Edit, null, null); }
             pendingRecordingPlan = selectionWindow.RecordingMode ? selectionWindow.Plan : null;

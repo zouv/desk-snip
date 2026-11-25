@@ -81,6 +81,7 @@ internal sealed partial class CaptureWindow : ProductWindow
     private bool recordingTransition;
     internal BitmapSource? InlineOutput { get; private set; }
     internal Action<CaptureWindow>? RecordTransitionRequested { get; set; }
+    internal Action<CaptureWindow>? LongScreenshotTransitionRequested { get; set; }
     internal AnnotationKind? LastInlineTool { get; private set; }
     internal AnnotationCanvas? InlineCanvas => inlineCanvas;
     internal BitmapSource? InlineBaseImage => inlineCanvas?.Image;
@@ -736,6 +737,7 @@ internal sealed partial class CaptureWindow : ProductWindow
         if (inlineEditing && inlineCanvas != null) { InlineOutput = BuildInlineOutput(); LastInlineTool = inlineCanvas.LastTool; }
         ActionResult = action;
         if (action == CaptureAction.Record && RecordTransitionRequested != null) { RecordTransitionRequested(this); return; }
+        if (action == CaptureAction.LongScreenshot && LongScreenshotTransitionRequested != null) { LongScreenshotTransitionRequested(this); return; }
         DialogResult = true;
     }
     /// <summary>截图就地标注：双击画布复制并关闭；首下误画的标注会撤销。</summary>
@@ -845,6 +847,21 @@ internal sealed partial class CaptureWindow : ProductWindow
     }
     internal void FinishRecordingTransition() { if (IsLoaded) DialogResult = true; }
     internal void CancelRecordingTransition() { if (IsLoaded) DialogResult = false; }
+    internal void HideForLongScreenshotTransition()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        if (handle != IntPtr.Zero) Native.ShowWindow(handle, 0); else Hide();
+    }
+    internal void FinishLongScreenshotTransition() { if (IsLoaded) DialogResult = true; }
+    internal void CancelLongScreenshotTransition() { if (IsLoaded) DialogResult = false; }
+    internal void ResumeFromLongScreenshot()
+    {
+        if (!IsLoaded) return;
+        var handle = new WindowInteropHelper(this).Handle;
+        if (handle != IntPtr.Zero) Native.ShowWindow(handle, 5); else Show();
+        Redraw(); Activate(); ForceForeground();
+        if (inlineEditing && inlineCanvas != null) inlineCanvas.Focus(); else { Focus(); Keyboard.Focus(this); }
+    }
     internal BitmapSource? BuildInlineOutput() => inlineCanvas == null ? null : AnnotationRenderer.Flatten(inlineCanvas.Image, inlineCanvas.Document.Items);
     private void CopySample(bool coordinates)
     {

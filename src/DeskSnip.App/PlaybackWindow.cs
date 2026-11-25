@@ -123,7 +123,7 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             if (!inlineRegion.IsEmpty && !firstFrameDismissed && !playing) PrepareFirstFrame();
         };
         player.MediaEnded += (_, _) => { playing = false; UpdatePlayButton(); };
-        player.MediaFailed += (_, _) => status.Text = L.Get("系统播放器无法解码，仍可尝试通过 FFmpeg 导出。");
+        player.MediaFailed += (_, _) => { playing = false; UpdatePlayButton(); status.Text = L.Get("系统播放器无法解码，仍可尝试通过 FFmpeg 导出。"); };
         seek.ValueChanged += (_, _) => { if (!updatingSeek) Position(seek.Value); };
         speed.SelectionChanged += (_, _) => { var rate = SpeedValue; player.SpeedRatio = systemPlayer.SpeedRatio = microphonePlayer.SpeedRatio = rate; };
         systemVolume.ValueChanged += (_, _) => { systemPlayer.Volume = Math.Min(1, systemVolume.Value); if (systemPlayer.Source == null) player.Volume = Math.Min(1, systemVolume.Value); };
@@ -309,8 +309,9 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
             if (!string.IsNullOrEmpty(draft.MicrophoneAudio) && File.Exists(journal.FilePath(draft.MicrophoneAudio))) microphonePlayer.Source = new Uri(journal.FilePath(draft.MicrophoneAudio));
             if (systemPlayer.Source != null || microphonePlayer.Source != null) player.IsMuted = true;
         }
-        if (inlineRegion.IsEmpty) Play(); else UpdatePlayButton();
+        FinishPlaybackLoad();
     }
+    private void FinishPlaybackLoad() { if (inlineRegion.IsEmpty || playing) Play(); else UpdatePlayButton(); }
     private void SetInfo(MediaInfo media) { info = media; seek.Maximum = media.Duration; end.Text = media.Duration.ToString("0.###", CultureInfo.InvariantCulture); crop[2].Text = media.Width.ToString(); crop[3].Text = media.Height.ToString(); status.Text = L.Format("{0} × {1} · {2:0.0} 秒；设置导出范围、倍速、裁剪及音量。",media.Width,media.Height,media.Duration); if (!inlineRegion.IsEmpty) PositionOverlay(); }
     private double CurrentPosition() => gif != null ? gifPosition : player.Position.TotalSeconds;
     private double SpeedValue => speed.SelectedItem is string value && double.TryParse(value.TrimEnd('X'), NumberStyles.Float, CultureInfo.InvariantCulture, out var rate) ? rate : 1;
@@ -387,7 +388,13 @@ internal sealed class PlaybackWindow : ProductWindow, IBackgroundWindow
         if (seek.IsMouseCaptured) seek.ReleaseMouseCapture();
         if (resumeAfterSeek) { resumeAfterSeek = false; Play(); }
     }
-    private void Play() { firstFrameDismissed = true; firstFrame.Visibility = Visibility.Collapsed; player.Visibility = Visibility.Visible; playing = true; player.Play(); if (systemPlayer.Source != null) systemPlayer.Play(); if (microphonePlayer.Source != null) microphonePlayer.Play(); UpdatePlayButton(); }
+    private void Play()
+    {
+        playing = true;
+        if (player.Source == null && gif == null) { UpdatePlayButton(); return; }
+        firstFrameDismissed = true; firstFrame.Visibility = Visibility.Collapsed; player.Visibility = Visibility.Visible;
+        player.Play(); if (systemPlayer.Source != null) systemPlayer.Play(); if (microphonePlayer.Source != null) microphonePlayer.Play(); UpdatePlayButton();
+    }
     private void Toggle() { if (!playing) Play(); else { playing = false; player.Pause(); systemPlayer.Pause(); microphonePlayer.Pause(); UpdatePlayButton(); } }
     private VideoEditOptions FullOptions() => new VideoEditOptions { EndSeconds = info!.Duration, Crop = new PixelRect(0, 0, info.Width, info.Height), Quality = 80, FramesPerSecond = 24 };
     private async Task Export(string format)

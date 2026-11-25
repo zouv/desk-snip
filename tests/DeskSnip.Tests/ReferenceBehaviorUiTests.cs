@@ -12,6 +12,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Interop;
 using DeskSnip.App;
 using DeskSnip.App.Imaging;
 using DeskSnip.App.Recognition;
@@ -41,8 +42,23 @@ public class ReferenceBehaviorUiTests
     [Fact] public void LongCaptureAndPlaybackReviewUseInPlaceBorderlessWindows() => ImagingTests.Sta(() =>
     {
         var bar = new LongScreenshotBar(new PixelRect(100, 100, 200, 200), new AppSettings(), (_, _) => { }, () => { });
-        Assert.Equal(WindowStyle.None, bar.WindowStyle); Assert.True(bar.Topmost); Assert.False(bar.ShowInTaskbar); Assert.Equal(300, bar.Width); Assert.True(bar.Height > 400);
+        Assert.Equal(WindowStyle.None, bar.WindowStyle); Assert.True(bar.Topmost); Assert.False(bar.ShowInTaskbar); Assert.Equal(300, bar.Width); Assert.Equal(SizeToContent.Height, bar.SizeToContent);
+        Assert.True(((Size)typeof(LongScreenshotBar).GetField("panelSize", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bar)!).Height > 400);
+        Assert.Equal(0, typeof(LongScreenshotBar).GetField("direction", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bar));
+        Assert.Empty(Descendants(bar).OfType<ScrollViewer>());
+        Assert.Equal(Stretch.Uniform, Descendants(bar).OfType<Image>().Single().Stretch);
+        Assert.Contains(Descendants(bar).OfType<Button>(), button => AutomationProperties.GetName(button) == "退出截图");
+        Assert.DoesNotContain(Descendants(bar).OfType<Button>(), button => AutomationProperties.GetName(button) == "返回普通截图");
+        Assert.Equal(HorizontalAlignment.Center, Descendants(bar).OfType<FloatingToolbar>().Single().HorizontalAlignment);
+        var menu = Descendants(bar).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "更多长截图操作").ContextMenu!;
+        var firstItem = menu.Items.OfType<MenuItem>().First(); var submenu = menu.Items.OfType<MenuItem>().Single(item => Equals(item.Header, "方向与拼接"));
+        Assert.Equal(firstItem.Padding, submenu.Padding); Assert.Equal(HorizontalAlignment.Left, firstItem.HorizontalContentAlignment); Assert.Equal(firstItem.HorizontalContentAlignment, submenu.HorizontalContentAlignment);
         bar.Close();
+        var transitioning = new LongScreenshotBar(new PixelRect(100, 100, 200, 200), new AppSettings(), (_, _) => { }, () => { }, () => { });
+        Assert.Contains(Descendants(transitioning).OfType<Button>(), button => AutomationProperties.GetName(button) == "返回普通截图");
+        var back = Descendants(transitioning).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "返回普通截图");
+        Assert.Equal(ToolGlyph.Back, ((ToolIcon)back.Content).Glyph);
+        transitioning.Close();
         var overlay = new PlaybackWindow("missing.mp4", "MP4", inlineRegion: new PixelRect(100, 100, 200, 200));
         Assert.Equal(WindowStyle.None, overlay.WindowStyle); Assert.False(overlay.Topmost); Assert.True(overlay.ShowInTaskbar); Assert.Equal(WindowStartupLocation.Manual, overlay.WindowStartupLocation);
         Assert.Equal(204, overlay.Width); Assert.True(overlay.Height >= 204); Assert.Equal(0, overlay.MinWidth); Assert.Equal(0, overlay.MinHeight);
@@ -50,6 +66,34 @@ public class ReferenceBehaviorUiTests
         Assert.Same(FloatingTools.Blue, frame.BorderBrush); Assert.Equal(new Thickness(2), frame.BorderThickness); Assert.Equal(204, frame.Width); Assert.Equal(204, frame.Height);
         var normal = new PlaybackWindow("missing.mp4", "MP4");
         Assert.NotEqual(WindowStyle.None, normal.WindowStyle); Assert.False(normal.Topmost);
+    });
+
+    [Fact] public void LongScreenshotPanelGrowsAndStaysInsideWorkArea() => ImagingTests.Sta(() =>
+    {
+        var work = SystemParameters.WorkArea;
+        var region = new PixelRect((int)work.Left + 80, (int)work.Bottom - 260, 200, 200);
+        var bar = new LongScreenshotBar(region, new AppSettings { ToolbarIconSize = "Large" }, (_, _) => { }, () => { }, () => { });
+        bar.Show();
+        var status = (TextBlock)typeof(LongScreenshotBar).GetField("status", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bar)!;
+        status.Text = "已尝试 199 次 · 连续画面之间缺少可靠重叠，请滚回最后成功位置后继续。· 12 帧待连接";
+        bar.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+        Assert.True(bar.ActualHeight >= ((FrameworkElement)bar.Content).DesiredSize.Height - 1, $"window={bar.ActualHeight}, content={((FrameworkElement)bar.Content).DesiredSize.Height}");
+        Assert.True(Native.GetWindowRect(new WindowInteropHelper(bar).Handle, out var rect));
+        Assert.True(rect.Bottom <= work.Bottom * VisualTreeHelper.GetDpi(bar).DpiScaleY + 1, $"panel bottom={rect.Bottom}, work bottom={work.Bottom}");
+        bar.Close();
+    });
+
+    [Fact] public void LongScreenshotReturnAndCloseHaveSeparateActions() => ImagingTests.Sta(() =>
+    {
+        var returned = 0; var cancelled = 0;
+        var bar = new LongScreenshotBar(new PixelRect(100, 100, 200, 200), new AppSettings(), (_, _) => { }, () => cancelled++, () => returned++);
+        bar.Show();
+        Descendants(bar).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "返回普通截图").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal(1, returned); Assert.Equal(0, cancelled); Assert.False(bar.IsVisible);
+        bar = new LongScreenshotBar(new PixelRect(100, 100, 200, 200), new AppSettings(), (_, _) => { }, () => cancelled++, () => returned++);
+        bar.Show();
+        Descendants(bar).OfType<Button>().Single(button => AutomationProperties.GetName(button) == "退出截图").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal(1, returned); Assert.Equal(1, cancelled); Assert.False(bar.IsVisible);
     });
 
     [Fact] public void InlinePlaybackEditorUsesCompactToolbarAndSaveFormat() => ImagingTests.Sta(() =>
@@ -95,6 +139,21 @@ public class ReferenceBehaviorUiTests
         typeof(PlaybackWindow).GetMethod("UpdateSeek", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(overlay, new object[] { seek.ActualWidth / 2 });
         Assert.Equal(Visibility.Collapsed, frame.Visibility);
         Assert.Equal(5d, seek.Value, 3);
+    });
+
+    [Fact] public void InlinePlaybackDefersEarlyPlayUntilSourceIsReady() => ImagingTests.Sta(() =>
+    {
+        var overlay = new PlaybackWindow(Path.Combine(Path.GetTempPath(), "missing.mp4"), "MP4", inlineRegion: new PixelRect(100, 100, 400, 300));
+        var frame = (Image)typeof(PlaybackWindow).GetField("firstFrame", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(overlay)!;
+        var player = (MediaElement)typeof(PlaybackWindow).GetField("player", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(overlay)!;
+        frame.Source = Image(); frame.Visibility = Visibility.Visible;
+        typeof(PlaybackWindow).GetMethod("Toggle", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(overlay, null);
+        Assert.True((bool)typeof(PlaybackWindow).GetField("playing", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(overlay)!);
+        Assert.Equal(Visibility.Visible, frame.Visibility);
+        player.Source = new Uri(Path.Combine(Path.GetTempPath(), "missing.mp4"));
+        typeof(PlaybackWindow).GetMethod("FinishPlaybackLoad", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(overlay, null);
+        Assert.Equal(Visibility.Collapsed, frame.Visibility);
+        Assert.Contains(Descendants((Panel)overlay.Content).OfType<Button>(), button => AutomationProperties.GetName(button) == "暂停");
     });
 
     [Fact] public void InlineSeekStartsDraggingImmediatelyAndRestoresOnlyPreviousPlayback() => ImagingTests.Sta(() =>

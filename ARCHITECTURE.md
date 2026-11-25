@@ -90,7 +90,7 @@ Core 不依赖 WPF。App 将输入转换为 Core 模型，再由 WPF 或 Windows
 | 启动与单实例 | App.xaml.cs：OnStartup / OnExit；PinFileChannel.Send / ListenAsync / Dispose；SystemIntegrationChange.Commit / Dispose |
 | 控制台与托盘 | MainWindow.xaml；AppController.Show / RequestExit / ApplyTrayAppearance / RunTrayAction |
 | 截图自动识别 | CaptureTargetReader.Snapshot；CaptureTargets.At；UiAutomationTargetReader.ElementAt；CaptureWindow.UpdateHover / QueueUiAutomation / UiAutomationLoop | 编码 | §3 |
-| 截图与选区交互 | AppController.Select / CompleteCapture / LongScreenshot / RecordRegion；CaptureWindow.BeginInteraction / UpdateInteraction / SetSelection / BeginRightDrag / UpdateRightDrag / BeginInlineEdit / BuildInlineOutput / SwitchToRecording；LongScreenshotBar；SelectionGeometry.Transform / AdjustEdge / TryParse |
+| 截图与选区交互 | AppController.Select / CompleteCapture / LongScreenshot / RecordRegion；CaptureWindow.BeginInteraction / UpdateInteraction / SetSelection / BeginRightDrag / UpdateRightDrag / BeginInlineEdit / BuildInlineOutput / SwitchToRecording / ResumeFromLongScreenshot；LongScreenshotBar；SelectionGeometry.Transform / AdjustEdge / TryParse |
 | 浮动界面与标注入口 | FloatingLayout.Actions / Info / Modes；CaptureWindow.Redraw / AnnotationTool；SelectionInfoBar.SetExpanded；AppController.EditWithTool；EditorWindow.AddToolGroup；AnnotationOptionsBar.Rebuild / RefreshState |
 | 放大镜与取色 | CaptureWindow.KeyDownHandler；PixelInspector.Sample / Viewport；PixelColor.Format / Coordinates；PixelMagnifier.OnRender |
 | 标注编辑与导出 | AnnotationCanvas.Down / Up / SelectAt / SelectIndex / TryBeginHandleDrag / UpdateHandleDrag / ResizeSelected / ChangeCorner / OpenTextEditor / LoadSavedStyles / SaveCurrentStyle；AnnotationDocument.Add / Undo / Redo / Clone；AnnotationRenderer.Flatten / CornerRadius；AnnotationStyleRules.Parse / Serialize；InlineAnnotationBar；AnnotationOptionsBar；AnnotationListBar；AnnotationToolDefaults；FloatingTools.SplitMenuButton；EditorWindow.Output |
@@ -140,7 +140,7 @@ Core 不依赖 WPF。App 将输入转换为 Core 模型，再由 WPF 或 Windows
 - IFrameSource.Copy 必须填满紧密 BGRA32（top-down）帧。生产为 GDI，时间线集成测试注入合成帧，测试不采集用户桌面。
 - RecordingTimeline 使用单调 TimeSpan；RecordingSession 的状态与计时在同一锁内读取，工作线程独占编码器。
 - MF vtable 索引依据公开 SDK：IMFAttributes UINT32=21、UINT64=22、GUID=24；IMFSample time=36、duration=38、buffer=42；SinkWriter finalize=11。每次 COM 调用检查 HRESULT，生命周期匹配 CoInitializeEx / MFStartup。
-- MP4 输入 NV12（BT.601、有限范围、偶数尺寸）；输出 H.264。VideoReader 优先 IMF2DBuffer.Lock2D 返回的顶行及带符号 pitch，避免解码上下翻转。
+- MP4 输入 NV12（BT.601、有限范围、偶数尺寸）；输出 H.264。VideoReader 按 IMF2DBuffer 顶行及带符号 pitch 解码；首帧对齐协商须更新 stride，逻辑宽高不变。
 - GifWriter 使用 RGB332 全局调色板，逐帧 LZW、可循环；直接录制最多 15 FPS / 207 万像素，转换默认 10 FPS。
 - LocalStore 只接受生成的 GUID 文件名；配置/历史通过同目录原子替换提交。ManagedDirectory 拒绝越界/联接点；显式保存路径也经 AtomicFile.ValidateTarget 规范化、拒绝链接。
 - AppSettings 新增参考偏好在 OnDeserializing 初始化默认值；可用项必须有消费入口。导出显式白名单排除目录、服务/代理连接信息；界面不可用项不生成虚假字段。
@@ -156,8 +156,8 @@ Core 不依赖 WPF。App 将输入转换为 Core 模型，再由 WPF 或 Windows
 - `AnnotationOptionsBar` 订阅 `AnnotationCanvas.ToolChanged` 重建控件、订阅 `Changed` 刷新选中状态；只显示当前工具适用的控件，所有修改经 `ChangeStyle` / `ChangeAppearance` 落到画布或选中对象。InlineAnnotationBar 由主工具条与子操作栏两个 FloatingToolbar 纵向排列。
 - `AppSettings.MarkToolStyles` 最多 8192 字符，格式为 `@RRGGBBAA`（可选共享颜色）与若干 `组|ARGB|粗细|填充|线型|箭头|不透明度|效果|文字底色|圆角|字体(URL 编码)|字号|粗体|斜体` 记录；组名限 ToolbarGroups。无效时 `Validate` 拒绝；偏好导入对 `MarkToolStyles` 放宽到 8192 字符。画布从自己的设置克隆读取，变更后写回克隆并通过 `AnnotationStylePersistence.Changed` 通知控制器原子保存。
 - PinWindow 不显示右上角按钮；Selected 时用 `PinSelectionGlow` 绘制深蓝色、内侧约 80% 不透明度的渐变边框，过渡带为外侧空白的 2/3，`ToggleSelectionBorder` 由 Pin 场景 `Border`（默认 F）触发且仅在选中时生效。`MinimumScale` 为 max(10%, 30/宽, 30/高)；滚轮 Zoom 与 Ctrl+滚轮 Opacity 后由 `ShowPinHint` 在图片左上角显示百分比与最新尺寸，透明度下限 10%。选中期间控制器观察左键，点击其它进程窗口或桌面会清除选中；点击本进程窗口或处于标注编辑时保留。右键菜单由 `BuildContextMenu` 生成，包含图标、`InputGestureText` 和主题化 ContextMenu/MenuItem 模板。`PreviewMouseDown` 在任何标注工具状态下捕获左键双击：就地标注先 Flatten 进复制图，双击首下若新增标注则 Undo，再 CopyAndClose；Esc 走 CloseFromEscape（无确认），二者仍受锁定关闭限制；`PinDoubleClickAction` 降为旧配置兼容字段，设置页不再提供双击动作选择。
-- LongScreenshotBar 用 RegisterHotKey 在其窗口句柄上注册 Ctrl+T，WM_HOTKEY 直接 Finish(Pin)，关闭时注销；未注册成功时仍可用面板焦点快捷键与菜单。
-- `LongScreenshotBar` 在截图选区左侧或右侧显示长图面板（按工作区空间选择一侧），固定区域每约 600ms 自动采集，`LongScreenshot` 只提交可信重叠；面板预览自动滚到新内容，方向/手工重叠/裁掉前后/撤销在“更多”中，输出经 AppController 走复制/保存/钉图/OCR/编辑。选区用点击穿透边框标识；旧独立长截图窗口已移除。
+- 长截图面板整图预览并注册 Ctrl+T；原 CaptureWindow 用原生 ShowWindow 保持模态，返回按钮恢复，X/Esc 退出整个截图。
+- `LongScreenshotBar` 在选区旁每 90ms 采集固定物理区域；`LongScreenshotViewport` 可识别沿拼接轴移动的局部视口，只匹配该区域，固定边缘由 `Compose` 保留一次。面板完整显示长图且无滚动条，方向/手工重叠/裁切/撤销在“更多”中，输出经 AppController；选区用点击穿透边框标识。
 - `PlaybackWindow` 的 `inlineRegion` 模式为无标题栏、细边框（1 px 强调色）、默认不置顶、任务栏可见、最小 820×560 的窗口，按录制区域居中并夹在工作区内；紧凑工具栏包含进度条、播放/暂停、时间、倍速、保存格式（MP4/GIF/WebP）、剪辑/音量弹层、置顶切换、复制、从头播放、保存与关闭，倍速/格式使用与应用浮动栏一致的文字下拉；按住底部操作区空白处可拖动窗口，关闭按钮/ Esc 走 CloseSafelyAsync。保存按钮弹文件夹选择：格式与原格式一致且无剪辑/倍速/音量改动时直接复制原文件，否则用 FFmpeg 重新编码；无区域的历史录像保持普通窗口与完整导出按钮。pending 模式只持有临时素材；复制写临时文件，保存后才登记历史并回调；关闭未保存调用 discardPending。sourceRequiresExport 为真时禁止直接复制。
 - 录制选择由 `RecordingPlan` 承载：普通/快速、帧率、麦克风/系统声音、格式。`CaptureWindow.Plan` 更新工具栏；`Select` 只在录制场景回传 `pendingRecordingPlan`；`RecordRegion` 不再显示 RecordingSetup，而是直接按 plan 重建 `RecordingOptions`（音频设备取首个可用设备，需要 FFmpeg 时自动查找）。普通模式写入 NewPendingRecordingPath，增强模式 DeferFinalExport 只在停止时 Join 临时 source.mp4，PlaybackPath 选择可回放路径；快速模式仍直接输出 MP4 并登记历史。`QuickRecordingEnabled` 决定默认模式；快捷模式写入快速目录/模板。普通模式结束后总是打开 PlaybackWindow 编辑器，快捷模式不打开；两者都不自动显示主窗口。
 - 录屏选区标记由 `CaptureWindow.SetRecordingMarking` 在选区内的透明 `AnnotationCanvas` 上收集，`RecordingAnnotations` 随选区结果回传；`AppController.RecordRegion` 在开始录制前创建 `RecordingAnnotationOverlay` 并传入这些标注，录制中 `RecordingBar` 通过 `SetTool` 切换同一叠加层的工具。无工具时叠加层设置 `WS_EX_TRANSPARENT | WS_EX_NOACTIVATE` 点击穿透且不抢焦点；有工具时接收绘制并由 GDI 屏幕捕获写入视频。叠加层与录制区同尺寸、同 DPI，取消/结束/异常路径必须关闭。

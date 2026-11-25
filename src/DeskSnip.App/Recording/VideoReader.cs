@@ -20,7 +20,7 @@ public sealed class VideoReader : IDisposable
     private bool started;
     private bool comInitialized;
     private bool decodedFrame;
-    private readonly int stride;
+    private int stride;
     public int Width { get; }
     public int Height { get; }
     public long FrameDuration { get; }
@@ -118,6 +118,10 @@ public sealed class VideoReader : IDisposable
             var alignedWidth = (Width + 15) & ~15; var alignedHeight = (Height + 15) & ~15;
             if ((currentWidth != Width && currentWidth != alignedWidth) || (currentHeight != Height && currentHeight != alignedHeight))
                 throw new ArgumentException(L.Get("不支持录制中途改变尺寸的视频。"));
+            // H.264 解码器可把首帧缓冲区补齐到 16 像素边界；逻辑画面尺寸不变，但连续缓冲必须改用协商后的行宽。
+            var strideKey = new Guid("644b4e48-1e02-4516-b0eb-c01ca9d49ac6");
+            var strideResult = Mf.Method<Mf.GetUint>(current, 7)(current, ref strideKey, out var pitch);
+            stride = strideResult >= 0 ? unchecked((int)pitch) : (stride < 0 ? -currentWidth : currentWidth) * 4;
         }
         finally { Mf.Release(ref current); }
     }

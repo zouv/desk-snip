@@ -88,6 +88,41 @@ public class Mp4Tests
         }
         finally { if (File.Exists(path)) File.Delete(path); }
     }
+    [Fact] public async Task NativeDecoderPreservesFrameLayoutWithPaddedVideoRows()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "DeskSnip-video-stride-" + Guid.NewGuid().ToString("N") + ".mp4");
+        try
+        {
+            await Task.Run(() =>
+            {
+                const int width = 824, height = 416;
+                var frame = new byte[width * height * 4];
+                for (var y = 0; y < height; y++) for (var x = 0; x < width; x++)
+                {
+                    var offset = (y * width + x) * 4;
+                    var gray = (byte)((x / 4 * 7 + y / 4 * 13) & 255);
+                    frame[offset] = frame[offset + 1] = frame[offset + 2] = gray; frame[offset + 3] = 255;
+                }
+                using (var writer = new Mp4Writer(path, width, height, 10))
+                {
+                    writer.WriteFrame(frame, 0, TimeSpan.TicksPerSecond / 10); writer.Complete();
+                }
+                using (var reader = new VideoReader(path))
+                {
+                    var decoded = reader.ReadFrame(); Assert.NotNull(decoded);
+                    double error = 0;
+                    for (var y = 0; y < height; y += 4) for (var x = 0; x < width; x += 4)
+                    {
+                        var offset = (y * width + x) * 4;
+                        error += Math.Abs(decoded!.Pixels[offset] - frame[offset]);
+                    }
+                    error /= width * height / 16;
+                    Assert.True(error < 20, "Decoded rows are misaligned; mean luminance error: " + error);
+                }
+            });
+        }
+        finally { if (File.Exists(path)) File.Delete(path); }
+    }
     [Fact] public void OddEncodingDimensionsAreRejected() => Assert.Throws<ArgumentException>(() => new Mp4Writer("unused.mp4", 31, 31, 15));
     private static uint ReadBe(byte[] bytes, int offset) => (uint)bytes[offset] << 24 | (uint)bytes[offset + 1] << 16 | (uint)bytes[offset + 2] << 8 | bytes[offset + 3];
     private static int Find(byte[] bytes, byte[] pattern)

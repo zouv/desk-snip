@@ -21,13 +21,40 @@ internal sealed partial class AppController
         }
         catch (Exception) { if (!Exiting) new OcrWindow(image, settings.LocalOcrLanguage, settings.OcrCloseAfterCopyAll, settings).Show(); }
     }
-    private void LongScreenshot(PixelRect region)
+    private void LongScreenshot(PixelRect region, CaptureWindow? origin = null)
     {
+        if (origin != null)
+        {
+            var session = new LongScreenshotBar(region, Store.Settings.Clone(), (image, action) =>
+            {
+                origin.FinishLongScreenshotTransition();
+                CompleteLongScreenshot(image, action);
+            }, () =>
+            {
+                if (!Exiting) origin.CancelLongScreenshotTransition();
+            }, () =>
+            {
+                longScreenshotStartedFromSelection = false;
+                if (!Exiting) origin.ResumeFromLongScreenshot();
+            });
+            origin.HideForLongScreenshotTransition(); session.Show(); return;
+        }
         var visible = Window.IsVisible; var openEditors = editors.FindAll(e => e.IsVisible);
         Window.Hide(); foreach (var editor in openEditors) editor.Hide();
         var bar = new LongScreenshotBar(region, Store.Settings.Clone(), CompleteLongScreenshot, () => { });
         bar.Closed += (_, _) => { if (Exiting) return; if (visible) Window.Show(); foreach (var editor in openEditors) if (editors.Contains(editor)) editor.Show(); };
         bar.Show();
+    }
+    private void BeginLongScreenshotFromSelection(CaptureWindow window)
+    {
+        if (longScreenshotStartedFromSelection || Exiting) return;
+        longScreenshotStartedFromSelection = true;
+        try { LongScreenshot(window.Selection, window); }
+        catch (Exception error)
+        {
+            longScreenshotStartedFromSelection = false; window.ResumeFromLongScreenshot();
+            if (!Exiting) Ui.Error(Window, error, L.Get("开始长截图"));
+        }
     }
     private void CompleteLongScreenshot(System.Windows.Media.Imaging.BitmapSource image, CaptureAction action)
     {
